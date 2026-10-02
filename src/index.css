@@ -1,0 +1,188 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-dark-main: #07090E;
+  --color-dark-card: #0E121B;
+  --color-dark-elevated: #151B27;
+  --color-dark-border: #1C2436;
+  --color-dark-border-strong: #2B3750;
+
+  --color-neon-green: #00FF85;
+  --color-neon-cyan: #00E5FF;
+  --color-neon-yellow: #FFE500;
+  --color-neon-pink: #FF2E55;
+  --color-neon-purple: #B55FE6;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark light;
+  }
+
+  body {
+    background-color: #07090E;
+    color: #F1F5F9;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+}
+
+/* =========================================================================
+   TEMA CLARO (LIGHT MODE)
+   Se activa automáticamente cuando html no tiene la clase .dark
+   (o cuando tiene .light / [data-theme="light"])
+   ========================================================================= */
+
+html:not(.dark) body {
+  background-color: #F8FAFC !important;
+  color: #0F172A !important;
+}
+
+/* Fondos principales */
+html:not(.dark) .bg-\[\#07090E\],
+html:not(.dark) [class*="bg-[#07090E]"] {
+  background-color: #F8FAFC !important;
+}
+
+html:not(.dark) .bg-\[\#0A0D14\],
+html:not(.dark) [class*="bg-[#0A0D14]"] {
+  background-color: #F1F5F9 !important;
+}
+
+/* Tarjetas y paneles */
+html:not(.dark) .bg-\[\#0E121B\],
+html:not(.dark) [class*="bg-[#0E121B]"] {
+  background-color: #FFFFFF !important;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+}
+
+/* Elementos elevados, campos de texto y botones secundarios */
+html:not(.dark) .bg-\[\#151B27\],
+html:not(.dark) [class*="bg-[#151B27]"] {
+  background-color: #F1F5F9 !important;
+}
+
+html:not(.dark) .bg-\[\#121622\],
+html:not(.dark) [class*="bg-[#121622]"] {
+  background-color: #E2E8F0 !important;
+}
+
+html:not(.dark) .bg-\[\#080A0F\],
+html:not(.dark) [class*="bg-[#080A0F]"] {
+  background-color: #E2E8F0 !important;
+}
+
+/* Bordes */
+html:not(.dark) .border-\[\#1C2436\],
+html:not(.dark) [class*="border-[#1C2436]"] {
+  border-color: #E2E8F0 !important;
+}
+
+html:not(.dark) .border-\[\#2B3750\],
+html:not(.dark) [class*="border-[#2B3750]"] {
+  border-color: #CBD5E1 !important;
+}
+
+/* Tipografía */
+html:not(.dark) .text-\[\#F1F5F9\],
+html:not(.dark) [class*="text-[#F1F5F9]"] {
+  color: #0F172A !important;
+}
+
+html:not(.dark) .text-\[\#CBD5E1\],
+html:not(.dark) [class*="text-[#CBD5E1]"] {
+  color: #334155 !important;
+}
+
+html:not(.dark) .text-\[\#8492A6\],
+html:not(.dark) [class*="text-[#8492A6]"] {
+  color: #64748B !important;
+}
+
+html:not(.dark) .text-\[\#94A3B8\],
+html:not(.dark) [class*="text-[#94A3B8]"] {
+  color: #64748B !important;
+}
+
+/* Acentos y colores neón adaptados a fondo claro con alto contraste */
+html:not(.dark) .text-\[\#00FF85\],
+html:not(.dark) [class*="text-[#00FF85]"] {
+  color: #059669 !important; /* Emerald 600 */
+}
+
+html:not(.dark) .text-\[\#00E5FF\],
+html:not(.dark) [class*="text-[#00E5FF]"] {
+  color: #0284C7 !important; /* Sky 600 */
+}
+
+html:not(.dark) .text-\[\#FFE500\],
+html:not(.dark) [class*="text-[#FFE500]"] {
+  color: #D97706 !important; /* Amber 600 */
+}
+
+html:not(.dark) .text-\[\#FF2E55\],
+html:not(.dark) [class*="text-[#FF2E55]"] {
+  color: #E11D48 !important; /* Rose 600 */
+}
+
+html:not(.dark) .text-\[\#B55FE6\],
+html:not(.dark) [class*="text-[#B55FE6]"] {
+  color: #7C3AED !important; /* Violet 600 */
+}
+
+/* Mantener el texto oscuro dentro de botones con fondo verde llamativo */
+html:not(.dark) .text-\[\#080A0F\] {
+  color: #080A0F !important;
+}
+
+/* Opciones de selectores nativos */
+html:not(.dark) select option {
+  background-color: #FFFFFF;
+  color: #0F172A;
+}
+
+html.dark select option,
+html:where(.dark) select option {
+  background-color: #0E121B;
+  color: #F1F5F9;
+}
+
+/* =========================================================================
+   SCROLLBAR ADAPTATIVA
+   ========================================================================= */
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+/* Modo oscuro (default) */
+::-webkit-scrollbar-track {
+  background: #07090E;
+}
+::-webkit-scrollbar-thumb {
+  background: #1C2436;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2B3750;
+}
+
+/* Modo claro */
+html:not(.dark) ::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+html:not(.dark) ::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 2px;
+}
+html:not(.dark) ::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
