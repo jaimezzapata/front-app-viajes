@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://back-app-viajes.onrender.com';
 
 /**
  * Cliente HTTP ligero con detección de conectividad

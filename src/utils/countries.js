@@ -467,17 +467,86 @@ export function extractVisitedCountries(eventos = [], viajes = []) {
 }
 
 /**
+ * Repara tildes o caracteres rotos por teclado/encoding (ej. "Jap+on" -> "Japón", "avi+on" -> "avión")
+ * Utiliza códigos de escape unicode para evitar problemas de codificación en el compilador/terminal.
+ * @param {string} text
+ * @returns {string}
+ */
+export function fixAccents(text) {
+  if (!text || typeof text !== 'string') return '';
+  return text
+    // Tecla muerta produciendo '+' antes de vocal o 'n'
+    .replace(/\+a/g, '\u00E1')
+    .replace(/\+e/g, '\u00E9')
+    .replace(/\+i/g, '\u00ED')
+    .replace(/\+o/g, '\u00F3')
+    .replace(/\+u/g, '\u00FA')
+    .replace(/\+n/g, '\u00F1')
+    .replace(/\+A/g, '\u00C1')
+    .replace(/\+E/g, '\u00C9')
+    .replace(/\+I/g, '\u00CD')
+    .replace(/\+O/g, '\u00D3')
+    .replace(/\+U/g, '\u00DA')
+    .replace(/\+N/g, '\u00D1')
+    // Acento agudo suelto seguido de letra (´a -> á)
+    .replace(/\u00B4a/g, '\u00E1')
+    .replace(/\u00B4e/g, '\u00E9')
+    .replace(/\u00B4i/g, '\u00ED')
+    .replace(/\u00B4o/g, '\u00F3')
+    .replace(/\u00B4u/g, '\u00FA')
+    .replace(/\u00B4A/g, '\u00C1')
+    .replace(/\u00B4E/g, '\u00C9')
+    .replace(/\u00B4I/g, '\u00CD')
+    .replace(/\u00B4O/g, '\u00D3')
+    .replace(/\u00B4U/g, '\u00DA')
+    .replace(/~n/g, '\u00F1')
+    .replace(/~N/g, '\u00D1')
+    // Mojibake comunes (UTF-8 interpretado como ISO-8859-1 / Windows-1252)
+    .replace(/\u00C3\u00A1/g, '\u00E1')
+    .replace(/\u00C3\u00A9/g, '\u00E9')
+    .replace(/\u00C3\u00AD/g, '\u00ED')
+    .replace(/\u00C3\u00B3/g, '\u00F3')
+    .replace(/\u00C3\u00BA/g, '\u00FA')
+    .replace(/\u00C3\u00B1/g, '\u00F1')
+    .replace(/\u00C3\u0081/g, '\u00C1')
+    .replace(/\u00C3\u0089/g, '\u00C9')
+    .replace(/\u00C3\u008D/g, '\u00CD')
+    .replace(/\u00C3\u0093/g, '\u00D3')
+    .replace(/\u00C3\u009A/g, '\u00DA')
+    .replace(/\u00C3\u0091/g, '\u00D1');
+}
+
+/**
  * Limpia el texto de cualquier bandera emoji o artefacto de código duplicado (ej: "ES ES España" -> "España")
+ * También repara cualquier tilde rota en los nombres de países o rutas.
+ * @param {string} text
+ * @returns {string}
  */
 export function cleanCountryText(text) {
   if (!text || typeof text !== 'string') return '';
-  return text
-    .replace(/[\uD83C][\uDDE6-\uDDFF]/gu, '')
-    .replace(/\b([a-zA-Z]{2})\s+\1\s*/gi, '')
-    .replace(/(^|\s➔\s|\s->\s)\s*([a-zA-Z]{2})\s+(?=[A-Za-zÀ-ÿ])/gi, '$1')
-    .replace(/\s*->\s*/g, ' ➔ ')
-    .replace(/\s*➔\s*/g, ' ➔ ')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
+
+  // 1. Normalizar separadores de ruta
+  const delimStr = text.replace(/\s*(?:->|➔|→)\s*/g, ' |DELIM| ');
+
+  // 2. Procesar cada tramo de la ruta de manera independiente
+  const parts = delimStr.split(' |DELIM| ').map(part => {
+    let p = part.trim();
+    // Eliminar banderas emoji (símbolos regionales y surrogates) y emojis en general
+    p = p.replace(/[\u{1F1E6}-\u{1F1FF}]/gu, '');
+    p = p.replace(/[\u{1F300}-\u{1F9FF}]/gu, '');
+    p = p.replace(/[\uD83C][\uDDE6-\uDDFF]/g, '');
+
+    // Eliminar códigos ISO de 2 letras repetidos o iniciales (ej: "ES ES España", "KR KR Corea del Sur")
+    p = p.replace(/^([a-zA-Z]{2}\s+)+/i, '');
+    p = p.replace(/\b([a-zA-Z]{2})\s+(?=[A-Za-z\u00C0-\u00FF])/gi, '');
+
+    // Reparar tildes
+    p = fixAccents(p);
+
+    // Limpiar espacios repetidos
+    return p.replace(/\s{2,}/g, ' ').trim();
+  });
+
+  return parts.filter(Boolean).join(' ➔ ');
 }
 

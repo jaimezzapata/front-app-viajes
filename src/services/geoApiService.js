@@ -37,26 +37,7 @@ export function extractIsoFromFlagEmoji(text) {
   return null;
 }
 
-/**
- * Limpia el texto de cualquier bandera emoji o artefacto de código duplicado (ej: "ES ES España" -> "España")
- * @param {string} text
- * @returns {string}
- */
-export function cleanCountryText(text) {
-  if (!text || typeof text !== 'string') return '';
-  return text
-    // Eliminar emojis de banderas (Regional Indicator Symbols) en cualquier posición
-    .replace(/[\uD83C][\uDDE6-\uDDFF]/gu, '')
-    // Eliminar códigos duplicados tipo "ES ES ", "KR KR ", "co co ", "JP JP "
-    .replace(/\b([a-zA-Z]{2})\s+\1\s*/gi, '')
-    // Eliminar prefijos de 2 letras aislados al inicio o después de flechas: "ES España" -> "España"
-    .replace(/(^|\s➔\s|\s->\s)\s*([a-zA-Z]{2})\s+(?=[A-Za-zÀ-ÿ])/gi, '$1')
-    // Normalizar flechas
-    .replace(/\s*->\s*/g, ' ➔ ')
-    .replace(/\s*➔\s*/g, ' ➔ ')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
-}
+export { cleanCountryText, fixAccents } from '../utils/countries';
 
 /**
  * Limpia el texto de cualquier bandera emoji al inicio o duplicados

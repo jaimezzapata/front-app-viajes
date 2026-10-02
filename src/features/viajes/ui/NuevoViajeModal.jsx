@@ -4,7 +4,7 @@ import Modal from '../../../components/Modal';
 import CountryInput from '../../../components/CountryInput';
 import AirportCityInput from '../../../components/AirportCityInput';
 import { CurrencySelector, LiveCurrencyConversions } from '../../../components/CurrencySelector';
-import { detectCountry } from '../../../utils/countries';
+import { detectCountry, fixAccents } from '../../../utils/countries';
 import { formatWithMiniFlag } from '../../../services/geoApiService';
 
 const CURRENCY_BY_COUNTRY = {
@@ -206,9 +206,9 @@ export function NuevoViajeModal({ isOpen, onClose, onSaveViaje, viajeAEditar, on
       const formattedOrigen = origen.trim() ? formatWithMiniFlag(origen.trim()) : undefined;
 
       const payload = {
-        titulo: titulo.trim(),
+        titulo: fixAccents(titulo.trim()),
         tipoViaje,
-        descripcion: descripcion.trim() || undefined,
+        descripcion: descripcion.trim() ? fixAccents(descripcion.trim()) : undefined,
         origen: formattedOrigen,
         destino: finalDestino,
         escalas: tipoViaje === 'unico' && escalas.trim() ? formatWithMiniFlag(escalas.trim()) : undefined,
@@ -327,7 +327,7 @@ export function NuevoViajeModal({ isOpen, onClose, onSaveViaje, viajeAEditar, on
             required
             placeholder={tipoViaje === 'multidestino' ? "Ej. Tour Europa & Asia 2026" : "Ej. Viaje a Japón 2026"}
             value={titulo}
-            onChange={(e) => setTitulo(e.target.value)}
+            onChange={(e) => setTitulo(fixAccents(e.target.value))}
             className="w-full bg-[#151B27] border border-[#1C2436] focus:border-[#00FF85] rounded-lg px-3 py-2 text-sm text-[#F1F5F9] focus:outline-none"
           />
         </div>

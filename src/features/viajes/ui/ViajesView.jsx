@@ -17,7 +17,7 @@ import {
 import WorldMapAmCharts from '../../../components/WorldMapAmCharts';
 import WatermarkIcon from '../../../components/WatermarkIcon';
 import MiniFlag from '../../../components/MiniFlag';
-import { extractVisitedCountries, getCountryFlag, cleanCountryText } from '../../../utils/countries';
+import { extractVisitedCountries, getCountryFlag, cleanCountryText, fixAccents } from '../../../utils/countries';
 import { extractFlightTrajectories } from '../../../utils/geoCoordinates';
 
 export function ViajesView({
@@ -313,11 +313,11 @@ export function ViajesView({
                     </div>
 
                     <h3 className="text-base font-bold text-[#F1F5F9] m-0 group-hover:text-[#00E5FF] transition-colors">
-                      {viaje.titulo}
+                      {fixAccents(viaje.titulo)}
                     </h3>
                     {viaje.descripcion && (
                       <p className="text-xs text-[#8492A6] mt-1 line-clamp-2 m-0">
-                        {viaje.descripcion}
+                        {fixAccents(viaje.descripcion)}
                       </p>
                     )}
 

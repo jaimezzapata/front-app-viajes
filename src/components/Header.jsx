@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Plane, Wifi, WifiOff, User, Plus, Globe2, Edit2, Trash2, MoreVertical, X } from 'lucide-react';
-import { cleanCountryText } from '../utils/countries';
+import { cleanCountryText, fixAccents } from '../utils/countries';
 import MiniFlag from './MiniFlag';
 import ThemeToggle from './ThemeToggle';
 
@@ -54,7 +54,7 @@ export function Header({
                 >
                   {viajes.map((v) => (
                     <option key={v.id} value={v.id}>
-                      {v.titulo} ({cleanCountryText(v.destino)})
+                      {fixAccents(v.titulo)} ({cleanCountryText(v.destino)})
                     </option>
                   ))}
                 </select>
@@ -117,7 +117,7 @@ export function Header({
                 <span>{new Date(activeViaje.fechaInicio).toLocaleDateString()} - {new Date(activeViaje.fechaFin).toLocaleDateString()}</span>
                 <span>•</span>
                 <span className="inline-flex items-center gap-1 truncate">
-                  <MiniFlag country={activeViaje.destino} className="w-3.5 h-2.5 sm:w-4 sm:h-2.5" />
+                  <MiniFlag country={activeViaje.destino} className="w-3.5 h-2.5 sm:w-4 sm:h-2.5 shrink-0" />
                   <span className="text-[#F1F5F9] font-medium truncate">{cleanCountryText(activeViaje.destino)}</span>
                 </span>
               </p>

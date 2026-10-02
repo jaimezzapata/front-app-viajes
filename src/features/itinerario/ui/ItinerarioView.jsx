@@ -317,8 +317,13 @@ export function ItinerarioView({
           {filteredEventos.map((ev) => {
             const isVuelo = ev.tipo?.toLowerCase() === 'vuelo';
             const Icon = TYPE_ICONS[ev.tipo?.toLowerCase()] || MapPin;
-            const startDate = new Date(ev.fechaInicio);
-            const endDate = new Date(ev.fechaFin);
+            const parseDate = (d) => {
+              if (!d) return null;
+              const p = new Date(d);
+              return isNaN(p.getTime()) ? null : p;
+            };
+            const startDate = parseDate(ev.fechaInicio) || parseDate(ev.fecha) || new Date();
+            const endDate = parseDate(ev.fechaFin) || startDate;
 
             const hasFlightLogistics = ev.ciudadOrigen || ev.aeropuertoOrigen || ev.tieneConexion || ev.ciudadDestino;
 

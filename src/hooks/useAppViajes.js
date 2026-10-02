@@ -2,16 +2,29 @@ import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { apiRequest } from '../services/api';
 import { convertCurrency } from '../utils/currencies';
+import { fixAccents, cleanCountryText } from '../utils/countries';
+
+export function repairViaje(v) {
+  if (!v) return v;
+  return {
+    ...v,
+    titulo: fixAccents(v.titulo || ''),
+    descripcion: v.descripcion ? fixAccents(v.descripcion) : v.descripcion,
+    destino: cleanCountryText(v.destino || ''),
+    origen: v.origen ? cleanCountryText(v.origen) : v.origen,
+    escalas: v.escalas ? cleanCountryText(v.escalas) : v.escalas,
+  };
+}
 
 export function useAppViajes(usuario) {
-  // Inicializar exclusivamente con datos reales guardados localmente (limpiando cualquier residuo de demo)
+  // Inicializar exclusivamente con datos reales guardados localmente (limpiando y reparando tildes/formatos)
   const [viajes, setViajes] = useState(() => {
     try {
       const saved = localStorage.getItem('app_viajes_lista');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          return parsed.filter(v => v.id && v.id !== 'viaje-demo-tokyo');
+          return parsed.filter(v => v.id && v.id !== 'viaje-demo-tokyo').map(repairViaje);
         }
       }
       return [];
@@ -114,14 +127,13 @@ export function useAppViajes(usuario) {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          const hasDemo = parsed.some(v => v.id === 'viaje-demo-tokyo');
-          if (hasDemo) {
-            const clean = parsed.filter(v => v.id !== 'viaje-demo-tokyo');
-            localStorage.setItem('app_viajes_lista', JSON.stringify(clean));
-            setViajes(clean);
-            if (activeViajeId === 'viaje-demo-tokyo') {
-              setActiveViajeId(clean[0]?.id || null);
-            }
+          const repaired = parsed
+            .filter(v => v.id !== 'viaje-demo-tokyo')
+            .map(repairViaje);
+          localStorage.setItem('app_viajes_lista', JSON.stringify(repaired));
+          setViajes(repaired);
+          if (activeViajeId === 'viaje-demo-tokyo' || !activeViajeId) {
+            setActiveViajeId(repaired[0]?.id || null);
           }
         }
       }
@@ -215,7 +227,9 @@ export function useAppViajes(usuario) {
     try {
       const dataViajes = await apiRequest(`/viajes${usuario?.id ? `?usuarioId=${usuario.id}` : ''}`);
       if (Array.isArray(dataViajes)) {
-        const cleanViajes = dataViajes.filter(v => v.id && v.id !== 'viaje-demo-tokyo');
+        const cleanViajes = dataViajes
+          .filter(v => v.id && v.id !== 'viaje-demo-tokyo')
+          .map(repairViaje);
         setViajes(cleanViajes);
         localStorage.setItem('app_viajes_lista', JSON.stringify(cleanViajes));
 
@@ -367,7 +381,7 @@ export function useAppViajes(usuario) {
             usuarioId: usuario?.id
           })
         });
-        savedViaje = res?.data || res;
+        savedViaje = repairViaje(res?.data || res);
         setViajes(prev => [savedViaje, ...prev]);
         setActiveViajeId(savedViaje.id);
         toast.success('Viaje configurado y sincronizado con éxito');
@@ -376,11 +390,11 @@ export function useAppViajes(usuario) {
 
     if (!savedViaje) {
       // Fallback offline
-      savedViaje = {
+      savedViaje = repairViaje({
         ...nuevoViajeData,
         id: 'viaje-local-' + Date.now(),
         usuarioId: usuario?.id
-      };
+      });
       setViajes(prev => [savedViaje, ...prev]);
       setActiveViajeId(savedViaje.id);
       toast.info('Configuración guardada localmente (Modo Offline).');
@@ -391,13 +405,14 @@ export function useAppViajes(usuario) {
 
   const handleUpdateViaje = async (id, updatedData) => {
     let saved = null;
+    const sanitizedUpdate = repairViaje(updatedData);
     try {
       if (navigator.onLine) {
         const res = await apiRequest(`/viajes/${id}`, {
           method: 'PUT',
-          body: JSON.stringify(updatedData)
+          body: JSON.stringify(sanitizedUpdate)
         });
-        saved = res?.data || res || updatedData;
+        saved = repairViaje(res?.data || res || sanitizedUpdate);
         setViajes(prev => prev.map(v => (v.id === id ? { ...v, ...saved } : v)));
         toast.success('Viaje actualizado y sincronizado');
       }
@@ -407,9 +422,9 @@ export function useAppViajes(usuario) {
 
     if (!saved) {
       // Fallback offline
-      setViajes(prev => prev.map(v => (v.id === id ? { ...v, ...updatedData } : v)));
+      saved = sanitizedUpdate;
+      setViajes(prev => prev.map(v => (v.id === id ? { ...v, ...sanitizedUpdate } : v)));
       toast.info('Cambios guardados localmente.');
-      saved = updatedData;
     }
 
     return saved;
