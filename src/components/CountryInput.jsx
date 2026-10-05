@@ -133,7 +133,7 @@ export function CountryInput({
           }}
           placeholder={placeholder}
           required={required}
-          className="bg-transparent text-xs text-[#F1F5F9] w-full focus:outline-none placeholder:text-[#8492A6]/50"
+          className="bg-transparent text-base sm:text-xs text-[#F1F5F9] w-full focus:outline-none placeholder:text-[#8492A6]/50"
         />
       </div>
 

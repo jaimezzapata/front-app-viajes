@@ -1,4 +1,5 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'https://back-app-viajes.onrender.com';
+const rawBase = import.meta.env.VITE_API_URL || 'https://back-app-viajes.onrender.com/api';
+const API_BASE = rawBase.endsWith('/api') ? rawBase : `${rawBase.replace(/\/+$/, '')}/api`;
 
 /**
  * Cliente HTTP ligero con detección de conectividad

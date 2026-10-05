@@ -240,82 +240,89 @@ export function NuevoViajeModal({ isOpen, onClose, onSaveViaje, viajeAEditar, on
       onClose={onClose}
       title={isEditing ? 'Editar Configuración del Viaje' : 'Configurar Nuevo Viaje'}
       maxWidth="max-w-xl"
+      footer={
+        <div className="flex items-center justify-between gap-2.5">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-xl bg-[#151B27] border border-[#1C2436] hover:bg-[#1E2738] text-xs font-semibold text-[#8492A6] hover:text-[#F1F5F9] transition-colors cursor-pointer"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            form="nuevo-viaje-form"
+            disabled={loading}
+            className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-[#00FF85] hover:bg-[#00FF85]/90 text-[#080A0F] text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer shadow-lg shadow-[#00FF85]/10 flex items-center justify-center gap-1.5"
+          >
+            {loading ? (
+              <span>Guardando...</span>
+            ) : (
+              <>
+                <Plane className="w-3.5 h-3.5 fill-[#080A0F]" />
+                <span>{isEditing ? 'Guardar Cambios' : 'Crear Viaje'}</span>
+              </>
+            )}
+          </button>
+        </div>
+      }
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form id="nuevo-viaje-form" onSubmit={handleSubmit} className="space-y-3.5 pb-2">
         {errorMsg && (
-          <div className="p-2.5 rounded bg-[#FF2E55]/10 border border-[#FF2E55] text-[#FF2E55] text-xs font-semibold">
+          <div className="p-2.5 rounded-xl bg-[#FF2E55]/10 border border-[#FF2E55] text-[#FF2E55] text-xs font-semibold">
             {errorMsg}
           </div>
         )}
 
-        {/* SELECTOR: Único Destino vs Multidestino */}
+        {/* SELECTOR: Control Segmentado Compacto (Mobile First) */}
         <div>
-          <label className="block text-xs font-semibold text-[#8492A6] mb-1.5 uppercase tracking-wider">
+          <label className="block text-[11px] font-bold text-[#8492A6] mb-1.5 uppercase tracking-wider">
             Tipo de Viaje *
           </label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="bg-[#0A0D14] p-1 rounded-xl border border-[#1C2436] grid grid-cols-2 gap-1">
             <button
               type="button"
               onClick={() => setTipoViaje('unico')}
-              className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-1 ${
+              className={`py-2 px-2.5 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 min-w-0 ${
                 tipoViaje === 'unico'
-                  ? 'bg-[#151B27] border-[#00E5FF] text-[#F1F5F9] shadow-md shadow-[#00E5FF]/10'
-                  : 'bg-[#0E121B] border-[#1C2436] text-[#8492A6] hover:border-[#1C2436]/80'
+                  ? 'bg-[#151B27] text-[#00E5FF] font-bold border border-[#00E5FF]/40 shadow-sm'
+                  : 'text-[#8492A6] hover:text-[#F1F5F9] font-medium border border-transparent'
               }`}
             >
-              <div className="flex items-center gap-2">
-                <span className={`w-2.5 h-2.5 rounded-full ${tipoViaje === 'unico' ? 'bg-[#00E5FF]' : 'bg-[#8492A6]'}`} />
-                <span className="font-bold text-xs uppercase tracking-wider text-[#F1F5F9]">
-                  📍 Único Destino
-                </span>
-              </div>
-              <p className="text-[11px] text-[#8492A6] m-0">
-                Viaje con un destino principal y conexiones directas.
-              </p>
+              <span className={`w-2 h-2 rounded-full shrink-0 ${tipoViaje === 'unico' ? 'bg-[#00E5FF]' : 'bg-[#8492A6]'}`} />
+              <span className="text-xs uppercase tracking-wider truncate">📍 Único Destino</span>
             </button>
 
             <button
               type="button"
               onClick={() => setTipoViaje('multidestino')}
-              className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-1 ${
+              className={`py-2 px-2.5 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 min-w-0 ${
                 tipoViaje === 'multidestino'
-                  ? 'bg-[#151B27] border-[#00FF85] text-[#F1F5F9] shadow-md shadow-[#00FF85]/10'
-                  : 'bg-[#0E121B] border-[#1C2436] text-[#8492A6] hover:border-[#1C2436]/80'
+                  ? 'bg-[#151B27] text-[#00FF85] font-bold border border-[#00FF85]/40 shadow-sm'
+                  : 'text-[#8492A6] hover:text-[#F1F5F9] font-medium border border-transparent'
               }`}
             >
-              <div className="flex items-center gap-2">
-                <span className={`w-2.5 h-2.5 rounded-full ${tipoViaje === 'multidestino' ? 'bg-[#00FF85]' : 'bg-[#8492A6]'}`} />
-                <span className="font-bold text-xs uppercase tracking-wider text-[#F1F5F9]">
-                  🗺️ Multidestino
-                </span>
-              </div>
-              <p className="text-[11px] text-[#8492A6] m-0">
-                Ruta con múltiples destinos (se resaltan en el mapa mundi).
-              </p>
+              <span className={`w-2 h-2 rounded-full shrink-0 ${tipoViaje === 'multidestino' ? 'bg-[#00FF85]' : 'bg-[#8492A6]'}`} />
+              <span className="text-xs uppercase tracking-wider truncate">🗺️ Multidestino</span>
             </button>
           </div>
         </div>
 
-        {/* Banner Informativo dinámico según regla de negocio */}
-        {tipoViaje === 'multidestino' ? (
-          <div className="p-3 rounded-lg bg-[#00FF85]/10 border border-[#00FF85]/30 text-xs space-y-1">
-            <p className="font-bold text-[#00FF85] m-0 flex items-center gap-1.5 uppercase text-[11px] tracking-wider">
-              <span>🌍</span> Regla de Multidestino Activa
-            </p>
-            <p className="m-0 text-[#CBD5E1] text-[11px] leading-relaxed">
-              Todos los destinos agregados a esta ruta se considerarán <strong className="text-[#00FF85]">países visitados</strong> y se iluminarán y resaltarán en el Mapa Mundi, trazando la trayectoria aérea animada continua del avión.
-            </p>
-          </div>
-        ) : (
-          <div className="p-3 rounded-lg bg-[#151B27] border border-[#00E5FF]/30 text-xs space-y-1">
-            <p className="font-bold text-[#00E5FF] m-0 flex items-center gap-1.5 uppercase text-[11px] tracking-wider">
-              <span>✈️</span> Modo Único Destino
-            </p>
-            <p className="m-0 text-[#8492A6] text-[11px] leading-relaxed">
-              Configura tu origen, destino y escalas. El país se registrará en el mapa mundi cuando registres tus vuelos en el itinerario (las escalas contarán solo si el cambio de vuelo supera las 24 horas).
-            </p>
-          </div>
-        )}
+        {/* Micro-banner informativo compacto */}
+        <div
+          className={`px-3 py-2 rounded-xl text-xs flex items-center gap-2 ${
+            tipoViaje === 'multidestino'
+              ? 'bg-[#00FF85]/10 border border-[#00FF85]/30 text-[#00FF85]'
+              : 'bg-[#00E5FF]/10 border border-[#00E5FF]/20 text-[#00E5FF]'
+          }`}
+        >
+          <span className="text-sm shrink-0">{tipoViaje === 'multidestino' ? '🌍' : '✈️'}</span>
+          <p className="m-0 text-[11px] leading-tight text-[#CBD5E1]">
+            {tipoViaje === 'multidestino'
+              ? 'Múltiples destinos enlazados de forma continua en el Mapa Mundi.'
+              : 'Configura origen, escalas y destino. Se trazarán arcos aéreos en el Mapa Mundi.'}
+          </p>
+        </div>
 
         {/* Nombre del Viaje */}
         <div>
@@ -328,7 +335,7 @@ export function NuevoViajeModal({ isOpen, onClose, onSaveViaje, viajeAEditar, on
             placeholder={tipoViaje === 'multidestino' ? "Ej. Tour Europa & Asia 2026" : "Ej. Viaje a Japón 2026"}
             value={titulo}
             onChange={(e) => setTitulo(fixAccents(e.target.value))}
-            className="w-full bg-[#151B27] border border-[#1C2436] focus:border-[#00FF85] rounded-lg px-3 py-2 text-sm text-[#F1F5F9] focus:outline-none"
+            className="w-full bg-[#151B27] border border-[#1C2436] focus:border-[#00FF85] rounded-lg px-3 py-2 text-base sm:text-sm text-[#F1F5F9] focus:outline-none min-h-[42px]"
           />
         </div>
 
@@ -357,7 +364,7 @@ export function NuevoViajeModal({ isOpen, onClose, onSaveViaje, viajeAEditar, on
           <div className="space-y-3 p-3.5 rounded-xl bg-[#0E121B] border border-[#1C2436]">
             <div>
               <CountryInput
-                label="Destino Principal (País) *"
+                label="Destino Principal (País)"
                 required
                 placeholder="Ej. Japón, Francia o España"
                 value={destino}
@@ -516,9 +523,10 @@ export function NuevoViajeModal({ isOpen, onClose, onSaveViaje, viajeAEditar, on
         )}
 
         {/* Fechas */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2.5">
           <div>
-            <label className="block text-xs font-semibold text-[#8492A6] mb-1 uppercase tracking-wider">
+            <label className="block text-[11px] font-bold text-[#8492A6] mb-1 uppercase tracking-wider flex items-center gap-1">
+              <Calendar className="w-3 h-3 text-[#00E5FF]" />
               Fecha Inicio *
             </label>
             <input
@@ -526,12 +534,13 @@ export function NuevoViajeModal({ isOpen, onClose, onSaveViaje, viajeAEditar, on
               required
               value={fechaInicio}
               onChange={(e) => setFechaInicio(e.target.value)}
-              className="w-full bg-[#151B27] border border-[#1C2436] focus:border-[#00FF85] rounded-lg px-3 py-2 text-sm text-[#F1F5F9] focus:outline-none"
+              className="w-full bg-[#151B27] border border-[#1C2436] focus:border-[#00FF85] rounded-lg px-2.5 py-2 text-base sm:text-sm text-[#F1F5F9] focus:outline-none min-h-[42px]"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#8492A6] mb-1 uppercase tracking-wider">
+            <label className="block text-[11px] font-bold text-[#8492A6] mb-1 uppercase tracking-wider flex items-center gap-1">
+              <Calendar className="w-3 h-3 text-[#00FF85]" />
               Fecha Fin *
             </label>
             <input
@@ -539,13 +548,13 @@ export function NuevoViajeModal({ isOpen, onClose, onSaveViaje, viajeAEditar, on
               required
               value={fechaFin}
               onChange={(e) => setFechaFin(e.target.value)}
-              className="w-full bg-[#151B27] border border-[#1C2436] focus:border-[#00FF85] rounded-lg px-3 py-2 text-sm text-[#F1F5F9] focus:outline-none"
+              className="w-full bg-[#151B27] border border-[#1C2436] focus:border-[#00FF85] rounded-lg px-2.5 py-2 text-base sm:text-sm text-[#F1F5F9] focus:outline-none min-h-[42px]"
             />
           </div>
         </div>
 
         {/* Presupuesto y Divisa */}
-        <div className="space-y-3 p-3 rounded-lg bg-[#151B27] border border-[#1C2436]">
+        <div className="space-y-3 p-3 rounded-xl bg-[#151B27] border border-[#1C2436]">
           <CurrencySelector
             value={monedaLocal}
             onChange={(selectedCurr) => setMonedaLocal(selectedCurr)}
@@ -553,15 +562,16 @@ export function NuevoViajeModal({ isOpen, onClose, onSaveViaje, viajeAEditar, on
           />
 
           <div>
-            <label className="block text-xs font-semibold text-[#8492A6] mb-1 uppercase tracking-wider">
-              Presupuesto Total del Viaje (en COP)
+            <label className="block text-[11px] font-bold text-[#8492A6] mb-1 uppercase tracking-wider flex items-center gap-1">
+              <DollarSign className="w-3 h-3 text-[#FFE500]" />
+              Presupuesto Total Estimado (en COP)
             </label>
             <input
               type="number"
               placeholder="Ej. 15000000"
               value={presupuestoTotal}
               onChange={(e) => setPresupuestoTotal(e.target.value)}
-              className="w-full bg-[#0E121B] border border-[#1C2436] focus:border-[#00FF85] rounded-lg px-3 py-2 text-sm font-bold text-[#F1F5F9] focus:outline-none"
+              className="w-full bg-[#0E121B] border border-[#1C2436] focus:border-[#00FF85] rounded-lg px-3 py-2 text-base sm:text-sm font-bold text-[#F1F5F9] focus:outline-none min-h-[42px]"
             />
           </div>
 
@@ -571,14 +581,6 @@ export function NuevoViajeModal({ isOpen, onClose, onSaveViaje, viajeAEditar, on
             title="Presupuesto equivalente en las demás monedas del viaje"
           />
         </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3 px-4 bg-[#00FF85] text-[#080A0F] font-bold text-xs uppercase tracking-wider rounded-lg hover:opacity-90 transition-opacity mt-4 cursor-pointer"
-        >
-          {loading ? 'Guardando...' : (isEditing ? 'Guardar Cambios' : 'Crear Viaje')}
-        </button>
       </form>
     </Modal>
   );
