@@ -57,12 +57,22 @@ export function ViajesView({
     return list;
   }, [eventos, viajes, activeViajeId]);
 
-  // Extraer mapa de países visitados EXCLUSIVAMENTE a partir de los VUELOS registrados
-  // REGLA: La configuración inicial del viaje NO se registra en el mapa; se consideran
-  // los destinos de vuelos y escalas mayores a 24 horas (Stopovers).
+  // Extraer mapa de países: Rutas pendientes (solo borde) y destinos confirmados por vuelos (relleno sólido)
   const visitedCountries = useMemo(() => {
     return extractVisitedCountries(allEventsList, viajes);
   }, [allEventsList, viajes]);
+
+  const { confirmedCount, pendingCount } = useMemo(() => {
+    let conf = 0;
+    let pend = 0;
+    if (visitedCountries instanceof Map) {
+      visitedCountries.forEach((c) => {
+        if (c.isPending) pend++;
+        else conf++;
+      });
+    }
+    return { confirmedCount: conf, pendingCount: pend };
+  }, [visitedCountries]);
 
   // Extraer trayectos de vuelos (origen -> escalas -> destino) para pintar las líneas y marcadores
   const flightRoutes = useMemo(() => {
@@ -152,13 +162,22 @@ export function ViajesView({
           </p>
           <div className="flex items-baseline gap-2 mt-1">
             <p className="text-2xl font-black text-[#00FF85] m-0">
-              {visitedCountries.size}
+              {confirmedCount}
             </p>
             <span className="text-xs text-[#8492A6]">/ 195</span>
+            {pendingCount > 0 && (
+              <span className="text-[10px] font-bold text-[#00E5FF] bg-[#00E5FF]/10 border border-[#00E5FF]/20 px-1.5 py-0.5 rounded ml-1" title={`${pendingCount} países en ruta pendiente de registrar vuelos`}>
+                +{pendingCount} en ruta
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-1 mt-1 text-sm overflow-hidden truncate">
             {Array.from(visitedCountries.values()).map((c) => (
-              <span key={c.code} title={c.es}>
+              <span
+                key={c.code}
+                title={`${c.es} (${c.isPending ? 'Ruta pendiente (borde)' : 'Confirmado'})`}
+                className={c.isPending ? 'opacity-60 ring-1 ring-[#00E5FF]/40 rounded-sm' : ''}
+              >
                 {c.flag}
               </span>
             ))}

@@ -200,8 +200,8 @@ export function extractVisitedCountries(eventos = [], viajes = []) {
     if (v && v.id) viajesById.set(v.id, v);
   });
 
-  // Helper para agregar o consolidar un país visitado
-  const addVisited = (countryObj, viaje = null, evento = null, motivo = '', horasEscala = null) => {
+  // Helper para agregar o consolidar un país visitado / en ruta
+  const addVisited = (countryObj, viaje = null, evento = null, motivo = '', horasEscala = null, isConfirmed = false, role = '') => {
     if (!countryObj || !countryObj.code) return;
     const code = countryObj.code.toUpperCase();
 
@@ -213,8 +213,11 @@ export function extractVisitedCountries(eventos = [], viajes = []) {
         flag: countryObj.flag || getFlagEmoji(code),
         viajes: viaje ? [viaje] : [],
         eventos: evento ? [evento] : [],
-        motivo: motivo || 'País visitado',
-        horasEscala: horasEscala !== null ? horasEscala : undefined
+        motivo: motivo || (isConfirmed ? 'Destino confirmado' : 'Ruta pendiente'),
+        horasEscala: horasEscala !== null ? horasEscala : undefined,
+        isPending: !isConfirmed,
+        hasConfirmedFlight: Boolean(isConfirmed),
+        role: role || (isConfirmed ? 'confirmado' : 'pendiente')
       });
     } else {
       const item = visited.get(code);
@@ -227,33 +230,72 @@ export function extractVisitedCountries(eventos = [], viajes = []) {
       if (horasEscala && (!item.horasEscala || horasEscala > item.horasEscala)) {
         item.horasEscala = horasEscala;
       }
-      if (motivo && (!item.motivo || item.motivo === 'País visitado')) {
-        item.motivo = motivo;
+      // Si la nueva entrada está confirmada por un vuelo o trayecto registrado, se actualiza a confirmado
+      if (isConfirmed) {
+        item.isPending = false;
+        item.hasConfirmedFlight = true;
+        if (motivo) item.motivo = motivo;
+        if (role) item.role = role;
       }
     }
   };
 
-  // 1. VIAJES (Multidestino y regulares)
+  // 1. VIAJES CONFIGURADOS INICIALMENTE (Origen y Destinos pendientes por registrar vuelos)
   safeViajes.forEach(v => {
+    // Origen del viaje (marcado como ruta pendiente hasta registrar vuelo de salida)
+    const origCountry =
+      detectCountry(v.origen) ||
+      detectCountry(v.ciudadOrigen) ||
+      detectCountry(v.paisOrigen);
+
+    if (origCountry) {
+      addVisited(
+        origCountry,
+        v,
+        null,
+        `Punto de partida (${v.titulo}) - Ruta pendiente por registrar vuelos`,
+        null,
+        false,
+        'origen'
+      );
+    }
+
     // A. Viajes Multidestino
     if ((v.tipoViaje || '').toLowerCase() === 'multidestino') {
       if (Array.isArray(v.destinosMultidestino) && v.destinosMultidestino.length > 0) {
         v.destinosMultidestino.forEach(item => {
-          const destCountry = detectCountry(item.destino) || detectCountry(item.ciudad);
+          const destCountry =
+            detectCountry(item.destino) ||
+            detectCountry(item.ciudad) ||
+            detectCountry(item.pais);
           if (destCountry) {
-            addVisited(destCountry, v, null, `Destino multidestino (${v.titulo})`);
+            addVisited(
+              destCountry,
+              v,
+              null,
+              `Destino multidestino (${v.titulo}) - Ruta pendiente por registrar vuelos`,
+              null,
+              false,
+              'destino'
+            );
           }
 
-          // Escala del multidestino (si tiene escala y dura 24h o más -> Stopover)
-          const horas = item.horasEscala !== undefined && item.horasEscala !== null && item.horasEscala !== ''
-            ? Number(item.horasEscala)
-            : null;
-          const isStopover = item.escalaMayor24h === true || (horas !== null && horas >= 24);
-
-          if ((item.escala || item.paisEscala || item.ciudadEscala) && (isStopover || item.tieneEscala)) {
-            const connCountry = detectCountry(item.escala) || detectCountry(item.paisEscala) || detectCountry(item.ciudadEscala);
+          // Escala del multidestino (si tiene escala configurada)
+          if (item.escala || item.paisEscala || item.ciudadEscala) {
+            const connCountry =
+              detectCountry(item.escala) ||
+              detectCountry(item.paisEscala) ||
+              detectCountry(item.ciudadEscala);
             if (connCountry) {
-              addVisited(connCountry, v, null, `Stopover multidestino ≥24h (${horas ? `${horas}h` : '≥24h'}) en ${connCountry.es}`, horas);
+              addVisited(
+                connCountry,
+                v,
+                null,
+                `Escala multidestino (${v.titulo}) - Ruta pendiente`,
+                null,
+                false,
+                'escala'
+              );
             }
           }
         });
@@ -262,50 +304,88 @@ export function extractVisitedCountries(eventos = [], viajes = []) {
         subDestinos.forEach(sub => {
           const destCountry = detectCountry(sub);
           if (destCountry) {
-            addVisited(destCountry, v, null, `Destino multidestino (${v.titulo})`);
+            addVisited(
+              destCountry,
+              v,
+              null,
+              `Destino multidestino (${v.titulo}) - Ruta pendiente por registrar vuelos`,
+              null,
+              false,
+              'destino'
+            );
           }
         });
       }
     } else {
-      // B. Viaje simple / único
-      const tripCountry = detectCountry(v.pais) || detectCountry(v.destino) || detectCountry(v.ciudad);
+      // B. Viaje simple / regular
+      const tripCountry =
+        detectCountry(v.pais) ||
+        detectCountry(v.destino) ||
+        detectCountry(v.ciudad);
       if (tripCountry) {
-        addVisited(tripCountry, v, null, `Destino de viaje (${v.titulo})`);
+        addVisited(
+          tripCountry,
+          v,
+          null,
+          `Destino planificado (${v.titulo}) - Ruta pendiente por registrar vuelos`,
+          null,
+          false,
+          'destino'
+        );
       }
       if (v.destino && typeof v.destino === 'string') {
         const subDestinos = v.destino.split(/[,;\-\/]+/).map(s => s.trim()).filter(Boolean);
         subDestinos.forEach(sub => {
           const dc = detectCountry(sub);
-          if (dc) addVisited(dc, v, null, `Destino de viaje (${v.titulo})`);
+          if (dc) {
+            addVisited(
+              dc,
+              v,
+              null,
+              `Destino planificado (${v.titulo}) - Ruta pendiente por registrar vuelos`,
+              null,
+              false,
+              'destino'
+            );
+          }
         });
       }
       // Escala en viaje regular si se especificó
       if (v.escalas || v.paisEscala || v.escala) {
-        const horasV = v.horasEscala ? Number(v.horasEscala) : null;
-        if (v.escalaMayor24h || (horasV !== null && horasV >= 24)) {
-          const connC = detectCountry(v.escalas) || detectCountry(v.paisEscala) || detectCountry(v.escala);
-          if (connC) {
-            addVisited(connC, v, null, `Stopover en viaje ≥24h en ${connC.es}`, horasV);
-          }
+        const connC =
+          detectCountry(v.escalas) ||
+          detectCountry(v.paisEscala) ||
+          detectCountry(v.escala);
+        if (connC) {
+          addVisited(
+            connC,
+            v,
+            null,
+            `Escala programada (${v.titulo}) - Ruta pendiente`,
+            null,
+            false,
+            'escala'
+          );
         }
       }
     }
   });
 
-  // 2. VUELOS Y TRAYECTOS AÉREOS
+  // 2. VUELOS Y TRAYECTOS AÉREOS REGISTRADOS EN ITINERARIO (CONFIRMAN Y COLOREAN PAÍSES)
   const flightEvents = safeEventos.filter(e => {
     const isVuelo = (e.tipo || '').toLowerCase() === 'vuelo';
+    const isTransporte = (e.tipo || '').toLowerCase() === 'transporte';
     const hasFlightLogistics = Boolean(
       e.ciudadDestino || e.paisDestino || e.aeropuertoDestino ||
       e.ciudadOrigen || e.paisOrigen || e.aeropuertoOrigen
     );
-    return isVuelo || hasFlightLogistics;
+    return isVuelo || isTransporte || hasFlightLogistics;
   });
 
   flightEvents.forEach(ev => {
     const viaje = viajesById.get(ev.viajeId);
 
-    // --- A. DESTINO DEL VUELO ---
+    // --- A. DESTINO DEL VUELO / TRAYECTO (CONFIRMADO) ---
     const destCountry =
       detectCountry(ev.paisDestino) ||
       detectCountry(ev.ciudadDestino) ||
@@ -313,10 +393,36 @@ export function extractVisitedCountries(eventos = [], viajes = []) {
       detectCountry(ev.ubicacion);
 
     if (destCountry) {
-      addVisited(destCountry, viaje, ev, `Destino de vuelo (${ev.ciudadDestino || ev.aeropuertoDestino || destCountry.es})`);
+      addVisited(
+        destCountry,
+        viaje,
+        ev,
+        `Destino de vuelo (${ev.ciudadDestino || ev.aeropuertoDestino || destCountry.es})`,
+        null,
+        true, // Confirmado por vuelo explícito
+        'destino_vuelo'
+      );
     }
 
-    // --- B. STOPOVER / ESCALA TRAMO 1 (>= 24 HORAS) ---
+    // --- B. ORIGEN DEL VUELO / TRAYECTO (CONFIRMADO) ---
+    const origCountry =
+      detectCountry(ev.paisOrigen) ||
+      detectCountry(ev.ciudadOrigen) ||
+      detectCountry(ev.aeropuertoOrigen);
+
+    if (origCountry) {
+      addVisited(
+        origCountry,
+        viaje,
+        ev,
+        `Origen de vuelo (${ev.ciudadOrigen || ev.aeropuertoOrigen || origCountry.es})`,
+        null,
+        true, // Confirmado por vuelo explícito
+        'origen_vuelo'
+      );
+    }
+
+    // --- C. STOPOVER / ESCALA TRAMO 1 (>= 24 HORAS) ---
     const horas = ev.horasEscala !== undefined && ev.horasEscala !== null && ev.horasEscala !== ''
       ? Number(ev.horasEscala)
       : null;
@@ -340,12 +446,14 @@ export function extractVisitedCountries(eventos = [], viajes = []) {
           viaje,
           ev,
           `Escala Stopover ≥24h (${horas ? `${horas}h` : '≥24h'}) en ${ev.aeropuertoConexion || ev.ciudadConexion || connCountry.es}`,
-          horas
+          horas,
+          true,
+          'stopover'
         );
       }
     }
 
-    // --- C. STOPOVER / ESCALA TRAMO DE REGRESO (>= 24 HORAS) ---
+    // --- D. STOPOVER / ESCALA TRAMO DE REGRESO (>= 24 HORAS) ---
     const horasReg = ev.horasEscalaRegreso !== undefined && ev.horasEscalaRegreso !== null && ev.horasEscalaRegreso !== ''
       ? Number(ev.horasEscalaRegreso)
       : null;
@@ -367,7 +475,9 @@ export function extractVisitedCountries(eventos = [], viajes = []) {
           viaje,
           ev,
           `Escala Stopover ≥24h Regreso (${horasReg ? `${horasReg}h` : '≥24h'}) en ${ev.aeropuertoConexionRegreso || ev.ciudadConexionRegreso || connCountryReg.es}`,
-          horasReg
+          horasReg,
+          true,
+          'stopover'
         );
       }
     }
@@ -401,7 +511,7 @@ export function extractVisitedCountries(eventos = [], viajes = []) {
       const departureTime = new Date(flight2.fechaInicio).getTime();
       const diffHours = (departureTime - arrivalTime) / (1000 * 60 * 60);
 
-      // Si la estadía entre vuelos es mayor o igual a 24 horas, es un Stopover
+      // Si la estadía entre vuelos es mayor o igual a 24 horas, es un Stopover confirmado
       if (diffHours >= 24) {
         const viaje = viajesById.get(flight1.viajeId) || viajesById.get(flight2.viajeId);
         addVisited(
@@ -409,7 +519,9 @@ export function extractVisitedCountries(eventos = [], viajes = []) {
           viaje,
           flight1,
           `Estadía / Stopover entre vuelos (${Math.round(diffHours)}h en ${arrivalCountry.es})`,
-          Math.round(diffHours)
+          Math.round(diffHours),
+          true,
+          'stopover'
         );
       }
     }
@@ -443,7 +555,10 @@ export function extractVisitedCountries(eventos = [], viajes = []) {
         eventCountry,
         viaje,
         ev,
-        `${isHotel ? 'Hotel / Alojamiento' : 'Estadía'} ≥24h (${Math.round(diffHours || 24)}h) en ${eventCountry.es}`
+        `${isHotel ? 'Hotel / Alojamiento' : 'Estadía'} ≥24h (${Math.round(diffHours || 24)}h) en ${eventCountry.es}`,
+        diffHours || 24,
+        true,
+        'alojamiento'
       );
     }
   });
@@ -459,7 +574,10 @@ export function extractVisitedCountries(eventos = [], viajes = []) {
           detected,
           viaje,
           ev,
-          `Estadía ≥24h registrada en bitácora (${ev.titulo || detected.es})`
+          `Estadía ≥24h registrada en bitácora (${ev.titulo || detected.es})`,
+          24,
+          true,
+          'estadía'
         );
       }
     }

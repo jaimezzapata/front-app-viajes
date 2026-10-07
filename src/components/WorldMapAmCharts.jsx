@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as am5 from '@amcharts/amcharts5';
 import * as am5map from '@amcharts/amcharts5/map';
 import am5geodata_worldLow from '@amcharts/amcharts5-geodata/worldLow';
@@ -22,6 +22,19 @@ export function WorldMapAmCharts({
   const chartInstanceRef = useRef(null);
   const [projectionType, setProjectionType] = useState('geoEqualEarth'); // 'geoEqualEarth' | 'geoOrthographic'
   const [showFlights, setShowFlights] = useState(true);
+
+  // Conteo de países confirmados (con vuelos) vs pendientes (solo configurados)
+  const { confirmedCount, pendingCount } = useMemo(() => {
+    let conf = 0;
+    let pend = 0;
+    if (visitedCountries instanceof Map) {
+      visitedCountries.forEach((c) => {
+        if (c.isPending) pend++;
+        else conf++;
+      });
+    }
+    return { confirmedCount: conf, pendingCount: pend };
+  }, [visitedCountries]);
 
   useLayoutEffect(() => {
     if (!chartRef.current) return;
@@ -93,12 +106,17 @@ export function WorldMapAmCharts({
       templateField: "polygonSettings"
     });
 
-    // Adapters de garantía total: PINTAR EL PAÍS VISITADO DE COLOR
+    // Adapters de garantía total: PINTAR EL PAÍS VISITADO / CONTORNEAR PAÍS PENDIENTE
     polygonSeries.mapPolygons.template.adapters.add('fill', (fill, target) => {
       const dataItem = target.dataItem;
       if (dataItem) {
         const id = dataItem.get('id');
         if (visitedCountries instanceof Map && visitedCountries.has(id)) {
+          const info = visitedCountries.get(id);
+          // Si es ruta pendiente (sin vuelos registrados): sin relleno, mantiene color base del mapa
+          if (info?.isPending) {
+            return isDark ? am5.color(0x151B27) : am5.color(0xF1F5F9);
+          }
           return id === selectedCountryCode ? am5.color(0xFFE500) : am5.color(0x00FF85);
         }
       }
@@ -110,7 +128,15 @@ export function WorldMapAmCharts({
       if (dataItem) {
         const id = dataItem.get('id');
         if (visitedCountries instanceof Map && visitedCountries.has(id)) {
-          return id === selectedCountryCode ? am5.color(0xFFE500) : am5.color(0x00FF85);
+          const info = visitedCountries.get(id);
+          if (id === selectedCountryCode) {
+            return am5.color(0xFFE500);
+          }
+          // Si es ruta pendiente: borde destacado en cian neón para denotar que está programada
+          if (info?.isPending) {
+            return am5.color(0x00E5FF);
+          }
+          return am5.color(0x00FF85);
         }
       }
       return stroke;
@@ -121,10 +147,28 @@ export function WorldMapAmCharts({
       if (dataItem) {
         const id = dataItem.get('id');
         if (visitedCountries instanceof Map && visitedCountries.has(id)) {
+          const info = visitedCountries.get(id);
+          if (info?.isPending) {
+            return 2.2; // Borde más visible y definido para la ruta pendiente
+          }
           return 1.4;
         }
       }
       return strokeWidth;
+    });
+
+    polygonSeries.mapPolygons.template.adapters.add('strokeDasharray', (strokeDasharray, target) => {
+      const dataItem = target.dataItem;
+      if (dataItem) {
+        const id = dataItem.get('id');
+        if (visitedCountries instanceof Map && visitedCountries.has(id)) {
+          const info = visitedCountries.get(id);
+          if (info?.isPending) {
+            return [5, 3]; // Trazo discontinuo para indicar ruta pendiente
+          }
+        }
+      }
+      return undefined;
     });
 
     polygonSeries.mapPolygons.template.adapters.add('fillOpacity', (fillOpacity, target) => {
@@ -132,13 +176,17 @@ export function WorldMapAmCharts({
       if (dataItem) {
         const id = dataItem.get('id');
         if (visitedCountries instanceof Map && visitedCountries.has(id)) {
+          const info = visitedCountries.get(id);
+          if (info?.isPending) {
+            return 1; // Relleno con tierra base sin color neón
+          }
           return 0.9;
         }
       }
       return fillOpacity;
     });
 
-    // Tooltip adapter para mostrar siempre la bandera y detalles si está visitado
+    // Tooltip adapter para mostrar información según si la ruta está pendiente o confirmada
     polygonSeries.mapPolygons.template.adapters.add('tooltipHTML', (tooltipHTML, target) => {
       const dataItem = target.dataItem;
       if (dataItem) {
@@ -147,11 +195,26 @@ export function WorldMapAmCharts({
           const info = visitedCountries.get(id);
           const tripCount = info.viajes?.length || 1;
           const tripTitles = info.viajes?.map((v) => v.titulo).join('<br/>• ') || '';
+
+          if (info.isPending) {
+            return `
+              <div style="background: ${isDark ? '#0E121B' : '#FFFFFF'}; border: 1.5px solid ${isDark ? '#00E5FF' : '#0284C7'}; padding: 10px 14px; border-radius: 8px; color: ${isDark ? '#F1F5F9' : '#0F172A'}; font-family: sans-serif; font-size: 12px; box-shadow: 0 10px 25px rgba(0,229,255,${isDark ? '0.25' : '0.12'});">
+                <div style="font-size: 16px; margin-bottom: 4px;">${info.flag || '🌍'} <span style="font-weight: bold; color: ${isDark ? '#00E5FF' : '#0284C7'};">${info.es || info.en || id}</span></div>
+                <div style="background: ${isDark ? 'rgba(0,229,255,0.15)' : 'rgba(2,132,199,0.12)'}; color: ${isDark ? '#00E5FF' : '#0284C7'}; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 6px;">
+                  ⏳ RUTA PENDIENTE (Sin vuelos registrados)
+                </div>
+                ${info.motivo ? `<div style="color: ${isDark ? '#CBD5E1' : '#334155'}; font-size: 10px; margin-bottom: 4px;">• ${info.motivo}</div>` : ''}
+                ${tripTitles ? `<div style="color: ${isDark ? '#8492A6' : '#64748B'}; font-size: 10px; line-height: 1.4;">Viaje: ${tripTitles}</div>` : ''}
+                <div style="color: ${isDark ? '#64748B' : '#94A3B8'}; font-size: 9px; margin-top: 5px; font-style: italic;">Se pintará al registrar los vuelos o trayectos correspondientes.</div>
+              </div>
+            `;
+          }
+
           return `
             <div style="background: ${isDark ? '#0E121B' : '#FFFFFF'}; border: 1.5px solid ${isDark ? '#00FF85' : '#059669'}; padding: 10px 14px; border-radius: 8px; color: ${isDark ? '#F1F5F9' : '#0F172A'}; font-family: sans-serif; font-size: 12px; box-shadow: 0 10px 25px rgba(0,255,133,${isDark ? '0.3' : '0.15'});">
               <div style="font-size: 16px; margin-bottom: 4px;">${info.flag || '🌍'} <span style="font-weight: bold; color: ${isDark ? '#00FF85' : '#059669'};">${info.es || info.en || id}</span></div>
               <div style="background: ${isDark ? 'rgba(0,255,133,0.2)' : 'rgba(5,150,105,0.15)'}; color: ${isDark ? '#00FF85' : '#059669'}; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 6px;">
-                ✓ PAÍS VISITADO (${tripCount} ${tripCount === 1 ? 'viaje' : 'viajes'})
+                ✓ DESTINO CONFIRMADO (${tripCount} ${tripCount === 1 ? 'viaje' : 'viajes'})
               </div>
               ${info.motivo ? `<div style="color: ${isDark ? '#00E5FF' : '#0284C7'}; font-size: 10px; margin-bottom: 4px;">• ${info.motivo}</div>` : ''}
               ${tripTitles ? `<div style="color: ${isDark ? '#CBD5E1' : '#334155'}; font-size: 11px; line-height: 1.4;">• ${tripTitles}</div>` : ''}
@@ -166,24 +229,28 @@ export function WorldMapAmCharts({
     polygonSeries.mapPolygons.template.states.create('hover', {
       fill: isDark ? am5.color(0x242F45) : am5.color(0xE2E8F0),
       stroke: isDark ? am5.color(0x00E5FF) : am5.color(0x0284C7),
-      strokeWidth: 1.2
+      strokeWidth: 1.6
     });
 
-    // 5. Mapear datos de países visitados con colores neón sólidos
+    // 5. Mapear datos de países visitados con colores neón sólidos o contorno de ruta pendiente
     const data = [];
     if (visitedCountries instanceof Map) {
       visitedCountries.forEach((info, code) => {
         const isSelected = selectedCountryCode === code;
-        const tripCount = info.viajes?.length || 1;
-        const tripTitles = info.viajes?.map((v) => v.titulo).join('<br/>• ') || '';
+        const isPending = Boolean(info.isPending);
 
         data.push({
           id: code,
           polygonSettings: {
-            fill: isSelected ? am5.color(0xFFE500) : am5.color(0x00FF85),
-            stroke: isSelected ? am5.color(0xFFE500) : am5.color(0x00FF85),
-            strokeWidth: 1.4,
-            fillOpacity: 0.9
+            fill: isPending
+              ? (isDark ? am5.color(0x151B27) : am5.color(0xF1F5F9))
+              : (isSelected ? am5.color(0xFFE500) : am5.color(0x00FF85)),
+            stroke: isSelected
+              ? am5.color(0xFFE500)
+              : (isPending ? am5.color(0x00E5FF) : am5.color(0x00FF85)),
+            strokeWidth: isPending ? 2.2 : 1.4,
+            strokeDasharray: isPending ? [5, 3] : undefined,
+            fillOpacity: isPending ? 1 : 0.9
           }
         });
       });
@@ -668,7 +735,11 @@ export function WorldMapAmCharts({
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-1.5">
             <span className="w-3.5 h-3.5 rounded-sm bg-[#00FF85] border border-[#00FF85]" />
-            <span className="text-[#F1F5F9] font-semibold text-[11px]">País Visitado</span>
+            <span className="text-[#F1F5F9] font-semibold text-[11px]">Destino Confirmado (Con Vuelo)</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-3.5 h-3.5 rounded-sm bg-transparent border-2 border-dashed border-[#00E5FF]" />
+            <span className="text-[#00E5FF] font-semibold text-[11px]">Ruta Pendiente (Sin Vuelo)</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-3.5 h-3.5 rounded-sm bg-[#151B27] border border-[#1C2436]" />
@@ -676,7 +747,7 @@ export function WorldMapAmCharts({
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-3.5 h-3.5 rounded-sm bg-[#FFE500] border border-[#FFE500]" />
-            <span className="text-[#8492A6] text-[11px]">Selección / Escala</span>
+            <span className="text-[#8492A6] text-[11px]">Selección</span>
           </div>
           {flightRoutes.length > 0 && (
             <div className="flex items-center gap-1.5">
@@ -689,11 +760,19 @@ export function WorldMapAmCharts({
         </div>
 
         <div className="text-[11px] text-[#8492A6]">
-          Países visitados:{' '}
+          Confirmados:{' '}
           <span className="font-bold text-[#00FF85] text-xs">
-            {visitedCountries.size}
-          </span>{' '}
-          de <span className="font-semibold text-[#F1F5F9]">195</span> ({((visitedCountries.size / 195) * 100).toFixed(1)}% del mundo)
+            {confirmedCount}
+          </span>
+          {pendingCount > 0 && (
+            <>
+              {' '}| En ruta pendiente:{' '}
+              <span className="font-bold text-[#00E5FF] text-xs">
+                {pendingCount}
+              </span>
+            </>
+          )}{' '}
+          de <span className="font-semibold text-[#F1F5F9]">195</span>
         </div>
       </div>
     </div>
