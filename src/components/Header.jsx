@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plane, Wifi, WifiOff, User, Plus, Globe2, Edit2, Trash2, MoreVertical, X, Share2 } from 'lucide-react';
+import { Plane, Wifi, WifiOff, User, Plus, Globe2, Edit2, Trash2, MoreVertical, X, Share2, LogOut } from 'lucide-react';
 import { cleanCountryText, fixAccents } from '../utils/countries';
 import MiniFlag from './MiniFlag';
 import ThemeToggle from './ThemeToggle';
@@ -15,6 +15,7 @@ export function Header({
   isOnline = true,
   usuario,
   onOpenAuth,
+  onLogout,
   activeTab,
   onSelectTab
 }) {
@@ -240,11 +241,24 @@ export function Header({
                   <User className="w-3.5 h-3.5 text-[#00FF85]" />
                   <span className="truncate">{usuario ? usuario.nombre : 'Perfil'}</span>
                 </button>
+
+                {usuario && onLogout && (
+                  <button
+                    onClick={() => {
+                      setShowMobileMenu(false);
+                      onLogout();
+                    }}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[#FF2E55] hover:bg-[#FF2E55]/10 text-left cursor-pointer transition-colors font-semibold"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Cerrar Sesión</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
 
-          {/* Botón de usuario en desktop */}
+          {/* Botones de usuario y cerrar sesión en modo responsive (< 768px) */}
           <button
             onClick={onOpenAuth}
             className="hidden sm:flex md:hidden p-1.5 rounded-lg bg-[#151B27] border border-[#1C2436] text-[#00FF85]"
@@ -252,6 +266,16 @@ export function Header({
           >
             <User className="w-4 h-4" strokeWidth={2.5} />
           </button>
+
+          {usuario && onLogout && (
+            <button
+              onClick={onLogout}
+              className="p-1.5 rounded-lg bg-[#151B27] border border-[#1C2436] hover:border-[#FF2E55] text-[#8492A6] hover:text-[#FF2E55] transition-colors cursor-pointer shrink-0 md:hidden flex items-center justify-center"
+              title="Cerrar Sesión"
+            >
+              <LogOut className="w-4 h-4 text-[#FF2E55]" strokeWidth={2.2} />
+            </button>
+          )}
         </div>
       </div>
     </header>

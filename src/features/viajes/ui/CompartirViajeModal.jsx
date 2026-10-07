@@ -30,27 +30,27 @@ export function CompartirViajeModal({
 
   if (!viaje) return null;
 
-  // Construir URL pública para compartir
+  // Construir URL pública limpia y corta para compartir
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  const shareId = viaje?.id || '';
+  const shareUrl = `${origin}${pathname}?share=${encodeURIComponent(shareId)}`;
 
-  // Empaquetar snapshot compacto para soporte offline o viaje local
-  let shareParam = `share=${viaje.id}`;
-  if (viaje.id?.startsWith('viaje-local-') || !navigator.onLine) {
-    try {
-      const bundle = {
-        viaje,
-        eventos: eventos.slice(0, 30),
-        gastos: gastos.slice(0, 50)
-      };
-      const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(bundle)))));
-      shareParam = `shareData=${encoded}`;
-    } catch {
-      shareParam = `share=${viaje.id}`;
+  // Cachear datos del viaje compartido para acceso instantáneo
+  React.useEffect(() => {
+    if (viaje && viaje.id) {
+      try {
+        const sharedPayload = {
+          viaje,
+          eventos: eventos || [],
+          gastos: gastos || []
+        };
+        localStorage.setItem(`app_viajes_shared_${viaje.id}`, JSON.stringify(sharedPayload));
+      } catch (err) {
+        console.warn('Error cacheando viaje compartido localmente:', err);
+      }
     }
-  }
-
-  const shareUrl = `${origin}${pathname}?${shareParam}`;
+  }, [viaje, eventos, gastos]);
 
   const cleanDestino = cleanCountryText(viaje.destino);
   const tituloViaje = fixAccents(viaje.titulo || 'Mi Viaje');

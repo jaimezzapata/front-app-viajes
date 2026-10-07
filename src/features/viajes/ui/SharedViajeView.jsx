@@ -105,6 +105,19 @@ export function SharedViajeView({ shareId, shareDataRaw, onExit, onGoToApp }) {
 
         // 2. Fallback de almacenamiento local (si se abre en el mismo navegador o offline)
         try {
+          const directShared = localStorage.getItem(`app_viajes_shared_${shareId}`);
+          if (directShared) {
+            const parsed = JSON.parse(directShared);
+            if (parsed && parsed.viaje && isMounted) {
+              setViaje(parsed.viaje);
+              setEventos(parsed.eventos || parsed.itinerario || []);
+              setGastos(parsed.gastos || []);
+              setDocumentos(parsed.documentos || []);
+              setLoading(false);
+              return;
+            }
+          }
+
           const savedViajes = localStorage.getItem('app_viajes_lista');
           if (savedViajes) {
             const list = JSON.parse(savedViajes);

@@ -158,6 +158,7 @@ export function App() {
         onSelectTab={setActiveTab}
         usuario={usuario}
         onOpenAuth={() => setIsAuthOpen(true)}
+        onLogout={logout}
       />
 
       {/* Contenedor Principal */}
@@ -180,6 +181,7 @@ export function App() {
           isOnline={isOnline}
           usuario={usuario}
           onOpenAuth={() => setIsAuthOpen(true)}
+          onLogout={logout}
           activeTab={activeTab}
           onSelectTab={setActiveTab}
         />

@@ -1,10 +1,10 @@
 import React from 'react';
-import { Compass, User, Globe2 } from 'lucide-react';
+import { Compass, User, Globe2, LogOut } from 'lucide-react';
 import { TABS } from './BottomNav';
 import WatermarkIcon from './WatermarkIcon';
 import ThemeToggle from './ThemeToggle';
 
-export function SidebarNav({ activeTab, onSelectTab, usuario, onOpenAuth }) {
+export function SidebarNav({ activeTab, onSelectTab, usuario, onOpenAuth, onLogout }) {
   return (
     <aside className="hidden md:flex flex-col w-64 bg-[#0E121B] border-r border-[#1C2436] min-h-screen p-5 select-none relative overflow-hidden shrink-0">
       {/* Marca de agua sólida en el sidebar */}
@@ -57,22 +57,34 @@ export function SidebarNav({ activeTab, onSelectTab, usuario, onOpenAuth }) {
           <ThemeToggle size="sm" showLabel={true} />
         </div>
 
-        <button
-          onClick={onOpenAuth}
-          className="w-full flex items-center gap-3 p-2 rounded-lg bg-[#151B27] border border-[#1C2436] hover:border-[#2B3750] transition-colors text-left"
-        >
-          <div className="w-8 h-8 rounded-full bg-[#080A0F] border border-[#00FF85] flex items-center justify-center text-[#00FF85]">
-            <User className="w-4 h-4" strokeWidth={2.5} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-[#F1F5F9] truncate m-0">
-              {usuario ? usuario.nombre : 'Iniciar Sesión'}
-            </p>
-            <p className="text-[10px] text-[#8492A6] truncate m-0">
-              {usuario ? usuario.email : 'Sin autenticar'}
-            </p>
-          </div>
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={onOpenAuth}
+            className="flex-1 min-w-0 flex items-center gap-3 p-2 rounded-lg bg-[#151B27] border border-[#1C2436] hover:border-[#2B3750] transition-colors text-left cursor-pointer"
+          >
+            <div className="w-8 h-8 rounded-full bg-[#080A0F] border border-[#00FF85] flex items-center justify-center text-[#00FF85] shrink-0">
+              <User className="w-4 h-4" strokeWidth={2.5} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-[#F1F5F9] truncate m-0">
+                {usuario ? usuario.nombre : 'Iniciar Sesión'}
+              </p>
+              <p className="text-[10px] text-[#8492A6] truncate m-0">
+                {usuario ? usuario.email : 'Sin autenticar'}
+              </p>
+            </div>
+          </button>
+
+          {usuario && onLogout && (
+            <button
+              onClick={onLogout}
+              className="p-2.5 rounded-lg bg-[#151B27] border border-[#1C2436] hover:border-[#FF2E55] text-[#8492A6] hover:text-[#FF2E55] transition-colors cursor-pointer shrink-0"
+              title="Cerrar Sesión"
+            >
+              <LogOut className="w-4 h-4 text-[#FF2E55]" strokeWidth={2.2} />
+            </button>
+          )}
+        </div>
       </div>
     </aside>
   );
