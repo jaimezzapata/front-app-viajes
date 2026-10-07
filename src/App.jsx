@@ -222,6 +222,12 @@ export function App() {
                 setViajeAEliminar(target || { id: viaje, titulo: 'este viaje' });
               }}
               onCompartirViaje={(viaje) => setViajeACompartir(viaje)}
+              onAddEvento={() => {
+                setEventoAEditar(null);
+                setIsNuevoEventoOpen(true);
+              }}
+              onAddGasto={() => setIsNuevoGastoOpen(true)}
+              onAddDoc={() => setIsNuevoDocOpen(true)}
             />
           )}
 
