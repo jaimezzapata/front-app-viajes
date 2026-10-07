@@ -307,15 +307,15 @@ export function ViajesView({
           </div>
 
           {/* Acciones de gestión del viaje */}
-          <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
             {/* Botón para abrir el mapa de ruta en modal */}
             <button
               onClick={() => setIsTripMapModalOpen(true)}
-              className="px-3 py-1.5 rounded-lg bg-[#151B27] border border-[#00E5FF]/40 hover:border-[#00E5FF] text-[#00E5FF] hover:bg-[#00E5FF]/10 transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-bold shadow-sm"
+              className="h-8.5 px-3 rounded-xl bg-[#151B27] border border-[#00E5FF]/40 hover:border-[#00E5FF] text-[#00E5FF] hover:bg-[#00E5FF]/10 transition-colors cursor-pointer inline-flex items-center gap-1.5 text-xs font-bold shadow-sm whitespace-nowrap select-none"
               title="Abrir mapa interactivo de la ruta aérea en ventana modal"
             >
               <Plane className="w-3.5 h-3.5" />
-              <span>Ver Ruta en el Mapa</span>
+              <span>Ver Ruta</span>
             </button>
 
             {onCompartirViaje && (
@@ -323,7 +323,7 @@ export function ViajesView({
                 type="button"
                 onClick={() => onCompartirViaje(currentViaje)}
                 title="Compartir bitácora con amigos"
-                className="px-2.5 py-1.5 rounded-lg bg-[#0E121B] border border-[#1C2436] hover:border-[#00FF85] text-[#8492A6] hover:text-[#00FF85] transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
+                className="h-8.5 px-3 rounded-xl bg-[#0E121B] border border-[#1C2436] hover:border-[#00FF85] text-[#8492A6] hover:text-[#00FF85] transition-colors cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold whitespace-nowrap select-none"
               >
                 <Share2 className="w-3.5 h-3.5 text-[#00FF85]" />
                 <span className="hidden sm:inline">Compartir</span>
@@ -333,7 +333,7 @@ export function ViajesView({
             <button
               onClick={() => onEditViaje(currentViaje)}
               title="Editar viaje"
-              className="px-2.5 py-1.5 rounded-lg bg-[#0E121B] border border-[#1C2436] hover:border-[#00E5FF] text-[#CBD5E1] hover:text-[#00E5FF] transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
+              className="h-8.5 px-3 rounded-xl bg-[#0E121B] border border-[#1C2436] hover:border-[#00E5FF] text-[#CBD5E1] hover:text-[#00E5FF] transition-colors cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold whitespace-nowrap select-none"
             >
               <Edit2 className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Editar</span>
@@ -345,7 +345,7 @@ export function ViajesView({
                 handleBackToOverview();
               }}
               title="Eliminar viaje"
-              className="px-2.5 py-1.5 rounded-lg bg-[#0E121B] border border-[#1C2436] hover:border-[#FF2E55] text-[#8492A6] hover:text-[#FF2E55] transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
+              className="h-8.5 px-2.5 rounded-xl bg-[#0E121B] border border-[#1C2436] hover:border-[#FF2E55] text-[#8492A6] hover:text-[#FF2E55] transition-colors cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold select-none"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -390,33 +390,33 @@ export function ViajesView({
               {onAddEvento && (
                 <button
                   onClick={() => onAddEvento()}
-                  className="px-3.5 py-2 bg-[#00FF85] hover:opacity-90 text-[#080A0F] font-bold text-xs uppercase tracking-wider rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  className="h-9 px-3.5 bg-[#00FF85] hover:opacity-90 text-[#080A0F] font-bold text-xs uppercase tracking-wider rounded-xl transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-sm whitespace-nowrap select-none"
                   title="Registrar vuelo o actividad en el itinerario"
                 >
                   <Plus className="w-4 h-4" strokeWidth={2.5} />
-                  <span>+ Vuelo / Actividad</span>
+                  <span className="whitespace-nowrap">+ Vuelo / Actividad</span>
                 </button>
               )}
 
               {onAddGasto && (
                 <button
                   onClick={() => onAddGasto()}
-                  className="px-3.5 py-2 bg-[#00E5FF] hover:opacity-90 text-[#080A0F] font-bold text-xs uppercase tracking-wider rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  className="h-9 px-3.5 bg-[#00E5FF] hover:opacity-90 text-[#080A0F] font-bold text-xs uppercase tracking-wider rounded-xl transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-sm whitespace-nowrap select-none"
                   title="Registrar nuevo gasto para este viaje"
                 >
                   <DollarSign className="w-4 h-4" strokeWidth={2.5} />
-                  <span>+ Gasto</span>
+                  <span className="whitespace-nowrap">+ Gasto</span>
                 </button>
               )}
 
               {onAddDoc && (
                 <button
                   onClick={() => onAddDoc()}
-                  className="px-3 py-2 bg-[#151B27] border border-[#B55FE6]/40 hover:border-[#B55FE6] text-[#B55FE6] font-bold text-xs uppercase tracking-wider rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="h-9 px-3 bg-[#151B27] border border-[#B55FE6]/40 hover:border-[#B55FE6] text-[#B55FE6] font-bold text-xs uppercase tracking-wider rounded-xl transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap select-none"
                   title="Subir boleto, reserva o pasaporte"
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  <span>+ Documento</span>
+                  <span className="whitespace-nowrap">+ Documento</span>
                 </button>
               )}
             </div>
@@ -724,17 +724,17 @@ export function ViajesView({
           </p>
         </div>
 
-        {/* Botones de acción principales (h-10 exacto, sin quiebres de línea, perfectamente alineados) */}
+        {/* Botones de acción principales (h-10 exacto, sin quiebres de línea, perfectamente simétricos) */}
         <div className="flex items-center gap-2.5 shrink-0 self-start sm:self-auto">
           {/* Botón para abrir el mapamundi en modal */}
           <button
             type="button"
             onClick={() => setIsGlobalMapModalOpen(true)}
-            className="h-10 px-4 bg-[#151B27] border border-[#00E5FF]/40 hover:border-[#00E5FF] hover:bg-[#00E5FF]/10 text-[#00E5FF] font-bold text-xs uppercase tracking-wider rounded-xl transition-all inline-flex items-center justify-center gap-2 cursor-pointer shadow-sm whitespace-nowrap select-none"
+            className="h-10 px-4 bg-[#151B27] border border-[#00E5FF]/40 hover:border-[#00E5FF] hover:bg-[#00E5FF]/10 text-[#00E5FF] font-bold text-xs uppercase tracking-wider rounded-xl transition-all inline-flex items-center justify-center gap-2 cursor-pointer shadow-sm whitespace-nowrap select-none shrink-0"
             title="Abrir mapamundi global en ventana modal"
           >
             <Globe2 className="w-4 h-4 text-[#00E5FF] shrink-0" />
-            <span className="whitespace-nowrap">Ver Mapa Mundi</span>
+            <span className="whitespace-nowrap">Ver Mapa</span>
             {globalVisitedCountries.size > 0 && (
               <span className="bg-[#00E5FF]/20 text-[#00E5FF] text-[10px] px-1.5 py-0.5 rounded-full font-bold ml-0.5 shrink-0">
                 {globalVisitedCountries.size}
@@ -746,7 +746,7 @@ export function ViajesView({
           <button
             type="button"
             onClick={onOpenNuevoViaje}
-            className="h-10 px-4 bg-[#00FF85] hover:opacity-90 text-[#080A0F] font-bold text-xs uppercase tracking-wider rounded-xl transition-opacity inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-sm whitespace-nowrap select-none"
+            className="h-10 px-4 bg-[#00FF85] hover:opacity-90 text-[#080A0F] font-bold text-xs uppercase tracking-wider rounded-xl transition-opacity inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-sm whitespace-nowrap select-none shrink-0"
           >
             <Plus className="w-4 h-4 shrink-0" strokeWidth={2.5} />
             <span className="whitespace-nowrap">Nuevo Viaje</span>
