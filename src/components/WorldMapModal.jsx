@@ -12,6 +12,7 @@ export function WorldMapModal({
   flightRoutes = [],
   showFlights = true,
   multiColor = false,
+  localCountryCode = 'CO',
   onSelectCountry,
   selectedCountryCode = null
 }) {
@@ -92,6 +93,7 @@ export function WorldMapModal({
             flightRoutes={flightRoutes}
             showFlights={showFlights}
             multiColor={multiColor}
+            localCountryCode={localCountryCode}
             onSelectCountry={onSelectCountry}
             selectedCountryCode={selectedCountryCode}
             mapHeightClass="h-[58vh] sm:h-[66vh] md:h-[70vh] lg:h-[72vh]"

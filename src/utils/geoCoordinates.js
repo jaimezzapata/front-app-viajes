@@ -1,7 +1,10 @@
 import { detectCountry, COUNTRIES } from './countries.js';
 
 // Coordenadas centroides aproximadas para los países de la aplicación
-const COUNTRY_CENTROIDS = {
+export const DEFAULT_LOCAL_COUNTRY = 'CO';
+export const DEFAULT_LOCAL_GEO_POINT = { latitude: 4.5709, longitude: -74.2973 };
+
+export const COUNTRY_CENTROIDS = {
   CO: { latitude: 4.5709, longitude: -74.2973 },
   JP: { latitude: 36.2048, longitude: 138.2529 },
   US: { latitude: 37.0902, longitude: -95.7129 },

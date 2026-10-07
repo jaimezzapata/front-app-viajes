@@ -5,7 +5,7 @@ import am5geodata_worldLow from '@amcharts/amcharts5-geodata/worldLow';
 import am5themes_Animated from '@amcharts/amcharts5/themes/Animated';
 import am5themes_Dark from '@amcharts/amcharts5/themes/Dark';
 import { Globe, Map as MapIcon, Plane, Sparkles, Navigation, CheckCircle2 } from 'lucide-react';
-import { ROUTE_COLORS } from '../utils/geoCoordinates';
+import { ROUTE_COLORS, DEFAULT_LOCAL_GEO_POINT, COUNTRY_CENTROIDS } from '../utils/geoCoordinates';
 import { useTheme } from '../context/ThemeContext';
 
 export const COUNTRY_PALETTE = [
@@ -41,6 +41,7 @@ export function WorldMapAmCharts({
   onSelectFlight,
   showFlights = true,
   multiColor = false,
+  localCountryCode = 'CO',
   mapHeightClass = "h-[360px] sm:h-[460px] md:h-[540px] lg:h-[600px] xl:h-[660px]"
 }) {
   const { isDark } = useTheme();
@@ -49,6 +50,14 @@ export function WorldMapAmCharts({
   const chartInstanceRef = useRef(null);
   const [projectionType, setProjectionType] = useState('geoEqualEarth'); // 'geoEqualEarth' | 'geoOrthographic'
   const [showFlightsInternal, setShowFlightsInternal] = useState(showFlights);
+
+  // Coordenadas geo del país local (Colombia por defecto) para apuntar la vista inicial
+  const resolvedLocalGeoPoint = useMemo(() => {
+    if (localCountryCode && COUNTRY_CENTROIDS[localCountryCode.toUpperCase()]) {
+      return COUNTRY_CENTROIDS[localCountryCode.toUpperCase()];
+    }
+    return DEFAULT_LOCAL_GEO_POINT;
+  }, [localCountryCode]);
 
   // Sincronizar showFlights cuando cambia la prop
   useEffect(() => {
@@ -87,14 +96,17 @@ export function WorldMapAmCharts({
         : [am5themes_Animated.new(root)]
     );
 
-    // 3. Crear MapChart
+    // 3. Crear MapChart centrado siempre en el país local (Colombia)
+    const is3D = projectionType === 'geoOrthographic';
     const chart = root.container.children.push(
       am5map.MapChart.new(root, {
         panX: 'rotateX',
-        panY: projectionType === 'geoOrthographic' ? 'rotateY' : 'translateY',
-        projection: projectionType === 'geoOrthographic' ? am5map.geoOrthographic() : am5map.geoEqualEarth(),
-        homeGeoPoint: { latitude: 15, longitude: 0 },
-        homeZoomLevel: 1
+        panY: is3D ? 'rotateY' : 'translateY',
+        projection: is3D ? am5map.geoOrthographic() : am5map.geoEqualEarth(),
+        rotationX: is3D ? -resolvedLocalGeoPoint.longitude : 0,
+        rotationY: is3D ? -resolvedLocalGeoPoint.latitude : 0,
+        homeGeoPoint: resolvedLocalGeoPoint,
+        homeZoomLevel: is3D ? 1.15 : 1.25
       })
     );
     chartInstanceRef.current = chart;
@@ -617,10 +629,32 @@ export function WorldMapAmCharts({
     const zoomControl = chart.set('zoomControl', am5map.ZoomControl.new(root, {}));
     zoomControl.homeButton.set('visible', true);
 
+    // Enfoque inicial garantizado hacia el país local (Colombia)
+    chart.events.once('appear', () => {
+      chart.zoomToGeoPoint(
+        resolvedLocalGeoPoint,
+        is3D ? 1.15 : 1.25,
+        true,
+        800
+      );
+    });
+
+    const initFocusTimer = setTimeout(() => {
+      if (chartInstanceRef.current) {
+        chartInstanceRef.current.zoomToGeoPoint(
+          resolvedLocalGeoPoint,
+          is3D ? 1.15 : 1.25,
+          true,
+          600
+        );
+      }
+    }, 200);
+
     return () => {
+      clearTimeout(initFocusTimer);
       root.dispose();
     };
-  }, [visitedCountries, projectionType, selectedCountryCode, onSelectCountry, flightRoutes, showFlightsInternal, isDark, multiColor]);
+  }, [visitedCountries, projectionType, selectedCountryCode, onSelectCountry, flightRoutes, showFlightsInternal, isDark, multiColor, resolvedLocalGeoPoint]);
 
   // Manejador para enfocar una ruta de vuelo específica
   const handleFocusRoute = (route) => {
