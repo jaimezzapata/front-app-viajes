@@ -387,16 +387,6 @@ export function ViajesView({
 
             {/* BOTONES DE ACCIÓN RÁPIDA INMEDIATOS (A LA MANO, 0 SCROLL) */}
             <div className="flex items-center gap-2 flex-wrap shrink-0 border-t lg:border-t-0 pt-3 lg:pt-0 border-[#1C2436]">
-              {/* Botón destacado para abrir el mapa de la ruta */}
-              <button
-                onClick={() => setIsTripMapModalOpen(true)}
-                className="px-3 py-2 bg-[#151B27] border border-[#00E5FF]/40 hover:border-[#00E5FF] text-[#00E5FF] font-bold text-xs uppercase tracking-wider rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:bg-[#00E5FF]/10"
-                title="Ver mapa de la ruta aérea en ventana modal"
-              >
-                <MapIcon className="w-4 h-4" />
-                <span>Ruta en Mapa</span>
-              </button>
-
               {onAddEvento && (
                 <button
                   onClick={() => onAddEvento()}
@@ -752,41 +742,6 @@ export function ViajesView({
             <Plus className="w-4 h-4" strokeWidth={2.5} />
             <span>Nuevo Viaje</span>
           </button>
-        </div>
-      </div>
-
-      {/* Banner Compacto de Acceso al Mapamundi (Opcional, discreto y elegante) */}
-      <div
-        onClick={() => setIsGlobalMapModalOpen(true)}
-        className="bg-[#0E121B] border border-[#1C2436] hover:border-[#00E5FF] rounded-2xl p-3 sm:p-4 flex items-center justify-between gap-3 cursor-pointer transition-all hover:bg-[#151B27] group shadow-sm relative z-10"
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-[#00E5FF]/10 border border-[#00E5FF]/30 flex items-center justify-center text-[#00E5FF] shrink-0 group-hover:scale-105 transition-transform">
-            <Globe2 className="w-5 h-5" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs sm:text-sm font-bold text-[#F1F5F9] m-0 group-hover:text-[#00E5FF] transition-colors truncate">
-              Mapamundi Global de Destinos
-            </p>
-            <p className="text-[11px] text-[#8492A6] m-0 truncate">
-              {globalVisitedCountries.size} {globalVisitedCountries.size === 1 ? 'país registrado' : 'países registrados'} en tus bitácoras • Haz clic para explorar en pantalla completa
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2.5 shrink-0">
-          <div className="hidden sm:flex items-center gap-1 text-sm overflow-hidden max-w-[200px]">
-            {Array.from(globalVisitedCountries.values()).slice(0, 6).map((c) => (
-              <span key={c.code} title={c.es}>{c.flag}</span>
-            ))}
-            {globalVisitedCountries.size > 6 && (
-              <span className="text-[10px] text-[#8492A6] font-bold">+{globalVisitedCountries.size - 6}</span>
-            )}
-          </div>
-          <span className="px-3 py-1.5 rounded-lg bg-[#151B27] text-xs font-bold text-[#00E5FF] border border-[#00E5FF]/30 group-hover:bg-[#00E5FF] group-hover:text-[#080A0F] transition-all flex items-center gap-1">
-            <span>Abrir Mapa</span>
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-          </span>
         </div>
       </div>
 
