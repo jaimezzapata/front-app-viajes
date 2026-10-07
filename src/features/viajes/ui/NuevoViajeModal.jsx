@@ -239,13 +239,13 @@ export function NuevoViajeModal({ isOpen, onClose, onSaveViaje, viajeAEditar, on
       isOpen={isOpen}
       onClose={onClose}
       title={isEditing ? 'Editar Configuración del Viaje' : 'Configurar Nuevo Viaje'}
-      maxWidth="max-w-xl"
+      maxWidth="max-w-4xl"
       footer={
         <div className="flex items-center justify-between gap-2.5">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl bg-[#151B27] border border-[#1C2436] hover:bg-[#1E2738] text-xs font-semibold text-[#8492A6] hover:text-[#F1F5F9] transition-colors cursor-pointer"
+            className="px-4 py-2.5 rounded-xl bg-[#151B27] border border-[#1C2436] hover:bg-[#1E2738] text-xs font-semibold text-[#8492A6] hover:text-[#F1F5F9] transition-colors cursor-pointer shrink-0"
           >
             Cancelar
           </button>
@@ -253,36 +253,39 @@ export function NuevoViajeModal({ isOpen, onClose, onSaveViaje, viajeAEditar, on
             type="submit"
             form="nuevo-viaje-form"
             disabled={loading}
-            className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-[#00FF85] hover:bg-[#00FF85]/90 text-[#080A0F] text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer shadow-lg shadow-[#00FF85]/10 flex items-center justify-center gap-1.5"
+            className="flex-1 sm:flex-initial px-4 sm:px-5 py-2.5 rounded-xl bg-[#00FF85] hover:bg-[#00FF85]/90 text-[#080A0F] text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer shadow-lg shadow-[#00FF85]/10 flex items-center justify-center gap-1.5 min-w-0"
           >
             {loading ? (
-              <span>Guardando...</span>
+              <span className="truncate">Guardando...</span>
             ) : (
               <>
-                <Plane className="w-3.5 h-3.5 fill-[#080A0F]" />
-                <span>{isEditing ? 'Guardar Cambios' : 'Crear Viaje'}</span>
+                <Plane className="w-3.5 h-3.5 fill-[#080A0F] shrink-0" />
+                <span className="truncate">{isEditing ? 'Guardar Cambios' : 'Crear Viaje'}</span>
               </>
             )}
           </button>
         </div>
       }
     >
-      <form id="nuevo-viaje-form" onSubmit={handleSubmit} className="space-y-3.5 pb-2">
+      <form id="nuevo-viaje-form" onSubmit={handleSubmit} className="space-y-4 pb-1">
         {errorMsg && (
           <div className="p-2.5 rounded-xl bg-[#FF2E55]/10 border border-[#FF2E55] text-[#FF2E55] text-xs font-semibold">
             {errorMsg}
           </div>
         )}
 
-        {/* SELECTOR: Control Segmentado Compacto (Mobile First) */}
-        <div>
-          <label className="block text-[11px] font-bold text-[#8492A6] mb-1.5 uppercase tracking-wider">
-            Tipo de Viaje *
-          </label>
-          <div className="bg-[#0A0D14] p-1 rounded-xl border border-[#1C2436] grid grid-cols-2 gap-1">
-            <button
-              type="button"
-              onClick={() => setTipoViaje('unico')}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 items-start">
+          {/* COLUMNA 1: Ruta, Destinos y Datos Principales */}
+          <div className="space-y-3.5 min-w-0">
+            {/* SELECTOR: Control Segmentado Compacto (Mobile First) */}
+            <div>
+              <label className="block text-[11px] font-bold text-[#8492A6] mb-1.5 uppercase tracking-wider">
+                Tipo de Viaje *
+              </label>
+              <div className="bg-[#0A0D14] p-1 rounded-xl border border-[#1C2436] grid grid-cols-2 gap-1">
+                <button
+                  type="button"
+                  onClick={() => setTipoViaje('unico')}
               className={`py-2 px-2.5 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 min-w-0 ${
                 tipoViaje === 'unico'
                   ? 'bg-[#151B27] text-[#00E5FF] font-bold border border-[#00E5FF]/40 shadow-sm'
@@ -522,65 +525,74 @@ export function NuevoViajeModal({ isOpen, onClose, onSaveViaje, viajeAEditar, on
           </div>
         )}
 
-        {/* Fechas */}
-        <div className="grid grid-cols-2 gap-2.5">
-          <div>
-            <label className="block text-[11px] font-bold text-[#8492A6] mb-1 uppercase tracking-wider flex items-center gap-1">
-              <Calendar className="w-3 h-3 text-[#00E5FF]" />
-              Fecha Inicio *
-            </label>
-            <input
-              type="date"
-              required
-              value={fechaInicio}
-              onChange={(e) => setFechaInicio(e.target.value)}
-              className="w-full bg-[#151B27] border border-[#1C2436] focus:border-[#00FF85] rounded-lg px-2.5 py-2 text-base sm:text-sm text-[#F1F5F9] focus:outline-none min-h-[42px]"
-            />
           </div>
+          {/* FIN COLUMNA 1 */}
 
-          <div>
-            <label className="block text-[11px] font-bold text-[#8492A6] mb-1 uppercase tracking-wider flex items-center gap-1">
-              <Calendar className="w-3 h-3 text-[#00FF85]" />
-              Fecha Fin *
-            </label>
-            <input
-              type="date"
-              required
-              value={fechaFin}
-              onChange={(e) => setFechaFin(e.target.value)}
-              className="w-full bg-[#151B27] border border-[#1C2436] focus:border-[#00FF85] rounded-lg px-2.5 py-2 text-base sm:text-sm text-[#F1F5F9] focus:outline-none min-h-[42px]"
-            />
+          {/* COLUMNA 2: Tiempos, Divisas y Presupuesto */}
+          <div className="space-y-3.5 min-w-0">
+            {/* Fechas */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-[11px] font-bold text-[#8492A6] mb-1 uppercase tracking-wider flex items-center gap-1">
+                  <Calendar className="w-3 h-3 text-[#00E5FF]" />
+                  Fecha Inicio *
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={fechaInicio}
+                  onChange={(e) => setFechaInicio(e.target.value)}
+                  className="w-full bg-[#151B27] border border-[#1C2436] focus:border-[#00FF85] rounded-lg px-2.5 py-2 text-base sm:text-sm text-[#F1F5F9] focus:outline-none min-h-[42px]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#8492A6] mb-1 uppercase tracking-wider flex items-center gap-1">
+                  <Calendar className="w-3 h-3 text-[#00FF85]" />
+                  Fecha Fin *
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={fechaFin}
+                  onChange={(e) => setFechaFin(e.target.value)}
+                  className="w-full bg-[#151B27] border border-[#1C2436] focus:border-[#00FF85] rounded-lg px-2.5 py-2 text-base sm:text-sm text-[#F1F5F9] focus:outline-none min-h-[42px]"
+                />
+              </div>
+            </div>
+
+            {/* Presupuesto y Divisa */}
+            <div className="space-y-3 p-3.5 rounded-xl bg-[#151B27] border border-[#1C2436]">
+              <CurrencySelector
+                value={monedaLocal}
+                onChange={(selectedCurr) => setMonedaLocal(selectedCurr)}
+                label="Moneda Local Principal"
+              />
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#8492A6] mb-1 uppercase tracking-wider flex items-center gap-1">
+                  <DollarSign className="w-3 h-3 text-[#FFE500]" />
+                  Presupuesto Total Estimado (en COP)
+                </label>
+                <input
+                  type="number"
+                  placeholder="Ej. 15000000"
+                  value={presupuestoTotal}
+                  onChange={(e) => setPresupuestoTotal(e.target.value)}
+                  className="w-full bg-[#0E121B] border border-[#1C2436] focus:border-[#00FF85] rounded-lg px-3 py-2 text-base sm:text-sm font-bold text-[#F1F5F9] focus:outline-none min-h-[42px]"
+                />
+              </div>
+
+              <LiveCurrencyConversions
+                amount={presupuestoTotal}
+                currency="COP"
+                title="Presupuesto equivalente en las demás monedas del viaje"
+              />
+            </div>
           </div>
+          {/* FIN COLUMNA 2 */}
         </div>
-
-        {/* Presupuesto y Divisa */}
-        <div className="space-y-3 p-3 rounded-xl bg-[#151B27] border border-[#1C2436]">
-          <CurrencySelector
-            value={monedaLocal}
-            onChange={(selectedCurr) => setMonedaLocal(selectedCurr)}
-            label="Moneda Local Principal"
-          />
-
-          <div>
-            <label className="block text-[11px] font-bold text-[#8492A6] mb-1 uppercase tracking-wider flex items-center gap-1">
-              <DollarSign className="w-3 h-3 text-[#FFE500]" />
-              Presupuesto Total Estimado (en COP)
-            </label>
-            <input
-              type="number"
-              placeholder="Ej. 15000000"
-              value={presupuestoTotal}
-              onChange={(e) => setPresupuestoTotal(e.target.value)}
-              className="w-full bg-[#0E121B] border border-[#1C2436] focus:border-[#00FF85] rounded-lg px-3 py-2 text-base sm:text-sm font-bold text-[#F1F5F9] focus:outline-none min-h-[42px]"
-            />
-          </div>
-
-          <LiveCurrencyConversions
-            amount={presupuestoTotal}
-            currency="COP"
-            title="Presupuesto equivalente en las demás monedas del viaje"
-          />
-        </div>
+        {/* FIN GRID 2 COLUMNAS */}
       </form>
     </Modal>
   );

@@ -11,7 +11,7 @@ export const TABS = [
 
 export function BottomNav({ activeTab, onSelectTab }) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#0E121B] border-t border-[#1C2436] md:hidden px-2 pt-1 pb-[calc(0.25rem+env(safe-area-inset-bottom,0px))] flex items-center justify-around select-none backdrop-blur-md">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#0E121B] border-t border-[#1C2436] md:hidden px-1 pt-1 pb-[calc(0.35rem+env(safe-area-inset-bottom,0px))] flex items-center justify-around select-none backdrop-blur-md w-full max-w-full overflow-hidden">
       {TABS.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
@@ -19,24 +19,25 @@ export function BottomNav({ activeTab, onSelectTab }) {
         return (
           <button
             key={tab.id}
+            type="button"
             onClick={() => onSelectTab(tab.id)}
-            className={`flex flex-col items-center justify-center py-1 px-2 min-w-[56px] min-h-[44px] rounded-lg transition-colors relative ${
+            className={`flex-1 flex flex-col items-center justify-center py-1 px-1 min-w-0 max-w-[80px] min-h-[44px] rounded-lg transition-colors relative cursor-pointer ${
               isActive ? 'bg-[#151B27]' : 'text-[#8492A6] hover:text-[#F1F5F9]'
             }`}
           >
-            {/* Indicador de pestaña activa superior (línea sólida neón sin gradiente) */}
+            {/* Indicador de pestaña activa superior */}
             {isActive && (
-              <span className={`absolute top-0 left-2 right-2 h-[2px] ${tab.indicatorBg || 'bg-[#00FF85]'}`} />
+              <span className={`absolute top-0 left-1 right-1 h-[2px] ${tab.indicatorBg || 'bg-[#00FF85]'}`} />
             )}
             
             <Icon
-              className={`w-5 h-5 mb-1 ${
+              className={`w-4.5 h-4.5 mb-1 shrink-0 ${
                 isActive ? tab.neonColor : 'text-[#8492A6]'
               }`}
               strokeWidth={isActive ? 2.5 : 2}
             />
             <span
-              className={`text-[11px] font-medium tracking-tight ${
+              className={`text-[10px] sm:text-[11px] font-medium tracking-tight truncate w-full text-center ${
                 isActive ? 'text-[#F1F5F9]' : 'text-[#8492A6]'
               }`}
             >

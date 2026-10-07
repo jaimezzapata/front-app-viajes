@@ -1,4 +1,4 @@
-const rawBase = import.meta.env.VITE_API_URL || 'https://back-app-viajes.onrender.com/api';
+const rawBase = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 const API_BASE = rawBase.endsWith('/api') ? rawBase : `${rawBase.replace(/\/+$/, '')}/api`;
 
 /**

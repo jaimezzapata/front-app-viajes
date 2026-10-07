@@ -189,7 +189,7 @@ export function ViajesView({
       </div>
 
       {/* SECCIÓN 1: MAPA MUNDI CON amCharts 5 */}
-      <section className="relative z-10">
+      <section className="relative z-10 w-full max-w-full overflow-hidden">
         <WorldMapAmCharts
           visitedCountries={visitedCountries}
           selectedCountryCode={selectedCountryCode}
@@ -204,7 +204,7 @@ export function ViajesView({
       </section>
 
       {/* SECCIÓN 2: LISTADO / CARDS DE VIAJES */}
-      <section className="space-y-4 relative z-10">
+      <section className="space-y-4 relative z-10 w-full max-w-full overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
           <div>
             <h2 className="text-lg font-bold text-[#F1F5F9] m-0 uppercase tracking-wide flex items-center gap-2">
@@ -217,7 +217,7 @@ export function ViajesView({
           </div>
 
           {/* Filtros de estado */}
-          <div className="flex rounded-lg bg-[#0E121B] p-1 border border-[#1C2436] self-start sm:self-auto overflow-x-auto max-w-full">
+          <div className="flex rounded-lg bg-[#0E121B] p-1 border border-[#1C2436] self-start sm:self-auto overflow-x-auto max-w-full no-scrollbar">
             {[
               { id: 'todos', label: 'Todos' },
               { id: 'en_curso', label: 'En Curso' },
@@ -269,7 +269,7 @@ export function ViajesView({
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
             {filteredViajes.map((viaje) => {
               const status = getViajeStatus(viaje);
               const flag = getCountryFlag(viaje.destino);

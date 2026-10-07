@@ -36,21 +36,21 @@ export function Header({
   }, [showMobileMenu]);
 
   return (
-    <header className="bg-[#0E121B] border-b border-[#1C2436] px-3 sm:px-4 py-2.5 sm:py-3 sticky top-0 z-30">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-3">
+    <header className="bg-[#0E121B] border-b border-[#1C2436] px-2.5 sm:px-4 py-2 sm:py-2.5 sticky top-0 z-30 w-full max-w-full overflow-hidden">
+      <div className="max-w-[1700px] w-full mx-auto flex items-center justify-between gap-1.5 sm:gap-3 min-w-0">
         {/* Selector de Viaje Activo */}
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 sm:gap-3 min-w-0 flex-1">
           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-[#151B27] border border-[#1C2436] flex items-center justify-center shrink-0 text-[#00E5FF]">
             <Plane className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2.2} />
           </div>
 
           <div className="min-w-0 flex-1">
             {viajes.length > 0 ? (
-              <div className="flex items-center gap-1.5 sm:gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                 <select
                   value={activeViaje?.id || ''}
                   onChange={(e) => onSelectViaje(e.target.value)}
-                  className="bg-[#151B27] text-[#F1F5F9] text-xs sm:text-sm font-semibold border border-[#1C2436] rounded px-2 sm:px-2.5 py-1 focus:outline-none focus:border-[#00E5FF] truncate cursor-pointer max-w-[150px] xs:max-w-[200px] sm:max-w-[280px]"
+                  className="bg-[#151B27] text-[#F1F5F9] text-xs sm:text-sm font-semibold border border-[#1C2436] rounded px-2 sm:px-2.5 py-1 focus:outline-none focus:border-[#00E5FF] truncate cursor-pointer max-w-[125px] xs:max-w-[180px] sm:max-w-[280px]"
                 >
                   {viajes.map((v) => (
                     <option key={v.id} value={v.id}>

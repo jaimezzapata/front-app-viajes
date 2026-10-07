@@ -65,7 +65,7 @@ export function CurrencySelector({
       </div>
 
       {/* Pastillas rápidas para las monedas del viaje */}
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 min-w-0">
         {TRIP_CURRENCIES.map((curr) => {
           const isSelected = curr.code === currentCode;
           return (
@@ -73,15 +73,15 @@ export function CurrencySelector({
               type="button"
               key={curr.code}
               onClick={() => onChange(curr.code)}
-              className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all cursor-pointer text-center ${
+              className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all cursor-pointer text-center min-w-0 ${
                 isSelected
                   ? 'bg-[#00E5FF]/15 border-[#00E5FF] text-[#F1F5F9] shadow-sm shadow-[#00E5FF]/20 ring-1 ring-[#00E5FF]/50'
                   : 'bg-[#151B27] border-[#1C2436] text-[#8492A6] hover:border-[#8492A6]/40 hover:text-[#F1F5F9]'
               }`}
             >
               <span className="text-base leading-none mb-1">{curr.flag}</span>
-              <span className="text-xs font-bold leading-tight">{curr.code}</span>
-              <span className="text-[9px] text-[#8492A6] truncate max-w-full">
+              <span className="text-xs font-bold leading-tight truncate w-full">{curr.code}</span>
+              <span className="text-[9px] text-[#8492A6] truncate w-full">
                 {curr.symbol}
               </span>
             </button>
@@ -129,20 +129,20 @@ export function LiveCurrencyConversions({
         </span>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 min-w-0">
         {conversions.map((conv) => (
           <div
             key={conv.code}
-            className="p-2 rounded-md bg-[#151B27]/80 border border-[#1C2436] hover:border-[#00FF85]/30 transition-colors"
+            className="p-2 rounded-md bg-[#151B27]/80 border border-[#1C2436] hover:border-[#00FF85]/30 transition-colors min-w-0 overflow-hidden"
           >
-            <div className="flex items-center justify-between text-[10px] text-[#8492A6] mb-0.5">
-              <span className="flex items-center gap-1">
+            <div className="flex items-center justify-between text-[10px] text-[#8492A6] mb-0.5 gap-1 min-w-0">
+              <span className="flex items-center gap-1 shrink-0">
                 <span>{conv.flag}</span>
                 <span className="font-bold text-[#F1F5F9]">{conv.code}</span>
               </span>
               <span className="text-[9px] text-[#8492A6] truncate">{conv.shortName}</span>
             </div>
-            <div className="text-xs font-extrabold text-[#00FF85] tracking-tight">
+            <div className="text-xs font-extrabold text-[#00FF85] tracking-tight truncate">
               {conv.shortDisplay}
             </div>
           </div>

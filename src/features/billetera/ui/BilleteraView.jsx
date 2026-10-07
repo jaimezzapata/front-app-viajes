@@ -82,9 +82,9 @@ export function BilleteraView({
   }
 
   return (
-    <div className="relative min-h-[calc(100vh-140px)] pb-24 md:pb-8">
+    <div className="relative min-h-[calc(100vh-140px)] pb-24 md:pb-8 w-full max-w-full overflow-hidden">
       {/* Marca de agua sólida */}
-      <WatermarkIcon icon={Wallet} className="w-80 h-80 top-4 right-2" opacity="opacity-[0.03]" color="text-[#00FF85]" />
+      <WatermarkIcon icon={Wallet} className="w-80 h-80 top-4 right-2 pointer-events-none" opacity="opacity-[0.03]" color="text-[#00FF85]" />
 
       {/* Header - Mobile First */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6 relative z-10">
@@ -134,10 +134,10 @@ export function BilleteraView({
 
           <button
             onClick={onAddGasto}
-            className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#00FF85] text-[#080A0F] font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#00FF85] text-[#080A0F] font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
           >
             <Plus className="w-4 h-4" strokeWidth={2.5} />
-            Registrar Gasto
+            <span>Registrar Gasto</span>
           </button>
         </div>
       </div>

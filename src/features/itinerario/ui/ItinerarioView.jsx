@@ -112,7 +112,7 @@ export function ItinerarioView({
   const cleanDestino = cleanCountryText(activeViaje.destino);
 
   return (
-    <div className="relative min-h-[calc(100vh-140px)] pb-24 md:pb-8">
+    <div className="relative min-h-[calc(100vh-140px)] pb-24 md:pb-8 w-full max-w-full overflow-hidden">
       {/* Marca de agua sólida del módulo de itinerario */}
       <WatermarkIcon icon={Compass} className="w-72 h-72 top-4 right-2 pointer-events-none" opacity="opacity-[0.02]" color="text-[#00E5FF]" />
 

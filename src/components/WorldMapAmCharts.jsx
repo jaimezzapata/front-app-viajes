@@ -527,7 +527,7 @@ export function WorldMapAmCharts({
   };
 
   return (
-    <div className="relative w-full bg-[#0E121B] border border-[#1C2436] rounded-2xl overflow-hidden shadow-2xl select-none">
+    <div className="relative w-full max-w-full bg-[#0E121B] border border-[#1C2436] rounded-2xl overflow-hidden shadow-2xl select-none">
       {/* Cabecera del mapa interactivo con amCharts 5 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-3.5 sm:px-4 py-3 border-b border-[#1C2436] bg-[#0A0D14]">
         <div className="flex items-start sm:items-center gap-2.5 min-w-0">
@@ -608,12 +608,12 @@ export function WorldMapAmCharts({
       {/* Contenedor Div del Mapa amCharts 5 */}
       <div
         ref={chartRef}
-        className="w-full h-[380px] sm:h-[440px] md:h-[520px] bg-[#07090E]"
+        className="w-full h-[360px] sm:h-[460px] md:h-[540px] lg:h-[600px] xl:h-[660px] bg-[#07090E] max-w-full overflow-hidden"
       />
 
       {/* Barra de Rutas de Vuelo Registradas (Pills interactivos con colores por trayecto) */}
       {showFlights && flightRoutes.length > 0 && (
-        <div className="px-4 py-2.5 bg-[#0D111A] border-t border-[#1C2436] flex items-center gap-2 overflow-x-auto no-scrollbar">
+        <div className="px-3 sm:px-4 py-2.5 bg-[#0D111A] border-t border-[#1C2436] flex items-center gap-2 overflow-x-auto no-scrollbar max-w-full">
           <span className="text-[10px] uppercase font-bold text-[#8492A6] tracking-wider shrink-0 flex items-center gap-1">
             <Navigation className="w-3 h-3 text-[#00E5FF]" /> Trayectos:
           </span>

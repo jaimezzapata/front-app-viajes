@@ -59,9 +59,9 @@ export function BalanceView({ viaje, onOpenNuevoViaje, balance, gastos = [], eve
   }
 
   return (
-    <div className="relative min-h-[calc(100vh-140px)] pb-24 md:pb-8">
+    <div className="relative min-h-[calc(100vh-140px)] pb-24 md:pb-8 w-full max-w-full overflow-hidden">
       {/* Marca de agua sólida */}
-      <WatermarkIcon icon={PieChart} className="w-80 h-80 top-4 right-2" opacity="opacity-[0.03]" color="text-[#FFE500]" />
+      <WatermarkIcon icon={PieChart} className="w-80 h-80 top-4 right-2 pointer-events-none" opacity="opacity-[0.03]" color="text-[#FFE500]" />
 
       {/* Header - Mobile First */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6 relative z-10">

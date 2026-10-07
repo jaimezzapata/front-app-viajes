@@ -1,4 +1,4 @@
-import { COUNTRIES, getFlagEmoji, detectCountry } from '../utils/countries';
+import { COUNTRIES, getFlagEmoji, detectCountry, cleanCountryText, fixAccents } from '../utils/countries';
 
 const COUNTRIES_API = 'https://countriesnow.space/api/v0.1/countries';
 const AIRPORTS_API = 'https://raw.githubusercontent.com/algolia/datasets/master/airports/airports.json';
@@ -37,7 +37,7 @@ export function extractIsoFromFlagEmoji(text) {
   return null;
 }
 
-export { cleanCountryText, fixAccents } from '../utils/countries';
+export { cleanCountryText, fixAccents };
 
 /**
  * Limpia el texto de cualquier bandera emoji al inicio o duplicados
