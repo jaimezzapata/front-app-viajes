@@ -1,25 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { Coins, ArrowRightLeft, RefreshCw, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Coins, ArrowRightLeft, RefreshCw, CheckCircle2, ChevronDown, Search } from 'lucide-react';
 import {
   TRIP_CURRENCIES,
+  GLOBAL_CURRENCIES,
+  CURRENCY_MAP,
+  getCurrenciesForTrip,
   getOtherCurrenciesConversions,
+  getExactExchangeRate,
   formatCurrencyDisplay,
   syncLiveCurrencyRates,
   getLiveRatesInfo
 } from '../utils/currencies';
 
 /**
- * Selector de divisas con acceso directo de 1 click y sincronización de API
+ * Selector de divisas dinámico según la ruta del viaje, con acceso directo y selector global
  */
 export function CurrencySelector({
   value,
   onChange,
+  viaje = null,
+  currencies = null,
   label = 'Moneda',
-  className = ''
+  className = '',
+  showAllOption = true
 }) {
   const currentCode = (value || 'COP').toUpperCase();
   const [ratesInfo, setRatesInfo] = useState(getLiveRatesInfo());
   const [syncing, setSyncing] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     // Sincronizar con API al montar
@@ -33,6 +43,17 @@ export function CurrencySelector({
     return () => window.removeEventListener('currency-rates-updated', handleUpdate);
   }, []);
 
+  // Cerrar menú al hacer clic afuera
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleManualSync = async () => {
     setSyncing(true);
     try {
@@ -41,6 +62,43 @@ export function CurrencySelector({
     } finally {
       setSyncing(false);
     }
+  };
+
+  // Calcular las monedas dinámicas según la ruta del viaje
+  const dynamicCurrencies = React.useMemo(() => {
+    let list = [];
+    if (Array.isArray(currencies) && currencies.length > 0) {
+      list = [...currencies];
+    } else if (viaje) {
+      list = getCurrenciesForTrip(viaje);
+    } else {
+      list = [...TRIP_CURRENCIES];
+    }
+
+    // Asegurar que la moneda seleccionada actualmente siempre esté visible en las pastillas
+    if (currentCode && !list.some(c => c.code === currentCode)) {
+      const activeObj = CURRENCY_MAP[currentCode];
+      if (activeObj) list.push(activeObj);
+    }
+
+    return list;
+  }, [viaje, currencies, currentCode]);
+
+  // Lista de monedas filtradas para el buscador "+ Otra Divisa"
+  const filteredAllCurrencies = React.useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return GLOBAL_CURRENCIES;
+    return GLOBAL_CURRENCIES.filter(c =>
+      c.code.toLowerCase().includes(q) ||
+      c.name.toLowerCase().includes(q) ||
+      c.country.toLowerCase().includes(q)
+    );
+  }, [searchQuery]);
+
+  const handleSelectFromDropdown = (code) => {
+    onChange(code);
+    setIsDropdownOpen(false);
+    setSearchQuery('');
   };
 
   return (
@@ -57,36 +115,101 @@ export function CurrencySelector({
           onClick={handleManualSync}
           disabled={syncing}
           className="flex items-center gap-1 text-[10px] text-[#00FF85] bg-[#00FF85]/10 hover:bg-[#00FF85]/20 border border-[#00FF85]/30 px-1.5 py-0.5 rounded cursor-pointer transition-colors"
-          title="Actualizar tasas de cambio con la API"
+          title="Actualizar tasas de cambio con la API en tiempo real"
         >
           <RefreshCw className={`w-2.5 h-2.5 ${syncing ? 'animate-spin' : ''}`} />
           <span>{syncing ? 'Actualizando...' : 'API en Vivo'}</span>
         </button>
       </div>
 
-      {/* Pastillas rápidas para las monedas del viaje */}
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 min-w-0">
-        {TRIP_CURRENCIES.map((curr) => {
+      {/* Pastillas dinámicas para las monedas de la ruta */}
+      <div className="flex flex-wrap gap-1.5 min-w-0 relative" ref={dropdownRef}>
+        {dynamicCurrencies.map((curr) => {
           const isSelected = curr.code === currentCode;
           return (
             <button
               type="button"
               key={curr.code}
               onClick={() => onChange(curr.code)}
-              className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all cursor-pointer text-center min-w-0 ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-all cursor-pointer text-left min-w-[70px] ${
                 isSelected
                   ? 'bg-[#00E5FF]/15 border-[#00E5FF] text-[#F1F5F9] shadow-sm shadow-[#00E5FF]/20 ring-1 ring-[#00E5FF]/50'
                   : 'bg-[#151B27] border-[#1C2436] text-[#8492A6] hover:border-[#8492A6]/40 hover:text-[#F1F5F9]'
               }`}
             >
-              <span className="text-base leading-none mb-1">{curr.flag}</span>
-              <span className="text-xs font-bold leading-tight truncate w-full">{curr.code}</span>
-              <span className="text-[9px] text-[#8492A6] truncate w-full">
-                {curr.symbol}
-              </span>
+              <span className="text-sm leading-none">{curr.flag}</span>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold leading-tight">{curr.code}</span>
+                <span className="text-[9px] text-[#8492A6] leading-none">{curr.symbol}</span>
+              </div>
             </button>
           );
         })}
+
+        {/* Botón "+ Otra Divisa" para seleccionar cualquier divisa mundial */}
+        {showAllOption && (
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsDropdownOpen(prev => !prev)}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
+                isDropdownOpen
+                  ? 'bg-[#1C2436] border-[#00E5FF] text-[#00E5FF]'
+                  : 'bg-[#151B27] border-[#1C2436] text-[#8492A6] hover:text-[#F1F5F9] hover:border-[#8492A6]/40'
+              }`}
+              title="Elegir entre todas las divisas mundiales"
+            >
+              <span>+ Otra</span>
+              <ChevronDown className={`w-3 h-3 transition-transform ${isDropdownOpen ? 'rotate-180 text-[#00E5FF]' : ''}`} />
+            </button>
+
+            {/* Menú desplegable flotante de todas las divisas mundiales */}
+            {isDropdownOpen && (
+              <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-1.5 z-50 w-64 bg-[#0B0F17]/98 backdrop-blur-md border border-[#1C2436] rounded-xl shadow-2xl p-2 space-y-2">
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-[#8492A6] absolute left-2.5 top-2.5" />
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="Buscar divisa o país..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-[#151B27] border border-[#1C2436] focus:border-[#00E5FF] rounded-lg pl-8 pr-2.5 py-1.5 text-xs text-[#F1F5F9] focus:outline-none"
+                  />
+                </div>
+
+                <div className="max-h-48 overflow-y-auto space-y-1">
+                  {filteredAllCurrencies.map((c) => {
+                    const isSelected = c.code === currentCode;
+                    return (
+                      <button
+                        type="button"
+                        key={c.code}
+                        onClick={() => handleSelectFromDropdown(c.code)}
+                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs cursor-pointer transition-colors ${
+                          isSelected
+                            ? 'bg-[#00E5FF]/20 text-[#00E5FF] font-bold'
+                            : 'hover:bg-[#151B27] text-[#CBD5E1]'
+                        }`}
+                      >
+                        <span className="flex items-center gap-2 truncate mr-2">
+                          <span>{c.flag}</span>
+                          <span className="truncate">{c.name}</span>
+                        </span>
+                        <span className="font-bold shrink-0">{c.code}</span>
+                      </button>
+                    );
+                  })}
+                  {filteredAllCurrencies.length === 0 && (
+                    <div className="p-2 text-center text-xs text-[#8492A6]">
+                      Sin resultados
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -98,7 +221,8 @@ export function CurrencySelector({
 export function LiveCurrencyConversions({
   amount,
   currency,
-  title = 'Conversión automática a tus monedas de viaje'
+  viaje = null,
+  title = 'Conversión en vivo a monedas de la ruta'
 }) {
   const [, setTick] = useState(0);
 
@@ -113,19 +237,21 @@ export function LiveCurrencyConversions({
     return null;
   }
 
-  const conversions = getOtherCurrenciesConversions(num, currency);
-  if (conversions.length === 0) return null;
+  const routeCurrencies = viaje ? getCurrenciesForTrip(viaje) : null;
+  const conversions = getOtherCurrenciesConversions(num, currency, routeCurrencies);
+  const currentCode = (currency || 'COP').toUpperCase();
+  const rateToCOP = getExactExchangeRate(currentCode, 'COP');
 
   return (
     <div className="p-3 rounded-lg bg-[#0E121B] border border-[#1C2436] space-y-2 mt-2">
-      <div className="flex items-center justify-between text-[11px] text-[#8492A6] font-semibold uppercase tracking-wider">
+      <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] font-semibold uppercase tracking-wider">
         <span className="flex items-center gap-1.5 text-[#00FF85]">
           <ArrowRightLeft className="w-3.5 h-3.5" />
           {title}
         </span>
         <span className="text-[10px] text-[#00E5FF] font-medium flex items-center gap-1">
           <CheckCircle2 className="w-3 h-3 text-[#00FF85]" />
-          Tasas de API en vivo
+          Tasa exacta: 1 {currentCode} = ${rateToCOP.toLocaleString('es-CO', { minimumFractionDigits: currentCode === 'JPY' || currentCode === 'KRW' ? 4 : 2, maximumFractionDigits: 4 })} COP
         </span>
       </div>
 

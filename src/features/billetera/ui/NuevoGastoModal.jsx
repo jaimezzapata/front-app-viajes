@@ -1,8 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from '../../../components/Modal';
 import { CurrencySelector, LiveCurrencyConversions } from '../../../components/CurrencySelector';
+import { getExactExchangeRate, convertCurrency, formatCurrencyDisplay } from '../../../utils/currencies';
+import { TrendingUp, ShieldCheck } from 'lucide-react';
 
-export function NuevoGastoModal({ isOpen, onClose, onSaveGasto, monedaDefault = 'COP' }) {
+export function NuevoGastoModal({
+  isOpen,
+  onClose,
+  onSaveGasto,
+  monedaDefault = 'COP',
+  activeViaje = null
+}) {
   const [concepto, setConcepto] = useState('');
   const [categoria, setCategoria] = useState('comida');
   const [montoOriginal, setMontoOriginal] = useState('');
@@ -13,13 +21,22 @@ export function NuevoGastoModal({ isOpen, onClose, onSaveGasto, monedaDefault = 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Sincronizar monedaDefault al abrir modal
-  React.useEffect(() => {
+  // Sincronizar moneda inicial según la moneda local del viaje
+  useEffect(() => {
     if (isOpen) {
-      setMonedaOriginal(monedaDefault || 'COP');
+      const initialCurr = activeViaje?.monedaLocal || monedaDefault || 'COP';
+      setMonedaOriginal(initialCurr);
+      setConcepto('');
+      setMontoOriginal('');
       setErrorMsg('');
     }
-  }, [isOpen, monedaDefault]);
+  }, [isOpen, activeViaje, monedaDefault]);
+
+  const numMonto = Number(montoOriginal) || 0;
+  const currentCode = (monedaOriginal || 'COP').toUpperCase();
+  const exactRateToCOP = getExactExchangeRate(currentCode, 'COP');
+  const previewMontoCOP = convertCurrency(numMonto, currentCode, 'COP');
+  const previewMontoUSD = convertCurrency(numMonto, currentCode, 'USD');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,11 +48,19 @@ export function NuevoGastoModal({ isOpen, onClose, onSaveGasto, monedaDefault = 
     setLoading(true);
     setErrorMsg('');
     try {
+      // Capturar la tasa de cambio exacta al momento preciso de la compra
+      const liveRate = getExactExchangeRate(currentCode, 'COP');
+      const finalMontoCOP = convertCurrency(numMonto, currentCode, 'COP');
+      const finalMontoUSD = convertCurrency(numMonto, currentCode, 'USD');
+
       await onSaveGasto({
         concepto: concepto.trim(),
         categoria,
-        montoOriginal: Number(montoOriginal),
-        monedaOriginal: monedaOriginal.toUpperCase(),
+        montoOriginal: numMonto,
+        monedaOriginal: currentCode,
+        tasaCambioFecha: liveRate, // Congelar tasa exacta
+        montoCOP: finalMontoCOP, // Valor calculado en COP al instante
+        montoUSD: finalMontoUSD,
         pagadoAdelantado,
         noComputar,
         esIngreso,
@@ -65,7 +90,7 @@ export function NuevoGastoModal({ isOpen, onClose, onSaveGasto, monedaDefault = 
           <input
             type="text"
             required
-            placeholder="Ej. Cena en Gangnam, Metro Tokio, Pasaje Abu Dhabi..."
+            placeholder="Ej. Ramen en Shinjuku, Feijoada en Río, Tacos en CDMX..."
             value={concepto}
             onChange={(e) => setConcepto(e.target.value)}
             className="w-full bg-[#151B27] border border-[#1C2436] focus:border-[#00FF85] rounded-lg px-3 py-2 text-sm text-[#F1F5F9] focus:outline-none"
@@ -90,10 +115,11 @@ export function NuevoGastoModal({ isOpen, onClose, onSaveGasto, monedaDefault = 
           </select>
         </div>
 
-        {/* Selector de Moneda del Viaje */}
+        {/* Selector Dinámico de Moneda de la Ruta */}
         <CurrencySelector
           value={monedaOriginal}
           onChange={(newCurr) => setMonedaOriginal(newCurr)}
+          viaje={activeViaje}
           label="Moneda en que se realiza el gasto"
         />
 
@@ -105,18 +131,50 @@ export function NuevoGastoModal({ isOpen, onClose, onSaveGasto, monedaDefault = 
             type="number"
             step="any"
             required
-            placeholder={monedaOriginal === 'COP' || monedaOriginal === 'KRW' || monedaOriginal === 'JPY' ? "Ej. 45000" : "Ej. 25.50"}
+            placeholder={currentCode === 'COP' || currentCode === 'KRW' || currentCode === 'JPY' ? "Ej. 45000" : "Ej. 25.50"}
             value={montoOriginal}
             onChange={(e) => setMontoOriginal(e.target.value)}
             className="w-full bg-[#151B27] border border-[#1C2436] focus:border-[#00FF85] rounded-lg px-3 py-2.5 text-base font-bold text-[#F1F5F9] focus:outline-none"
           />
         </div>
 
-        {/* Conversión automática en tiempo real a las otras monedas del viaje */}
+        {/* Panel de Conversión Instantánea con Tasa Congelada */}
+        {numMonto > 0 && (
+          <div className="p-3 rounded-lg bg-[#0E121B] border border-[#00FF85]/30 space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1.5 font-bold text-[#00FF85]">
+                <TrendingUp className="w-4 h-4" />
+                Cálculo Exacto en Pesos Colombianos (COP)
+              </span>
+              <span className="flex items-center gap-1 text-[10px] text-[#00E5FF] font-semibold bg-[#00E5FF]/10 px-2 py-0.5 rounded border border-[#00E5FF]/20">
+                <ShieldCheck className="w-3 h-3 text-[#00E5FF]" />
+                Tasa Congelada
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pt-1 border-t border-[#1C2436]">
+              <div>
+                <p className="text-[11px] text-[#8492A6] m-0">Tasa de cambio exacta en este instante:</p>
+                <p className="text-xs font-bold text-[#F1F5F9] m-0">
+                  1 {currentCode} = ${exactRateToCOP.toLocaleString('es-CO', { minimumFractionDigits: currentCode === 'JPY' || currentCode === 'KRW' ? 4 : 2, maximumFractionDigits: 4 })} COP
+                </p>
+              </div>
+              <div className="text-left sm:text-right">
+                <p className="text-[11px] text-[#8492A6] m-0">Equivalente a guardar en COP:</p>
+                <p className="text-base font-black text-[#00FF85] m-0">
+                  ≈ $ {previewMontoCOP.toLocaleString('es-CO')} COP
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Conversión automática a las demás monedas de la ruta */}
         <LiveCurrencyConversions
           amount={montoOriginal}
           currency={monedaOriginal}
-          title="Conversión instantánea a las otras monedas del viaje"
+          viaje={activeViaje}
+          title="Equivalencias en la ruta del viaje"
         />
 
         {/* Políticas de negocio (RF 3.2) */}
@@ -163,7 +221,7 @@ export function NuevoGastoModal({ isOpen, onClose, onSaveGasto, monedaDefault = 
           disabled={loading}
           className="w-full py-3 px-4 bg-[#00FF85] text-[#080A0F] font-bold text-xs uppercase tracking-wider rounded-lg hover:opacity-90 transition-opacity mt-4 cursor-pointer"
         >
-          {loading ? 'Guardando...' : 'Registrar Transacción'}
+          {loading ? 'Guardando con tasa exacta...' : 'Registrar Transacción'}
         </button>
       </form>
     </Modal>

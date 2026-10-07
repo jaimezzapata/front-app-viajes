@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { apiRequest } from '../services/api';
-import { convertCurrency } from '../utils/currencies';
+import { convertCurrency, getExactExchangeRate } from '../utils/currencies';
 import { fixAccents, cleanCountryText } from '../utils/countries';
 
 export function repairViaje(v) {
@@ -714,34 +714,44 @@ export function useAppViajes(usuario) {
       toast.error('Debes seleccionar o crear un viaje en la base de datos primero.');
       return null;
     }
+
+    const monto = Number(gastoData.montoOriginal) || 0;
+    const orig = (gastoData.monedaOriginal || activeViaje?.monedaBase || 'COP').toUpperCase();
+    const liveRate = gastoData.tasaCambioFecha || getExactExchangeRate(orig, 'COP');
+    const montoCOP = gastoData.montoCOP !== undefined ? Number(gastoData.montoCOP) : convertCurrency(monto, orig, 'COP');
+    const montoUSD = gastoData.montoUSD !== undefined ? Number(gastoData.montoUSD) : convertCurrency(monto, orig, 'USD');
+
+    const payload = {
+      ...gastoData,
+      montoOriginal: monto,
+      monedaOriginal: orig,
+      tasaCambioFecha: liveRate,
+      montoCOP,
+      montoUSD
+    };
+
     try {
       if (navigator.onLine) {
         const res = await apiRequest(`/viajes/${activeViajeId}/gastos`, {
           method: 'POST',
-          body: JSON.stringify(gastoData)
+          body: JSON.stringify(payload)
         });
-        setGastos(prev => [res, ...prev]);
-        toast.success('Gasto registrado con éxito.');
-        return res;
+        const savedGasto = res?.data || res || payload;
+        setGastos(prev => [savedGasto, ...prev.filter(g => g.id !== savedGasto.id)]);
+        toast.success('Gasto registrado con éxito (tasa congelada al instante de la compra).');
+        return savedGasto;
       }
-    } catch {}
+    } catch (err) {
+      console.warn('Error guardando gasto en servidor:', err);
+    }
 
-    // Fallback offline con conversión exacta multidivisa
-    const monto = Number(gastoData.montoOriginal) || 0;
-    const orig = (gastoData.monedaOriginal || activeViaje?.monedaBase || 'COP').toUpperCase();
-    const montoCOP = convertCurrency(monto, orig, 'COP');
-    const montoUSD = convertCurrency(monto, orig, 'USD');
-
+    // Fallback offline con conversión exacta congelada
     const localGasto = {
-      ...gastoData,
+      ...payload,
       id: 'g-local-' + Date.now(),
-      viajeId: activeViajeId,
-      montoOriginal: monto,
-      monedaOriginal: orig,
-      montoCOP,
-      montoUSD
+      viajeId: activeViajeId
     };
-    setGastos(prev => [localGasto, ...prev]);
+    setGastos(prev => [localGasto, ...prev.filter(g => g.id !== localGasto.id)]);
     toast.info('Guardado localmente. Pendiente de sincronización.');
     return localGasto;
   };

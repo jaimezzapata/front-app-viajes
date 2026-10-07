@@ -14,6 +14,7 @@ import WatermarkIcon from '../../../components/WatermarkIcon';
 import { exportTripPdf } from '../use-cases/exportPdf';
 import {
   TRIP_CURRENCIES,
+  getCurrenciesForTrip,
   convertCurrency,
   formatCurrencyDisplay
 } from '../../../utils/currencies';
@@ -147,7 +148,7 @@ export function BalanceView({ viaje, onOpenNuevoViaje, balance, gastos = [], eve
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-          {TRIP_CURRENCIES.map((curr) => {
+          {(viaje ? getCurrenciesForTrip(viaje) : TRIP_CURRENCIES).map((curr) => {
             const amountInCurr = convertCurrency(balance?.totalGastadoCOP || 0, 'COP', curr.code);
             return (
               <div

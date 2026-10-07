@@ -1,87 +1,179 @@
 /**
- * Definición y motor de conversión multidivisa para el viaje con sincronización de API en tiempo real
- * Monedas del viaje:
- * - COP: Pesos colombianos 🇨🇴
- * - EUR: Euros 🇪🇺
- * - KRW: Won surcoreano (Corea del Sur) 🇰🇷
- * - JPY: Yenes japoneses 🇯🇵
- * - AED: Dírham de Abu Dhabi / EAU 🇦🇪
- * - USD: Dólar estadounidense (Referencia) 🇺🇸
+ * Motor de Divisas Dinámico y Escalable Global
+ * 
+ * Soporta cualquier país del mundo (Brasil -> BRL, México -> MXN, Japón -> JPY, etc.)
+ * Genera divisas dinámicamente según la ruta del viaje (origen, escalas, destinos).
+ * Captura y congela la tasa de cambio exacta en el instante de la compra.
  */
 
-const STORAGE_KEY = 'app_viajes_live_currency_rates_v1';
+import { detectCountry } from './countries.js';
 
-// Tasas iniciales de respaldo (1 USD = X unidades)
-const DEFAULT_RATES_FROM_USD = {
-  USD: 1.0,
-  COP: 3333.96,
-  EUR: 0.8818,
-  KRW: 1355.84,
-  JPY: 157.30,
-  AED: 3.6725
-};
+const STORAGE_KEY = 'app_viajes_live_currency_rates_v2';
 
-export const TRIP_CURRENCIES = [
-  {
-    code: 'COP',
-    name: 'Pesos Colombianos',
-    shortName: 'Peso Colombiano',
-    country: 'Colombia',
-    symbol: '$',
-    flag: '🇨🇴',
-    decimals: 0
-  },
-  {
-    code: 'EUR',
-    name: 'Euros',
-    shortName: 'Euro',
-    country: 'Europa',
-    symbol: '€',
-    flag: '🇪🇺',
-    decimals: 2
-  },
-  {
-    code: 'KRW',
-    name: 'Moneda Corea del Sur (Won)',
-    shortName: 'Won Surcoreano',
-    country: 'Corea del Sur',
-    symbol: '₩',
-    flag: '🇰🇷',
-    decimals: 0
-  },
-  {
-    code: 'JPY',
-    name: 'Yenes Japoneses',
-    shortName: 'Yen Japonés',
-    country: 'Japón',
-    symbol: '¥',
-    flag: '🇯🇵',
-    decimals: 0
-  },
-  {
-    code: 'AED',
-    name: 'Moneda Abu Dhabi (Dírham)',
-    shortName: 'Dírham EAU',
-    country: 'Abu Dhabi / EAU',
-    symbol: 'AED',
-    flag: '🇦🇪',
-    decimals: 2
-  },
-  {
-    code: 'USD',
-    name: 'Dólar Estadounidense',
-    shortName: 'Dólar USD',
-    country: 'Estados Unidos',
-    symbol: '$',
-    flag: '🇺🇸',
-    decimals: 2
-  }
+// Catálogo Global de Divisas con Metadatos, Símbolos y Banderas
+export const GLOBAL_CURRENCIES = [
+  { code: 'COP', name: 'Pesos Colombianos', shortName: 'Peso Colombiano', country: 'Colombia', symbol: '$', flag: '🇨🇴', decimals: 0, countryCode: 'CO' },
+  { code: 'BRL', name: 'Real Brasileño', shortName: 'Real Brasileño', country: 'Brasil', symbol: 'R$', flag: '🇧🇷', decimals: 2, countryCode: 'BR' },
+  { code: 'MXN', name: 'Peso Mexicano', shortName: 'Peso Mexicano', country: 'México', symbol: '$', flag: '🇲🇽', decimals: 2, countryCode: 'MX' },
+  { code: 'USD', name: 'Dólar Estadounidense', shortName: 'Dólar USD', country: 'Estados Unidos', symbol: '$', flag: '🇺🇸', decimals: 2, countryCode: 'US' },
+  { code: 'EUR', name: 'Euros', shortName: 'Euro', country: 'Europa', symbol: '€', flag: '🇪🇺', decimals: 2, countryCode: 'ES' },
+  { code: 'JPY', name: 'Yenes Japoneses', shortName: 'Yen Japonés', country: 'Japón', symbol: '¥', flag: '🇯🇵', decimals: 0, countryCode: 'JP' },
+  { code: 'KRW', name: 'Won Surcoreano', shortName: 'Won Surcoreano', country: 'Corea del Sur', symbol: '₩', flag: '🇰🇷', decimals: 0, countryCode: 'KR' },
+  { code: 'AED', name: 'Dírham de Emiratos', shortName: 'Dírham EAU', country: 'Emiratos Árabes / Abu Dhabi', symbol: 'AED', flag: '🇦🇪', decimals: 2, countryCode: 'AE' },
+  { code: 'GBP', name: 'Libra Esterlina', shortName: 'Libra', country: 'Reino Unido', symbol: '£', flag: '🇬🇧', decimals: 2, countryCode: 'GB' },
+  { code: 'CHF', name: 'Franco Suizo', shortName: 'Franco Suizo', country: 'Suiza', symbol: 'CHF', flag: '🇨🇭', decimals: 2, countryCode: 'CH' },
+  { code: 'CAD', name: 'Dólar Canadiense', shortName: 'Dólar CAD', country: 'Canadá', symbol: '$', flag: '🇨🇦', decimals: 2, countryCode: 'CA' },
+  { code: 'AUD', name: 'Dólar Australiano', shortName: 'Dólar AUD', country: 'Australia', symbol: '$', flag: '🇦🇺', decimals: 2, countryCode: 'AU' },
+  { code: 'NZD', name: 'Dólar Neozelandés', shortName: 'Dólar NZD', country: 'Nueva Zelanda', symbol: '$', flag: '🇳🇿', decimals: 2, countryCode: 'NZ' },
+  { code: 'ARS', name: 'Peso Argentino', shortName: 'Peso Argentino', country: 'Argentina', symbol: '$', flag: '🇦🇷', decimals: 2, countryCode: 'AR' },
+  { code: 'CLP', name: 'Peso Chileno', shortName: 'Peso Chileno', country: 'Chile', symbol: '$', flag: '🇨🇱', decimals: 0, countryCode: 'CL' },
+  { code: 'PEN', name: 'Sol Peruano', shortName: 'Sol Peruano', country: 'Perú', symbol: 'S/', flag: '🇵🇪', decimals: 2, countryCode: 'PE' },
+  { code: 'UYU', name: 'Peso Uruguayo', shortName: 'Peso Uruguayo', country: 'Uruguay', symbol: '$', flag: '🇺🇾', decimals: 2, countryCode: 'UY' },
+  { code: 'TRY', name: 'Lira Turca', shortName: 'Lira Turca', country: 'Turquía', symbol: '₺', flag: '🇹🇷', decimals: 2, countryCode: 'TR' },
+  { code: 'CNY', name: 'Yuan Chino', shortName: 'Yuan Chino', country: 'China', symbol: '¥', flag: '🇨🇳', decimals: 2, countryCode: 'CN' },
+  { code: 'THB', name: 'Baht Tailandés', shortName: 'Baht Tailandés', country: 'Tailandia', symbol: '฿', flag: '🇹🇭', decimals: 2, countryCode: 'TH' },
+  { code: 'VND', name: 'Dong Vietnamita', shortName: 'Dong', country: 'Vietnam', symbol: '₫', flag: '🇻🇳', decimals: 0, countryCode: 'VN' },
+  { code: 'IDR', name: 'Rupia Indonesia', shortName: 'Rupia Indonesia', country: 'Indonesia', symbol: 'Rp', flag: '🇮🇩', decimals: 0, countryCode: 'ID' },
+  { code: 'SGD', name: 'Dólar de Singapur', shortName: 'Dólar Singapur', country: 'Singapur', symbol: '$', flag: '🇸🇬', decimals: 2, countryCode: 'SG' },
+  { code: 'MYR', name: 'Ringgit Malayo', shortName: 'Ringgit', country: 'Malasia', symbol: 'RM', flag: '🇲🇾', decimals: 2, countryCode: 'MY' },
+  { code: 'INR', name: 'Rupia India', shortName: 'Rupia India', country: 'India', symbol: '₹', flag: '🇮🇳', decimals: 2, countryCode: 'IN' },
+  { code: 'PHP', name: 'Peso Filipino', shortName: 'Peso Filipino', country: 'Filipinas', symbol: '₱', flag: '🇵🇭', decimals: 2, countryCode: 'PH' },
+  { code: 'EGP', name: 'Libra Egipcia', shortName: 'Libra Egipcia', country: 'Egipto', symbol: 'E£', flag: '🇪🇬', decimals: 2, countryCode: 'EG' },
+  { code: 'MAD', name: 'Dírham Marroquí', shortName: 'Dírham Marroquí', country: 'Marruecos', symbol: 'MAD', flag: '🇲🇦', decimals: 2, countryCode: 'MA' },
+  { code: 'ZAR', name: 'Rand Sudafricano', shortName: 'Rand', country: 'Sudáfrica', symbol: 'R', flag: '🇿🇦', decimals: 2, countryCode: 'ZA' },
+  { code: 'QAR', name: 'Riyal Catarí', shortName: 'Riyal Catarí', country: 'Catar', symbol: 'QR', flag: '🇶🇦', decimals: 2, countryCode: 'QA' },
+  { code: 'SAR', name: 'Riyal Saudí', shortName: 'Riyal Saudí', country: 'Arabia Saudita', symbol: 'SR', flag: '🇸🇦', decimals: 2, countryCode: 'SA' },
+  { code: 'SEK', name: 'Corona Sueca', shortName: 'Corona Sueca', country: 'Suecia', symbol: 'kr', flag: '🇸🇪', decimals: 2, countryCode: 'SE' },
+  { code: 'NOK', name: 'Corona Noruega', shortName: 'Corona Noruega', country: 'Noruega', symbol: 'kr', flag: '🇳🇴', decimals: 2, countryCode: 'NO' },
+  { code: 'DKK', name: 'Corona Danesa', shortName: 'Corona Danesa', country: 'Dinamarca', symbol: 'kr', flag: '🇩🇰', decimals: 2, countryCode: 'DK' },
+  { code: 'PLN', name: 'Złoty Polaco', shortName: 'Złoty', country: 'Polonia', symbol: 'zł', flag: '🇵🇱', decimals: 2, countryCode: 'PL' },
+  { code: 'CZK', name: 'Corona Checa', shortName: 'Corona Checa', country: 'República Checa', symbol: 'Kč', flag: '🇨🇿', decimals: 2, countryCode: 'CZ' },
+  { code: 'HUF', name: 'Forinto Húngaro', shortName: 'Forinto', country: 'Hungría', symbol: 'Ft', flag: '🇭🇺', decimals: 0, countryCode: 'HU' },
+  { code: 'ILS', name: 'Nuevo Shekel', shortName: 'Shekel', country: 'Israel', symbol: '₪', flag: '🇮🇱', decimals: 2, countryCode: 'IL' },
+  { code: 'DOP', name: 'Peso Dominicano', shortName: 'Peso Dominicano', country: 'República Dominicana', symbol: 'RD$', flag: '🇩🇴', decimals: 2, countryCode: 'DO' },
+  { code: 'CRC', name: 'Colón Costarricense', shortName: 'Colón', country: 'Costa Rica', symbol: '₡', flag: '🇨🇷', decimals: 0, countryCode: 'CR' },
+  { code: 'BOB', name: 'Boliviano', shortName: 'Boliviano', country: 'Bolivia', symbol: 'Bs.', flag: '🇧🇴', decimals: 2, countryCode: 'BO' },
+  { code: 'PYG', name: 'Guaraní Paraguayo', shortName: 'Guaraní', country: 'Paraguay', symbol: '₲', flag: '🇵🇾', decimals: 0, countryCode: 'PY' },
+  { code: 'GTQ', name: 'Quetzal Guatemalteco', shortName: 'Quetzal', country: 'Guatemala', symbol: 'Q', flag: '🇬🇹', decimals: 2, countryCode: 'GT' }
 ];
 
-export const CURRENCY_MAP = TRIP_CURRENCIES.reduce((acc, curr) => {
+export const CURRENCY_MAP = GLOBAL_CURRENCIES.reduce((acc, curr) => {
   acc[curr.code] = curr;
   return acc;
 }, {});
+
+// Mapeo exhaustivo de códigos ISO Alpha-2 a Divisas Oficiales
+export const COUNTRY_TO_CURRENCY_MAP = {
+  CO: 'COP',
+  BR: 'BRL',
+  MX: 'MXN',
+  US: 'USD',
+  ES: 'EUR',
+  FR: 'EUR',
+  DE: 'EUR',
+  IT: 'EUR',
+  PT: 'EUR',
+  NL: 'EUR',
+  BE: 'EUR',
+  AT: 'EUR',
+  GR: 'EUR',
+  IE: 'EUR',
+  FI: 'EUR',
+  JP: 'JPY',
+  KR: 'KRW',
+  AE: 'AED',
+  GB: 'GBP',
+  CH: 'CHF',
+  CA: 'CAD',
+  AU: 'AUD',
+  NZ: 'NZD',
+  AR: 'ARS',
+  CL: 'CLP',
+  PE: 'PEN',
+  UY: 'UYU',
+  TR: 'TRY',
+  CN: 'CNY',
+  TH: 'THB',
+  VN: 'VND',
+  ID: 'IDR',
+  SG: 'SGD',
+  MY: 'MYR',
+  IN: 'INR',
+  PH: 'PHP',
+  EG: 'EGP',
+  MA: 'MAD',
+  ZA: 'ZAR',
+  QA: 'QAR',
+  SA: 'SAR',
+  SE: 'SEK',
+  NO: 'NOK',
+  DK: 'DKK',
+  PL: 'PLN',
+  CZ: 'CZK',
+  HU: 'HUF',
+  IL: 'ILS',
+  DO: 'DOP',
+  CR: 'CRC',
+  PA: 'USD',
+  EC: 'USD',
+  BO: 'BOB',
+  PY: 'PYG',
+  GT: 'GTQ',
+  HN: 'USD',
+  NI: 'USD',
+  CU: 'USD'
+};
+
+// Monedas iniciales por defecto para retrocompatibilidad
+export const TRIP_CURRENCIES = [
+  CURRENCY_MAP['COP'],
+  CURRENCY_MAP['USD'],
+  CURRENCY_MAP['EUR'],
+  CURRENCY_MAP['BRL'],
+  CURRENCY_MAP['MXN'],
+  CURRENCY_MAP['JPY']
+];
+
+// Tasas iniciales de respaldo seguras (1 USD = X unidades)
+const DEFAULT_RATES_FROM_USD = {
+  USD: 1.0,
+  COP: 3199.58,
+  BRL: 4.98,
+  MXN: 17.98,
+  EUR: 0.889,
+  JPY: 158.15,
+  KRW: 1338.92,
+  AED: 3.6725,
+  GBP: 0.754,
+  CHF: 0.832,
+  CAD: 1.36,
+  AUD: 1.52,
+  ARS: 880.0,
+  CLP: 940.0,
+  PEN: 3.75,
+  UYU: 38.5,
+  TRY: 32.5,
+  CNY: 7.23,
+  THB: 36.5,
+  VND: 25400.0,
+  IDR: 16200.0,
+  SGD: 1.35,
+  MYR: 4.72,
+  INR: 83.5,
+  PHP: 58.0,
+  EGP: 47.8,
+  MAD: 10.0,
+  ZAR: 18.5,
+  QAR: 3.64,
+  SAR: 3.75,
+  SEK: 10.5,
+  NOK: 10.7,
+  DKK: 6.9,
+  PLN: 3.95,
+  CZK: 23.2,
+  HUF: 365.0,
+  ILS: 3.7
+};
 
 // Almacén en memoria de tasas activas
 let activeRates = { ...DEFAULT_RATES_FROM_USD };
@@ -100,9 +192,102 @@ if (typeof window !== 'undefined' && window.localStorage) {
         syncSource = parsed.source || 'cache';
       }
     }
-  } catch (e) {
-    // Ignorar error de parsing
+  } catch {}
+}
+
+/**
+ * Detecta la moneda oficial para cualquier país (por nombre, código ISO o aeropuerto)
+ * Escalable a cualquier país del mundo.
+ * @param {string} countryQueryOrCode - Ej. 'Brasil', 'BR', 'México', 'Japón', 'MDE'
+ * @returns {object} Metadatos de la moneda
+ */
+export function getCurrencyForCountry(countryQueryOrCode) {
+  if (!countryQueryOrCode || typeof countryQueryOrCode !== 'string') {
+    return CURRENCY_MAP['COP'];
   }
+
+  const detected = detectCountry(countryQueryOrCode);
+  if (detected && detected.code) {
+    const currCode = COUNTRY_TO_CURRENCY_MAP[detected.code.toUpperCase()];
+    if (currCode && CURRENCY_MAP[currCode]) {
+      return CURRENCY_MAP[currCode];
+    }
+  }
+
+  // Comprobar coincidencia directa con código de moneda
+  const upper = countryQueryOrCode.toUpperCase().trim();
+  if (CURRENCY_MAP[upper]) {
+    return CURRENCY_MAP[upper];
+  }
+
+  return CURRENCY_MAP['USD'] || CURRENCY_MAP['COP'];
+}
+
+/**
+ * Genera dinámicamente las divisas correspondientes a la ruta de un viaje.
+ * Inspecciona destino principal, origen, escalas y tramos multidestino.
+ * @param {object} viaje - Objeto del viaje con destino, origen, escalas, etc.
+ * @returns {Array<object>} Lista ordenada y deduplicada de monedas del viaje
+ */
+export function getCurrenciesForTrip(viaje) {
+  const resultCodes = new Set();
+
+  if (viaje) {
+    // 1. Moneda del destino principal
+    if (viaje.destino) {
+      const curr = getCurrencyForCountry(viaje.destino);
+      if (curr) resultCodes.add(curr.code);
+    }
+
+    // 2. Moneda configurada explícitamente como monedaLocal
+    if (viaje.monedaLocal && CURRENCY_MAP[viaje.monedaLocal.toUpperCase()]) {
+      resultCodes.add(viaje.monedaLocal.toUpperCase());
+    }
+
+    // 3. Monedas de escalas del viaje
+    if (viaje.escalas) {
+      const currEscala = getCurrencyForCountry(viaje.escalas);
+      if (currEscala) resultCodes.add(currEscala.code);
+    }
+
+    // 4. Monedas de multidestinos si aplica
+    if (Array.isArray(viaje.destinosMultidestino)) {
+      viaje.destinosMultidestino.forEach(dest => {
+        if (dest.destino) {
+          const c = getCurrencyForCountry(dest.destino);
+          if (c) resultCodes.add(c.code);
+        }
+        if (dest.ciudad) {
+          const c = getCurrencyForCountry(dest.ciudad);
+          if (c) resultCodes.add(c.code);
+        }
+        if (dest.escala) {
+          const c = getCurrencyForCountry(dest.escala);
+          if (c) resultCodes.add(c.code);
+        }
+      });
+    }
+
+    // 5. Moneda del punto de partida / origen (por defecto COP si Colombia)
+    if (viaje.origen) {
+      const currOrigen = getCurrencyForCountry(viaje.origen);
+      if (currOrigen) resultCodes.add(currOrigen.code);
+    }
+
+    // 6. Moneda base (COP)
+    if (viaje.monedaBase && CURRENCY_MAP[viaje.monedaBase.toUpperCase()]) {
+      resultCodes.add(viaje.monedaBase.toUpperCase());
+    }
+  }
+
+  // Siempre asegurar COP y USD como referencia global y local
+  resultCodes.add('COP');
+  resultCodes.add('USD');
+
+  // Convertir a objetos completos y ordenar
+  return Array.from(resultCodes)
+    .map(code => CURRENCY_MAP[code])
+    .filter(Boolean);
 }
 
 /**
@@ -120,8 +305,7 @@ export function getLiveRatesInfo() {
 }
 
 /**
- * Sincronizar tasas de cambio con la API externa
- * Intenta primero el endpoint del backend (/api/divisas), y de respaldo la API pública directa
+ * Sincronizar tasas de cambio con la API externa en tiempo real
  */
 export async function syncLiveCurrencyRates() {
   let fetchedRates = null;
@@ -142,11 +326,9 @@ export async function syncLiveCurrencyRates() {
         source = 'backend-api';
       }
     }
-  } catch (err) {
-    // Continuar con fallback directo
-  }
+  } catch {}
 
-  // Fallback directo a open.er-api.com si el backend no respondió
+  // Fallback directo a open.er-api.com
   if (!fetchedRates) {
     try {
       const controller = new AbortController();
@@ -161,9 +343,7 @@ export async function syncLiveCurrencyRates() {
           source = 'open-er-api';
         }
       }
-    } catch (err) {
-      // Ignorar error
-    }
+    } catch {}
   }
 
   if (fetchedRates) {
@@ -185,7 +365,7 @@ export async function syncLiveCurrencyRates() {
             source
           })
         );
-      } catch (e) {}
+      } catch {}
     }
 
     if (typeof window !== 'undefined') {
@@ -209,9 +389,31 @@ export function roundCurrencyAmount(amount, currencyCode) {
 }
 
 /**
- * Convierte un monto de una divisa origen a una divisa destino usando las tasas de la API
+ * Obtiene la tasa de cambio exacta congelada entre dos monedas en este instante
+ * @param {string} fromCode - Divisa origen (ej. 'JPY', 'BRL', 'USD')
+ * @param {string} toCode - Divisa destino (ej. 'COP')
+ * @returns {number} Tasa de cambio unitaria exacta
  */
-export function convertCurrency(amount, fromCode, toCode) {
+export function getExactExchangeRate(fromCode, toCode = 'COP') {
+  const from = (fromCode || 'COP').toUpperCase();
+  const to = (toCode || 'COP').toUpperCase();
+
+  if (from === to) return 1.0;
+
+  const rateFrom = activeRates[from] || DEFAULT_RATES_FROM_USD[from] || 1.0;
+  const rateTo = activeRates[to] || DEFAULT_RATES_FROM_USD[to] || 1.0;
+
+  return rateTo / rateFrom;
+}
+
+/**
+ * Convierte un monto de una divisa origen a una divisa destino usando las tasas de la API
+ * @param {number|string} amount
+ * @param {string} fromCode
+ * @param {string} toCode
+ * @param {number} [customRate] - Tasa congelada histórica opcional
+ */
+export function convertCurrency(amount, fromCode, toCode, customRate = null) {
   const num = Number(amount) || 0;
   const from = (fromCode || 'COP').toUpperCase();
   const to = (toCode || 'COP').toUpperCase();
@@ -220,11 +422,12 @@ export function convertCurrency(amount, fromCode, toCode) {
     return roundCurrencyAmount(num, to);
   }
 
-  const rateFrom = activeRates[from] || DEFAULT_RATES_FROM_USD[from] || 1.0;
-  const rateTo = activeRates[to] || DEFAULT_RATES_FROM_USD[to] || 1.0;
+  if (customRate && Number(customRate) > 0) {
+    return roundCurrencyAmount(num * Number(customRate), to);
+  }
 
-  // Conversión cruzada directa: num * (rateTo / rateFrom)
-  const converted = num * (rateTo / rateFrom);
+  const rate = getExactExchangeRate(from, to);
+  const converted = num * rate;
 
   return roundCurrencyAmount(converted, to);
 }
@@ -249,15 +452,21 @@ export function formatCurrencyDisplay(amount, currencyCode, includeCode = true) 
 }
 
 /**
- * Retorna las conversiones a todas las DEMÁS monedas del viaje usando la API
+ * Retorna las conversiones a las demás monedas relevantes usando la API
+ * @param {number|string} amount
+ * @param {string} currentCode
+ * @param {Array<object>} [targetCurrencies] - Lista opcional de monedas de la ruta
  */
-export function getOtherCurrenciesConversions(amount, currentCode) {
+export function getOtherCurrenciesConversions(amount, currentCode, targetCurrencies = null) {
   const num = Number(amount);
   if (!num || isNaN(num) || num <= 0) return [];
 
   const current = (currentCode || 'COP').toUpperCase();
+  const list = Array.isArray(targetCurrencies) && targetCurrencies.length > 0
+    ? targetCurrencies
+    : TRIP_CURRENCIES;
 
-  return TRIP_CURRENCIES
+  return list
     .filter(c => c.code !== current)
     .map(c => {
       const convertedVal = convertCurrency(num, current, c.code);

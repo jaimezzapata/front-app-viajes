@@ -338,7 +338,8 @@ export function App() {
         eventoAEditar={eventoAEditar}
         onSaveEvento={handleSaveEvento}
         onUpdateEvento={handleUpdateEvento}
-        monedaDefault={activeViaje?.monedaBase || 'COP'}
+        monedaDefault={activeViaje?.monedaLocal || activeViaje?.monedaBase || 'COP'}
+        activeViaje={activeViaje}
       />
 
       <ConfirmDeleteEventoModal
@@ -355,7 +356,8 @@ export function App() {
         isOpen={isNuevoGastoOpen}
         onClose={() => setIsNuevoGastoOpen(false)}
         onSaveGasto={handleSaveGasto}
-        monedaDefault={activeViaje?.monedaBase || 'COP'}
+        monedaDefault={activeViaje?.monedaLocal || activeViaje?.monedaBase || 'COP'}
+        activeViaje={activeViaje}
       />
 
       <NuevoDocModal

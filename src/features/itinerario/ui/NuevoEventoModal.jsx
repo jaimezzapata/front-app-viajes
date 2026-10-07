@@ -35,7 +35,8 @@ export function NuevoEventoModal({
   onSaveEvento,
   eventoAEditar,
   onUpdateEvento,
-  monedaDefault = 'COP'
+  monedaDefault = 'COP',
+  activeViaje = null
 }) {
   const isEditing = Boolean(eventoAEditar);
   const [titulo, setTitulo] = useState('');
@@ -880,6 +881,7 @@ export function NuevoEventoModal({
           <CurrencySelector
             value={moneda}
             onChange={(selectedCurr) => setMoneda(selectedCurr)}
+            viaje={activeViaje}
             label={tipo === 'vuelo' && tipoTrayecto === 'round-trip' ? 'Moneda del Boleto Round-Trip' : 'Moneda del Evento'}
           />
 

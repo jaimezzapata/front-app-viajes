@@ -5,40 +5,8 @@ import CountryInput from '../../../components/CountryInput';
 import AirportCityInput from '../../../components/AirportCityInput';
 import { CurrencySelector, LiveCurrencyConversions } from '../../../components/CurrencySelector';
 import { detectCountry, fixAccents } from '../../../utils/countries';
+import { getCurrencyForCountry } from '../../../utils/currencies';
 import { formatWithMiniFlag } from '../../../services/geoApiService';
-
-const CURRENCY_BY_COUNTRY = {
-  JP: 'JPY',
-  US: 'USD',
-  ES: 'EUR',
-  FR: 'EUR',
-  IT: 'EUR',
-  DE: 'EUR',
-  NL: 'EUR',
-  BE: 'EUR',
-  AT: 'EUR',
-  PT: 'EUR',
-  GR: 'EUR',
-  IE: 'EUR',
-  GB: 'GBP',
-  CO: 'COP',
-  MX: 'MXN',
-  AR: 'ARS',
-  BR: 'BRL',
-  CL: 'CLP',
-  PE: 'PEN',
-  PA: 'USD',
-  EC: 'USD',
-  CA: 'CAD',
-  AU: 'AUD',
-  NZ: 'NZD',
-  CH: 'CHF',
-  TR: 'TRY',
-  AE: 'AED',
-  KR: 'KRW',
-  CN: 'CNY',
-  TH: 'THB'
-};
 
 export function NuevoViajeModal({ isOpen, onClose, onSaveViaje, viajeAEditar, onUpdateViaje }) {
   const isEditing = Boolean(viajeAEditar);
@@ -108,9 +76,9 @@ export function NuevoViajeModal({ isOpen, onClose, onSaveViaje, viajeAEditar, on
 
   const handleDestinoChange = (newDestino) => {
     setDestino(newDestino);
-    const country = detectCountry(newDestino);
-    if (country && CURRENCY_BY_COUNTRY[country.code]) {
-      setMonedaLocal(CURRENCY_BY_COUNTRY[country.code]);
+    const curr = getCurrencyForCountry(newDestino);
+    if (curr && curr.code) {
+      setMonedaLocal(curr.code);
     }
   };
 
@@ -132,11 +100,11 @@ export function NuevoViajeModal({ isOpen, onClose, onSaveViaje, viajeAEditar, on
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
 
-      // Si cambia el destino, sugerir moneda
+      // Si cambia el destino, sugerir moneda oficial automáticamente
       if (field === 'destino') {
-        const country = detectCountry(value);
-        if (country && CURRENCY_BY_COUNTRY[country.code]) {
-          setMonedaLocal(CURRENCY_BY_COUNTRY[country.code]);
+        const curr = getCurrencyForCountry(value);
+        if (curr && curr.code) {
+          setMonedaLocal(curr.code);
         }
       }
 
@@ -567,6 +535,15 @@ export function NuevoViajeModal({ isOpen, onClose, onSaveViaje, viajeAEditar, on
                 value={monedaLocal}
                 onChange={(selectedCurr) => setMonedaLocal(selectedCurr)}
                 label="Moneda Local Principal"
+                viaje={{
+                  destino,
+                  origen,
+                  escalas,
+                  tipoViaje,
+                  destinosMultidestino,
+                  monedaLocal,
+                  monedaBase: 'COP'
+                }}
               />
 
               <div>

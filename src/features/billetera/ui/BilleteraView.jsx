@@ -19,6 +19,7 @@ import {
   CURRENCY_MAP,
   formatCurrencyDisplay,
   getOtherCurrenciesConversions,
+  getCurrenciesForTrip,
   syncLiveCurrencyRates,
   getLiveRatesInfo
 } from '../../../utils/currencies';
@@ -157,7 +158,8 @@ export function BilleteraView({
             const isTerceros = g.noComputar;
             const currMeta = CURRENCY_MAP[(g.monedaOriginal || 'COP').toUpperCase()] || {};
             const isExpanded = showAllConversionsGlobal || expandedGastoId === g.id;
-            const otherConversions = getOtherCurrenciesConversions(g.montoOriginal, g.monedaOriginal);
+            const routeCurrencies = activeViaje ? getCurrenciesForTrip(activeViaje) : null;
+            const otherConversions = getOtherCurrenciesConversions(g.montoOriginal, g.monedaOriginal, routeCurrencies);
 
             return (
               <div
@@ -231,6 +233,12 @@ export function BilleteraView({
                       <p className="text-xs font-semibold text-[#00FF85] m-0 mt-0.5 text-left sm:text-right">
                         ≈ $ {Math.round(g.montoCOP || 0).toLocaleString()} COP
                       </p>
+                      {/* Tasa exacta congelada en el momento de la compra */}
+                      {g.tasaCambioFecha && (g.monedaOriginal || '').toUpperCase() !== 'COP' && (
+                        <p className="text-[10px] text-[#8492A6] m-0 text-left sm:text-right" title="Tasa de cambio capturada en el momento de la compra">
+                          Tasa: 1 {g.monedaOriginal} = ${Number(g.tasaCambioFecha).toLocaleString('es-CO', { minimumFractionDigits: (g.monedaOriginal || '').toUpperCase() === 'JPY' || (g.monedaOriginal || '').toUpperCase() === 'KRW' ? 4 : 2, maximumFractionDigits: 4 })} COP
+                        </p>
+                      )}
                     </div>
 
                     <button
