@@ -385,38 +385,41 @@ export function ViajesView({
               )}
             </div>
 
-            {/* BOTONES DE ACCIÓN RÁPIDA INMEDIATOS (A LA MANO, 0 SCROLL) */}
-            <div className="flex items-center gap-2 flex-wrap shrink-0 border-t lg:border-t-0 pt-3 lg:pt-0 border-[#1C2436]">
+            {/* BOTONES DE ACCIÓN RÁPIDA INMEDIATOS: ALINEADOS Y DISTRIBUIDOS SIMÉTRICAMENTE */}
+            <div className="grid grid-cols-3 sm:flex sm:items-center gap-2 w-full lg:w-auto shrink-0 border-t lg:border-t-0 pt-3 lg:pt-0 border-[#1C2436]">
               {onAddEvento && (
                 <button
+                  type="button"
                   onClick={() => onAddEvento()}
-                  className="h-9 px-3.5 bg-[#00FF85] hover:opacity-90 text-[#080A0F] font-bold text-xs uppercase tracking-wider rounded-xl transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-sm whitespace-nowrap select-none"
+                  className="h-9 px-3 bg-[#00FF85] hover:opacity-90 text-[#080A0F] font-bold text-xs uppercase tracking-wider rounded-xl transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-sm whitespace-nowrap select-none"
                   title="Registrar vuelo o actividad en el itinerario"
                 >
-                  <Plus className="w-4 h-4" strokeWidth={2.5} />
-                  <span className="whitespace-nowrap">+ Vuelo / Actividad</span>
+                  <Plus className="w-3.5 h-3.5 shrink-0" strokeWidth={2.5} />
+                  <span>Actividad</span>
                 </button>
               )}
 
               {onAddGasto && (
                 <button
+                  type="button"
                   onClick={() => onAddGasto()}
-                  className="h-9 px-3.5 bg-[#00E5FF] hover:opacity-90 text-[#080A0F] font-bold text-xs uppercase tracking-wider rounded-xl transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-sm whitespace-nowrap select-none"
+                  className="h-9 px-3 bg-[#00E5FF] hover:opacity-90 text-[#080A0F] font-bold text-xs uppercase tracking-wider rounded-xl transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-sm whitespace-nowrap select-none"
                   title="Registrar nuevo gasto para este viaje"
                 >
-                  <DollarSign className="w-4 h-4" strokeWidth={2.5} />
-                  <span className="whitespace-nowrap">+ Gasto</span>
+                  <Plus className="w-3.5 h-3.5 shrink-0" strokeWidth={2.5} />
+                  <span>Gasto</span>
                 </button>
               )}
 
               {onAddDoc && (
                 <button
+                  type="button"
                   onClick={() => onAddDoc()}
-                  className="h-9 px-3 bg-[#151B27] border border-[#B55FE6]/40 hover:border-[#B55FE6] text-[#B55FE6] font-bold text-xs uppercase tracking-wider rounded-xl transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap select-none"
+                  className="h-9 px-3 bg-[#151B27] border border-[#B55FE6]/50 hover:border-[#B55FE6] text-[#B55FE6] font-bold text-xs uppercase tracking-wider rounded-xl transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap select-none"
                   title="Subir boleto, reserva o pasaporte"
                 >
-                  <Upload className="w-3.5 h-3.5" />
-                  <span className="whitespace-nowrap">+ Documento</span>
+                  <Plus className="w-3.5 h-3.5 shrink-0" strokeWidth={2.5} />
+                  <span>Documento</span>
                 </button>
               )}
             </div>
