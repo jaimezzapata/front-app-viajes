@@ -645,9 +645,6 @@ export function WorldMapAmCharts({
                 Mapa Mundi de Viajes y Rutas Aéreas
               </h3>
               <div className="flex items-center gap-1.5 shrink-0">
-                <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-[#00E5FF]/10 text-[#00E5FF] border border-[#00E5FF]/30 whitespace-nowrap leading-none inline-flex items-center">
-                  amCharts 5
-                </span>
                 {flightRoutes.length > 0 && (
                   <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-[#00FF85]/15 text-[#00FF85] border border-[#00FF85]/40 inline-flex items-center gap-1 whitespace-nowrap leading-none">
                     <Plane className="w-3 h-3 shrink-0" />
