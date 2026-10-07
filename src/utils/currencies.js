@@ -304,17 +304,31 @@ export function getLiveRatesInfo() {
   };
 }
 
+function resolveCurrenciesApiBase() {
+  const defaultBase = (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
+    ? 'https://back-app-viajes.onrender.com'
+    : 'http://localhost:4000';
+
+  const rawBase = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL)
+    ? import.meta.env.VITE_API_URL
+    : defaultBase;
+
+  return rawBase.endsWith('/api') ? rawBase : `${rawBase.replace(/\/+$/, '')}/api`;
+}
+
 /**
  * Sincronizar tasas de cambio con la API externa en tiempo real
+ * Resiliente y tolerante a fallos: backend -> open.er-api -> exchangerate-api -> local cache
  */
 export async function syncLiveCurrencyRates() {
   let fetchedRates = null;
   let source = 'live-api';
 
+  // 1. Intentar endpoint oficial del backend
   try {
-    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+    const apiBase = resolveCurrenciesApiBase();
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
+    const timeout = setTimeout(() => controller.abort(), 4500);
 
     const res = await fetch(`${apiBase}/divisas`, { signal: controller.signal }).catch(() => null);
     clearTimeout(timeout);
@@ -328,11 +342,11 @@ export async function syncLiveCurrencyRates() {
     }
   } catch {}
 
-  // Fallback directo a open.er-api.com
+  // 2. Fallback primario directo a open.er-api.com
   if (!fetchedRates) {
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 6000);
+      const timeout = setTimeout(() => controller.abort(), 4500);
       const res = await fetch('https://open.er-api.com/v6/latest/USD', { signal: controller.signal }).catch(() => null);
       clearTimeout(timeout);
 
@@ -341,6 +355,24 @@ export async function syncLiveCurrencyRates() {
         if (json && json.rates) {
           fetchedRates = json.rates;
           source = 'open-er-api';
+        }
+      }
+    } catch {}
+  }
+
+  // 3. Fallback secundario a api.exchangerate-api.com
+  if (!fetchedRates) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 4500);
+      const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD', { signal: controller.signal }).catch(() => null);
+      clearTimeout(timeout);
+
+      if (res && res.ok) {
+        const json = await res.json().catch(() => null);
+        if (json && json.rates) {
+          fetchedRates = json.rates;
+          source = 'exchangerate-api';
         }
       }
     } catch {}

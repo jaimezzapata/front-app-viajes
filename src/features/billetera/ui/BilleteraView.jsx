@@ -14,6 +14,7 @@ import {
   Coins,
   RefreshCw
 } from 'lucide-react';
+import { toast } from 'sonner';
 import WatermarkIcon from '../../../components/WatermarkIcon';
 import {
   CURRENCY_MAP,
@@ -51,6 +52,13 @@ export function BilleteraView({
     try {
       const updated = await syncLiveCurrencyRates();
       setRatesInfo(updated);
+      if (updated && (updated.source === 'backend-api' || updated.source === 'open-er-api' || updated.source === 'exchangerate-api')) {
+        toast.success('Tasas de cambio actualizadas en tiempo real');
+      } else {
+        toast.info('Operando con tasas de referencia locales');
+      }
+    } catch {
+      toast.info('Operando con tasas de referencia');
     } finally {
       setSyncingRates(false);
     }

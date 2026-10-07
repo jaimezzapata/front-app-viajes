@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Coins, ArrowRightLeft, RefreshCw, CheckCircle2, ChevronDown, Search } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   TRIP_CURRENCIES,
   GLOBAL_CURRENCIES,
@@ -59,6 +60,13 @@ export function CurrencySelector({
     try {
       const updated = await syncLiveCurrencyRates();
       setRatesInfo(updated);
+      if (updated && (updated.source === 'backend-api' || updated.source === 'open-er-api' || updated.source === 'exchangerate-api')) {
+        toast.success('Tasas de cambio actualizadas en tiempo real');
+      } else {
+        toast.info('Operando con tasas de referencia locales');
+      }
+    } catch {
+      toast.info('Operando con tasas de referencia');
     } finally {
       setSyncing(false);
     }
