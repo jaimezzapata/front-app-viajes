@@ -317,17 +317,19 @@ export function App() {
         onUpdateViaje={handleUpdateViaje}
       />
 
-      <CompartirViajeModal
-        isOpen={Boolean(viajeACompartir)}
-        onClose={() => setViajeACompartir(null)}
-        viaje={viajeACompartir}
-        eventos={viajeACompartir?.id === activeViajeId ? eventos : []}
-        gastos={viajeACompartir?.id === activeViajeId ? gastos : []}
-        onOpenPreview={(v) => {
-          setViajeACompartir(null);
-          setSharedViajeParams({ shareId: v.id });
-        }}
-      />
+      {viajeACompartir && (
+        <CompartirViajeModal
+          isOpen={Boolean(viajeACompartir)}
+          onClose={() => setViajeACompartir(null)}
+          viaje={viajeACompartir}
+          eventos={viajeACompartir?.id === activeViajeId ? eventos : []}
+          gastos={viajeACompartir?.id === activeViajeId ? gastos : []}
+          onOpenPreview={(v) => {
+            setViajeACompartir(null);
+            setSharedViajeParams({ shareId: v.id });
+          }}
+        />
+      )}
 
       <ConfirmDeleteViajeModal
         isOpen={Boolean(viajeAEliminar)}

@@ -28,15 +28,7 @@ export function CompartirViajeModal({
   const [copied, setCopied] = useState(false);
   const [showQr, setShowQr] = useState(false);
 
-  if (!viaje) return null;
-
-  // Construir URL pública limpia y corta para compartir
-  const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-  const shareId = viaje?.id || '';
-  const shareUrl = `${origin}${pathname}?share=${encodeURIComponent(shareId)}`;
-
-  // Cachear datos del viaje compartido para acceso instantáneo
+  // Cachear datos del viaje compartido para acceso instantáneo (siempre al inicio sin retornos previos)
   React.useEffect(() => {
     if (viaje && viaje.id) {
       try {
@@ -51,6 +43,15 @@ export function CompartirViajeModal({
       }
     }
   }, [viaje, eventos, gastos]);
+
+  // Si el modal no está abierto o no hay viaje, no renderizar el contenido
+  if (!isOpen || !viaje) return null;
+
+  // Construir URL pública limpia y corta para compartir
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  const shareId = viaje?.id || '';
+  const shareUrl = `${origin}${pathname}?share=${encodeURIComponent(shareId)}`;
 
   const cleanDestino = cleanCountryText(viaje.destino);
   const tituloViaje = fixAccents(viaje.titulo || 'Mi Viaje');
