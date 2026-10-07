@@ -708,36 +708,43 @@ export function ViajesView({
         }}
       />
 
-      {/* Cabecera Principal Limpia y Minimalista */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-black text-[#F1F5F9] tracking-tight m-0">
-            Bitácoras de Viaje
-          </h1>
+      {/* 1. CABECERA PRINCIPAL INTEGRADA A TODO EL ANCHO */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3.5 pb-2 border-b border-[#1C2436]/80 relative z-10">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl sm:text-2xl font-black text-[#F1F5F9] tracking-tight m-0">
+              Bitácoras de Viaje
+            </h1>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#00E5FF]/10 text-[#00E5FF] border border-[#00E5FF]/30 tracking-wider uppercase">
+              {filteredViajes.length} {filteredViajes.length === 1 ? 'viaje' : 'viajes'}
+            </span>
+          </div>
           <p className="text-xs text-[#8492A6] mt-1 m-0">
             Gestiona tus aventuras y visualiza tus rutas en el mundo
           </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
-          {/* BOTÓN PROTAGONISTA PARA ABRIR EL MAPAMUNDI EN MODAL */}
+        {/* Botones de acción principales (Alineados a la derecha y responsivos a todo el ancho en móvil) */}
+        <div className="flex items-center gap-2.5 shrink-0 w-full md:w-auto">
+          {/* Botón para abrir el mapamundi en modal */}
           <button
             onClick={() => setIsGlobalMapModalOpen(true)}
-            className="px-3.5 py-2 bg-[#151B27] border border-[#00E5FF]/40 hover:border-[#00E5FF] hover:bg-[#00E5FF]/10 text-[#00E5FF] font-bold text-xs uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm shrink-0"
+            className="flex-1 md:flex-initial px-4 py-2.5 bg-[#151B27] border border-[#00E5FF]/40 hover:border-[#00E5FF] hover:bg-[#00E5FF]/10 text-[#00E5FF] font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
             title="Abrir mapamundi global en ventana modal"
           >
             <Globe2 className="w-4 h-4 text-[#00E5FF]" />
             <span>Ver Mapa Mundi</span>
             {globalVisitedCountries.size > 0 && (
-              <span className="bg-[#00E5FF]/15 text-[#00E5FF] text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+              <span className="bg-[#00E5FF]/20 text-[#00E5FF] text-[10px] px-1.5 py-0.2 rounded-full font-bold ml-0.5">
                 {globalVisitedCountries.size}
               </span>
             )}
           </button>
 
+          {/* Botón Nuevo Viaje */}
           <button
             onClick={onOpenNuevoViaje}
-            className="px-4 py-2 bg-[#00FF85] hover:opacity-90 text-[#080A0F] font-bold text-xs uppercase tracking-wider rounded-lg transition-opacity flex items-center justify-center gap-1.5 cursor-pointer shadow-sm shrink-0"
+            className="flex-1 md:flex-initial px-4 py-2.5 bg-[#00FF85] hover:opacity-90 text-[#080A0F] font-bold text-xs uppercase tracking-wider rounded-xl transition-opacity flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
           >
             <Plus className="w-4 h-4" strokeWidth={2.5} />
             <span>Nuevo Viaje</span>
@@ -745,22 +752,23 @@ export function ViajesView({
         </div>
       </div>
 
-      {/* PROTAGONISTA ABSOLUTO: LISTADO DE VIAJES REGISTRADOS
-          Aprovechamiento total del espacio visual para los viajes */}
+      {/* 2. BARRA DE HERRAMIENTAS INTEGRADA: BÚSQUEDA Y FILTROS APROVECHANDO TODO EL ANCHO */}
       <section className="space-y-4 relative z-10 w-full max-w-full overflow-hidden">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-          <div>
-            <h2 className="text-base sm:text-lg font-bold text-[#F1F5F9] m-0 uppercase tracking-wide flex items-center gap-2">
-              <Plane className="w-4 h-4 text-[#00E5FF]" />
-              Viajes Registrados ({filteredViajes.length})
-            </h2>
-            <p className="text-xs text-[#8492A6] mt-0.5 m-0">
-              Selecciona una bitácora para gestionar su itinerario, gastos y documentos
-            </p>
+        <div className="bg-[#0E121B] border border-[#1C2436] rounded-2xl p-2 sm:p-2.5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 shadow-sm">
+          {/* Campo de Búsqueda que se expande en todo el ancho disponible */}
+          <div className="relative flex-1 min-w-0">
+            <Search className="w-4 h-4 text-[#8492A6] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Buscar por destino, país o nombre del viaje..."
+              className="w-full bg-[#151B27] border border-[#1C2436] focus:border-[#00E5FF] rounded-xl pl-10 pr-4 py-2 text-xs text-[#F1F5F9] focus:outline-none placeholder-[#8492A6]/60 transition-colors"
+            />
           </div>
 
-          {/* Filtros de estado */}
-          <div className="flex rounded-lg bg-[#0E121B] p-1 border border-[#1C2436] self-start sm:self-auto overflow-x-auto max-w-full no-scrollbar">
+          {/* Filtros de Estado integrados en la misma barra */}
+          <div className="flex items-center gap-1 bg-[#151B27] p-1 rounded-xl border border-[#1C2436] shrink-0 overflow-x-auto no-scrollbar justify-between md:justify-start">
             {[
               { id: 'todos', label: 'Todos' },
               { id: 'en_curso', label: 'En Curso' },
@@ -770,9 +778,9 @@ export function ViajesView({
               <button
                 key={f.id}
                 onClick={() => setFilterStatus(f.id)}
-                className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer shrink-0 ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer shrink-0 text-center flex-1 md:flex-initial ${
                   filterStatus === f.id
-                    ? 'bg-[#151B27] text-[#00FF85] border border-[#00FF85]/30'
+                    ? 'bg-[#0E121B] text-[#00FF85] border border-[#00FF85]/40 shadow-xs font-bold'
                     : 'text-[#8492A6] hover:text-[#F1F5F9]'
                 }`}
               >
@@ -780,18 +788,6 @@ export function ViajesView({
               </button>
             ))}
           </div>
-        </div>
-
-        {/* Barra de Búsqueda Minimalista */}
-        <div className="relative">
-          <Search className="w-4 h-4 text-[#8492A6] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar por destino, país o nombre del viaje..."
-            className="w-full bg-[#0E121B] border border-[#1C2436] focus:border-[#00E5FF] rounded-xl pl-10 pr-4 py-2.5 text-xs text-[#F1F5F9] focus:outline-none placeholder-[#8492A6]/60"
-          />
         </div>
 
         {/* Grid Limpio de Tarjetas de Viaje */}
