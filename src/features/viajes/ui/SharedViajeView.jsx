@@ -24,7 +24,7 @@ import {
   Layers,
   Info
 } from 'lucide-react';
-import WorldMapAmCharts from '../../../components/WorldMapAmCharts';
+import WorldMapModal from '../../../components/WorldMapModal';
 import MiniFlag from '../../../components/MiniFlag';
 import ThemeToggle from '../../../components/ThemeToggle';
 import WatermarkIcon from '../../../components/WatermarkIcon';
@@ -56,6 +56,7 @@ export function SharedViajeView({ shareId, shareDataRaw, onExit, onGoToApp }) {
   const [documentos, setDocumentos] = useState([]);
   const [activeTab, setActiveTab] = useState('itinerario'); // 'itinerario' | 'gastos' | 'documentos'
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
 
   // Cargar datos del viaje compartido
   useEffect(() => {
@@ -444,14 +445,49 @@ export function SharedViajeView({ shareId, shareDataRaw, onExit, onGoToApp }) {
           </div>
         </div>
 
-        {/* MAPA MUNDI CON amCharts 5 */}
-        <section className="relative z-10 w-full max-w-full overflow-hidden">
-          <WorldMapAmCharts
-            visitedCountries={visitedCountries}
-            flightRoutes={flightRoutes}
-            onSelectCountry={() => {}}
-          />
-        </section>
+        {/* ACCESO A MAPAMUNDI INTERACTIVO (MODAL) */}
+        <div className="relative z-10 p-3.5 sm:p-4 rounded-xl bg-[#0E121B] border border-[#1C2436] hover:border-[#00E5FF]/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#00E5FF]/10 border border-[#00E5FF]/30 flex items-center justify-center text-[#00E5FF] shrink-0">
+              <Globe2 className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black tracking-wider text-[#F1F5F9] uppercase">
+                  Mapamundi & Rutas
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#00E5FF]/15 text-[#00E5FF] border border-[#00E5FF]/30">
+                  {visitedCountries.size} {visitedCountries.size === 1 ? 'País' : 'Países'} · {flightRoutes.length} {flightRoutes.length === 1 ? 'Vuelo' : 'Vuelos'}
+                </span>
+              </div>
+              <p className="text-xs text-[#8492A6] m-0 mt-0.5">
+                Visualiza los países explorados y trayectos aéreos en una ventana interactiva a pantalla completa.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsMapModalOpen(true)}
+            className="px-4 py-2 bg-[#00E5FF] hover:bg-[#00E5FF]/90 text-[#080A0F] font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer shrink-0"
+          >
+            <Globe2 className="w-4 h-4" />
+            <span>Ver Mapamundi</span>
+          </button>
+        </div>
+
+        {/* MODAL DEL MAPAMUNDI */}
+        <WorldMapModal
+          isOpen={isMapModalOpen}
+          onClose={() => setIsMapModalOpen(false)}
+          title={`Ruta: ${tituloViaje}`}
+          subtitle="Visualización geográfica de los países y trayectos de este viaje"
+          badge={`${visitedCountries.size} ${visitedCountries.size === 1 ? 'país' : 'países'} · ${flightRoutes.length} ${flightRoutes.length === 1 ? 'vuelo' : 'vuelos'}`}
+          visitedCountries={visitedCountries}
+          flightRoutes={flightRoutes}
+          showFlights={flightRoutes.length > 0}
+          multiColor={false}
+        />
 
         {/* NAVEGACIÓN POR PESTAÑAS (ITINERARIO / GASTOS / DOCUMENTOS) */}
         <div className="space-y-4 pt-2">

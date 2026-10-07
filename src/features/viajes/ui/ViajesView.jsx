@@ -22,9 +22,10 @@ import {
   AlertTriangle,
   Layers,
   Sparkles,
-  Upload
+  Upload,
+  Map as MapIcon
 } from 'lucide-react';
-import WorldMapAmCharts from '../../../components/WorldMapAmCharts';
+import WorldMapModal from '../../../components/WorldMapModal';
 import WatermarkIcon from '../../../components/WatermarkIcon';
 import MiniFlag from '../../../components/MiniFlag';
 import { extractVisitedCountries, getCountryFlag, cleanCountryText, fixAccents } from '../../../utils/countries';
@@ -53,6 +54,10 @@ export function ViajesView({
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('todos'); // 'todos' | 'en_curso' | 'proximos' | 'finalizados'
   const [selectedCountryCode, setSelectedCountryCode] = useState(null);
+
+  // Estados para abrir el mapamundi en ventana modal (oculto por defecto para no saturar la pantalla)
+  const [isGlobalMapModalOpen, setIsGlobalMapModalOpen] = useState(false);
+  const [isTripMapModalOpen, setIsTripMapModalOpen] = useState(false);
 
   // Si activeViajeId cambia externamente a null, limpiar selectedViajeId
   useEffect(() => {
@@ -83,8 +88,7 @@ export function ViajesView({
   }, [eventos, viajes, activeViajeId]);
 
   // Mapa de países para la vista global:
-  // IMPORTANTE: Refleja TODOS los países configurados en los viajes (origen, destinos, escalas)
-  // pintados en colores armónicos para que la vista inicial sea un resumen visual completo.
+  // Refleja TODOS los países configurados en los viajes (origen, destinos, escalas)
   const globalVisitedCountries = useMemo(() => {
     const allVisited = extractVisitedCountries(allEventsList, viajes);
     const result = new Map();
@@ -92,7 +96,7 @@ export function ViajesView({
     allVisited.forEach((info, code) => {
       result.set(code, {
         ...info,
-        isPending: false // Relleno sólido con su color asignado en la vista inicial
+        isPending: false // Relleno sólido con su color asignado en la vista global
       });
     });
 
@@ -252,7 +256,7 @@ export function ViajesView({
 
   // =========================================================================
   // VISTA 1: MODO DETALLE DEL VIAJE SELECCIONADO
-  // Flujo optimizado: Accesos directos y botones de registro inmediatamente arriba
+  // Flujo optimizado: Datos y registros a la mano; mapa disponible en ventana modal
   // =========================================================================
   if (selectedViajeId && currentViaje) {
     const status = getViajeStatus(currentViaje);
@@ -265,6 +269,19 @@ export function ViajesView({
         {/* Marcas de agua sutiles */}
         <WatermarkIcon icon={Globe2} className="w-[500px] h-[500px] -top-20 -right-20" opacity="opacity-[0.02]" color="text-[#00E5FF]" />
         <WatermarkIcon icon={Compass} className="w-[450px] h-[450px] top-[600px] -left-20" opacity="opacity-[0.02]" color="text-[#00FF85]" />
+
+        {/* Modal del Mapamundi para este Viaje Específico (Oculto por defecto, se abre con el botón) */}
+        <WorldMapModal
+          isOpen={isTripMapModalOpen}
+          onClose={() => setIsTripMapModalOpen(false)}
+          title={`Ruta de Viaje: ${fixAccents(currentViaje.titulo)}`}
+          subtitle={`Trayectos aéreos y escalas hacia ${cleanCountryText(currentViaje.destino)}`}
+          badge={tripFlights.length > 0 ? `${tripFlights.length} trayectos` : 'Sin vuelos aún'}
+          visitedCountries={tripVisitedCountries}
+          flightRoutes={tripFlights}
+          showFlights={true}
+          multiColor={false}
+        />
 
         {/* Barra superior de Navegación: Volver a Mis Viajes + Destino + Acciones secundarias */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10 pt-1">
@@ -291,6 +308,16 @@ export function ViajesView({
 
           {/* Acciones de gestión del viaje */}
           <div className="flex items-center gap-2 self-start sm:self-auto">
+            {/* Botón para abrir el mapa de ruta en modal */}
+            <button
+              onClick={() => setIsTripMapModalOpen(true)}
+              className="px-3 py-1.5 rounded-lg bg-[#151B27] border border-[#00E5FF]/40 hover:border-[#00E5FF] text-[#00E5FF] hover:bg-[#00E5FF]/10 transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-bold shadow-sm"
+              title="Abrir mapa interactivo de la ruta aérea en ventana modal"
+            >
+              <Plane className="w-3.5 h-3.5" />
+              <span>Ver Ruta en el Mapa</span>
+            </button>
+
             {onCompartirViaje && (
               <button
                 type="button"
@@ -360,6 +387,16 @@ export function ViajesView({
 
             {/* BOTONES DE ACCIÓN RÁPIDA INMEDIATOS (A LA MANO, 0 SCROLL) */}
             <div className="flex items-center gap-2 flex-wrap shrink-0 border-t lg:border-t-0 pt-3 lg:pt-0 border-[#1C2436]">
+              {/* Botón destacado para abrir el mapa de la ruta */}
+              <button
+                onClick={() => setIsTripMapModalOpen(true)}
+                className="px-3 py-2 bg-[#151B27] border border-[#00E5FF]/40 hover:border-[#00E5FF] text-[#00E5FF] font-bold text-xs uppercase tracking-wider rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:bg-[#00E5FF]/10"
+                title="Ver mapa de la ruta aérea en ventana modal"
+              >
+                <MapIcon className="w-4 h-4" />
+                <span>Ruta en Mapa</span>
+              </button>
+
               {onAddEvento && (
                 <button
                   onClick={() => onAddEvento()}
@@ -635,89 +672,135 @@ export function ViajesView({
           </div>
         </section>
 
-        {/* MAPAMUNDI ENFOCADO EN LA RUTA ESPECÍFICA DE ESTE VIAJE */}
-        <section className="relative z-10 w-full max-w-full overflow-hidden">
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-[#00E5FF] m-0 flex items-center gap-1.5">
-              <Plane className="w-3.5 h-3.5" />
-              Ruta Aérea y Destinos del Viaje
-            </h2>
-            <span className="text-[11px] text-[#8492A6]">
-              {tripFlights.length > 0 ? `${tripFlights.length} trayectos de vuelo` : 'Sin vuelos registrados aún'}
-            </span>
-          </div>
-
-          <WorldMapAmCharts
-            visitedCountries={tripVisitedCountries}
-            flightRoutes={tripFlights}
-            showFlights={true}
-            multiColor={false}
-          />
-        </section>
+        {/* Modal de la Ruta en Mapa del Viaje Seleccionado */}
+        <WorldMapModal
+          isOpen={isTripMapModalOpen}
+          onClose={() => setIsTripMapModalOpen(false)}
+          title={`Ruta: ${fixAccents(currentViaje.titulo || 'Detalle del Viaje')}`}
+          subtitle={`${cleanCountryText(currentViaje.origen)} ➔ ${cleanCountryText(currentViaje.destino)}`}
+          badge={`${tripFlights.length} ${tripFlights.length === 1 ? 'vuelo registrado' : 'vuelos registrados'}`}
+          visitedCountries={tripVisitedCountries}
+          flightRoutes={tripFlights}
+          showFlights={tripFlights.length > 0}
+          multiColor={false}
+        />
       </div>
     );
   }
 
   // =========================================================================
   // VISTA 2: RESUMEN GENERAL LIMPIO Y MINIMALISTA (VISTA INICIAL TRAS LOGIN)
-  // Refleja todos los países configurados en los viajes con colores armónicos
+  // El mapamundi está oculto por defecto y se abre en ventana modal con un botón.
+  // El espacio es 100% aprovechado para el listado de viajes registrados.
   // =========================================================================
   return (
-    <div className="space-y-8 relative pb-16">
+    <div className="space-y-6 relative pb-16">
       {/* Marcas de agua sutiles de fondo */}
       <WatermarkIcon icon={Globe2} className="w-[500px] h-[500px] -top-20 -right-20" opacity="opacity-[0.02]" color="text-[#00E5FF]" />
       <WatermarkIcon icon={Compass} className="w-[450px] h-[450px] top-[600px] -left-20" opacity="opacity-[0.02]" color="text-[#00FF85]" />
 
-      {/* Cabecera Principal Limpia y Minimalista (Sin saturación de componentes) */}
+      {/* Modal del Mapamundi Global (Oculto por defecto, se abre con clic en el botón) */}
+      <WorldMapModal
+        isOpen={isGlobalMapModalOpen}
+        onClose={() => setIsGlobalMapModalOpen(false)}
+        title="Mapamundi Global • Destinos Explorados"
+        subtitle="Todos los países configurados y visitados en tus bitácoras de viaje"
+        badge={`${globalVisitedCountries.size} ${globalVisitedCountries.size === 1 ? 'país' : 'países'}`}
+        visitedCountries={globalVisitedCountries}
+        showFlights={false}
+        multiColor={true}
+        onSelectCountry={(code, info) => {
+          setSelectedCountryCode(code);
+          if (info && info.viajes && info.viajes[0]) {
+            setIsGlobalMapModalOpen(false);
+            handleSelectViaje(info.viajes[0].id);
+          }
+        }}
+      />
+
+      {/* Cabecera Principal Limpia y Minimalista */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-[#F1F5F9] tracking-tight m-0">
             Bitácoras de Viaje
           </h1>
           <p className="text-xs text-[#8492A6] mt-1 m-0">
-            Resumen global de destinos explorados en el mundo
+            Gestiona tus aventuras y visualiza tus rutas en el mundo
           </p>
         </div>
 
-        <button
-          onClick={onOpenNuevoViaje}
-          className="self-start sm:self-auto px-4 py-2 bg-[#00FF85] hover:opacity-90 text-[#080A0F] font-bold text-xs uppercase tracking-wider rounded-lg transition-opacity flex items-center justify-center gap-1.5 cursor-pointer shadow-sm shrink-0"
-        >
-          <Plus className="w-4 h-4" strokeWidth={2.5} />
-          Nuevo Viaje
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          {/* BOTÓN PROTAGONISTA PARA ABRIR EL MAPAMUNDI EN MODAL */}
+          <button
+            onClick={() => setIsGlobalMapModalOpen(true)}
+            className="px-3.5 py-2 bg-[#151B27] border border-[#00E5FF]/40 hover:border-[#00E5FF] hover:bg-[#00E5FF]/10 text-[#00E5FF] font-bold text-xs uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm shrink-0"
+            title="Abrir mapamundi global en ventana modal"
+          >
+            <Globe2 className="w-4 h-4 text-[#00E5FF]" />
+            <span>Ver Mapa Mundi</span>
+            {globalVisitedCountries.size > 0 && (
+              <span className="bg-[#00E5FF]/15 text-[#00E5FF] text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+                {globalVisitedCountries.size}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={onOpenNuevoViaje}
+            className="px-4 py-2 bg-[#00FF85] hover:opacity-90 text-[#080A0F] font-bold text-xs uppercase tracking-wider rounded-lg transition-opacity flex items-center justify-center gap-1.5 cursor-pointer shadow-sm shrink-0"
+          >
+            <Plus className="w-4 h-4" strokeWidth={2.5} />
+            <span>Nuevo Viaje</span>
+          </button>
+        </div>
       </div>
 
-      {/* PROTAGONISTA 1: MAPAMUNDI GLOBAL
-          Refleja todos los países configurados en los viajes registrados (origen, destinos, escalas)
-          pintados en colores distintivos y armoniosos, sin trayectos ni vuelos cruzando el mapa. */}
-      <section className="relative z-10 w-full max-w-full overflow-hidden">
-        <WorldMapAmCharts
-          visitedCountries={globalVisitedCountries}
-          selectedCountryCode={selectedCountryCode}
-          flightRoutes={[]} // Vista inicial limpia: sin vuelos en el mapa global
-          showFlights={false} // Sin líneas de vuelo ni avión volando
-          multiColor={true} // Países configurados coloreados cada uno en un tono armónico individual
-          onSelectCountry={(code, info) => {
-            setSelectedCountryCode(code);
-            if (info && info.viajes && info.viajes[0]) {
-              handleSelectViaje(info.viajes[0].id);
-            }
-          }}
-        />
-      </section>
+      {/* Banner Compacto de Acceso al Mapamundi (Opcional, discreto y elegante) */}
+      <div
+        onClick={() => setIsGlobalMapModalOpen(true)}
+        className="bg-[#0E121B] border border-[#1C2436] hover:border-[#00E5FF] rounded-2xl p-3 sm:p-4 flex items-center justify-between gap-3 cursor-pointer transition-all hover:bg-[#151B27] group shadow-sm relative z-10"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-[#00E5FF]/10 border border-[#00E5FF]/30 flex items-center justify-center text-[#00E5FF] shrink-0 group-hover:scale-105 transition-transform">
+            <Globe2 className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs sm:text-sm font-bold text-[#F1F5F9] m-0 group-hover:text-[#00E5FF] transition-colors truncate">
+              Mapamundi Global de Destinos
+            </p>
+            <p className="text-[11px] text-[#8492A6] m-0 truncate">
+              {globalVisitedCountries.size} {globalVisitedCountries.size === 1 ? 'país registrado' : 'países registrados'} en tus bitácoras • Haz clic para explorar en pantalla completa
+            </p>
+          </div>
+        </div>
 
-      {/* PROTAGONISTA 2: LISTADO DE VIAJES REGISTRADOS
-          Diseño limpio, espacioso y minimalista antes de entrar al detalle */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <div className="hidden sm:flex items-center gap-1 text-sm overflow-hidden max-w-[200px]">
+            {Array.from(globalVisitedCountries.values()).slice(0, 6).map((c) => (
+              <span key={c.code} title={c.es}>{c.flag}</span>
+            ))}
+            {globalVisitedCountries.size > 6 && (
+              <span className="text-[10px] text-[#8492A6] font-bold">+{globalVisitedCountries.size - 6}</span>
+            )}
+          </div>
+          <span className="px-3 py-1.5 rounded-lg bg-[#151B27] text-xs font-bold text-[#00E5FF] border border-[#00E5FF]/30 group-hover:bg-[#00E5FF] group-hover:text-[#080A0F] transition-all flex items-center gap-1">
+            <span>Abrir Mapa</span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+          </span>
+        </div>
+      </div>
+
+      {/* PROTAGONISTA ABSOLUTO: LISTADO DE VIAJES REGISTRADOS
+          Aprovechamiento total del espacio visual para los viajes */}
       <section className="space-y-4 relative z-10 w-full max-w-full overflow-hidden">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
           <div>
-            <h2 className="text-lg font-bold text-[#F1F5F9] m-0 uppercase tracking-wide flex items-center gap-2">
-              <Plane className="w-5 h-5 text-[#00E5FF]" />
+            <h2 className="text-base sm:text-lg font-bold text-[#F1F5F9] m-0 uppercase tracking-wide flex items-center gap-2">
+              <Plane className="w-4 h-4 text-[#00E5FF]" />
               Viajes Registrados ({filteredViajes.length})
             </h2>
             <p className="text-xs text-[#8492A6] mt-0.5 m-0">
-              Selecciona una bitácora para ver su ruta en el mapa y el detalle de sus métricas
+              Selecciona una bitácora para gestionar su itinerario, gastos y documentos
             </p>
           </div>
 

@@ -40,7 +40,8 @@ export function WorldMapAmCharts({
   activeFlightId = null,
   onSelectFlight,
   showFlights = true,
-  multiColor = false
+  multiColor = false,
+  mapHeightClass = "h-[360px] sm:h-[460px] md:h-[540px] lg:h-[600px] xl:h-[660px]"
 }) {
   const { isDark } = useTheme();
   const chartRef = useRef(null);
@@ -712,7 +713,7 @@ export function WorldMapAmCharts({
       {/* Contenedor Div del Mapa amCharts 5 */}
       <div
         ref={chartRef}
-        className="w-full h-[360px] sm:h-[460px] md:h-[540px] lg:h-[600px] xl:h-[660px] bg-[#07090E] max-w-full overflow-hidden"
+        className={`w-full ${mapHeightClass} bg-[#07090E] max-w-full overflow-hidden`}
       />
 
       {/* Barra de Rutas de Vuelo Registradas (Pills interactivos con colores por trayecto) */}

@@ -23,7 +23,7 @@ import {
   Share2
 } from 'lucide-react';
 import WatermarkIcon from '../../../components/WatermarkIcon';
-import WorldMapAmCharts from '../../../components/WorldMapAmCharts';
+import WorldMapModal from '../../../components/WorldMapModal';
 import MiniFlag from '../../../components/MiniFlag';
 import { extractVisitedCountries, cleanCountryText } from '../../../utils/countries';
 import { extractFlightTrajectories } from '../../../utils/geoCoordinates';
@@ -206,11 +206,11 @@ export function ItinerarioView({
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
-                onClick={() => setShowMap(!showMap)}
+                onClick={() => setShowMap(true)}
                 className="px-2.5 py-1 bg-[#151B27] hover:bg-[#1E2738] border border-[#00E5FF]/40 text-[#00E5FF] font-semibold text-[11px] rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <Navigation className="w-3 h-3" />
-                <span>{showMap ? 'Ocultar Mapa' : 'Mapa'}</span>
+                <span>Ver Mapa</span>
               </button>
 
               <button
@@ -292,14 +292,21 @@ export function ItinerarioView({
             </div>
           )}
 
-          {/* Mapa Mundi amCharts renderizado cuando el usuario lo despliega */}
-          {showMap && (
-            <div className="border-t border-[#1C2436]">
-              <WorldMapAmCharts flightRoutes={flightRoutes} visitedCountries={visitedCountries} />
-            </div>
-          )}
         </div>
       )}
+
+      {/* Modal del Mapa Mundi con las rutas aéreas */}
+      <WorldMapModal
+        isOpen={showMap}
+        onClose={() => setShowMap(false)}
+        title={`Ruta Aérea: ${activeViaje?.titulo || 'Itinerario'}`}
+        subtitle="Trayectos de vuelo y escalas configuradas en este viaje"
+        badge={`${flightRoutes.length} ${flightRoutes.length === 1 ? 'trayecto' : 'trayectos'}`}
+        visitedCountries={visitedCountries}
+        flightRoutes={flightRoutes}
+        showFlights={true}
+        multiColor={false}
+      />
 
       {/* Pills de Filtrado - Scroll horizontal sin saturar */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-4 relative z-10 no-scrollbar">
