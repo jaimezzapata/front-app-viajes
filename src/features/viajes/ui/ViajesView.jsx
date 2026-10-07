@@ -12,7 +12,8 @@ import {
   MapPin,
   Clock,
   Compass,
-  CheckCircle2
+  CheckCircle2,
+  Share2
 } from 'lucide-react';
 import WorldMapAmCharts from '../../../components/WorldMapAmCharts';
 import WatermarkIcon from '../../../components/WatermarkIcon';
@@ -28,7 +29,8 @@ export function ViajesView({
   onOpenNuevoViaje,
   onEditViaje,
   onDeleteViaje,
-  onOpenBitacora
+  onOpenBitacora,
+  onCompartirViaje
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('todos'); // 'todos' | 'en_curso' | 'proximos' | 'finalizados'
@@ -401,9 +403,24 @@ export function ViajesView({
                     </div>
                   </div>
 
-                  {/* Botones de Acción (Abrir, Editar, Eliminar) */}
+                  {/* Botones de Acción (Abrir, Editar, Eliminar, Compartir) */}
                   <div className="mt-5 pt-4 border-t border-[#1C2436] flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {onCompartirViaje && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onCompartirViaje(viaje);
+                          }}
+                          title="Compartir bitácora con amigos (enlace, QR, WhatsApp)"
+                          className="px-2.5 py-1.5 rounded-lg bg-[#151B27] border border-[#1C2436] hover:border-[#00FF85] text-[#8492A6] hover:text-[#00FF85] transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
+                        >
+                          <Share2 className="w-3.5 h-3.5 text-[#00FF85]" />
+                          <span>Compartir</span>
+                        </button>
+                      )}
+
                       <button
                         onClick={(e) => {
                           e.stopPropagation();

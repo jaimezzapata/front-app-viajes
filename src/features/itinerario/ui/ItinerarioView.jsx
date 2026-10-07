@@ -19,7 +19,8 @@ import {
   Coins,
   RefreshCw,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Share2
 } from 'lucide-react';
 import WatermarkIcon from '../../../components/WatermarkIcon';
 import WorldMapAmCharts from '../../../components/WorldMapAmCharts';
@@ -57,6 +58,7 @@ export function ItinerarioView({
   onOpenNuevoViaje,
   onEditEvento,
   onDeleteEvento,
+  onCompartirViaje,
   hasConflicts = false,
   conflicts = []
 }) {
@@ -135,13 +137,27 @@ export function ItinerarioView({
           </p>
         </div>
 
-        <button
-          onClick={onAddEvento}
-          className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#00E5FF] text-[#080A0F] font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
-        >
-          <Plus className="w-4 h-4" strokeWidth={2.5} />
-          <span>Vuelo / Actividad</span>
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          {onCompartirViaje && activeViaje && (
+            <button
+              type="button"
+              onClick={() => onCompartirViaje(activeViaje)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#151B27] border border-[#1C2436] hover:border-[#00FF85] text-[#8492A6] hover:text-[#00FF85] text-xs font-semibold transition-colors cursor-pointer"
+              title="Compartir este itinerario"
+            >
+              <Share2 className="w-3.5 h-3.5 text-[#00FF85]" />
+              <span className="hidden sm:inline">Compartir</span>
+            </button>
+          )}
+
+          <button
+            onClick={onAddEvento}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#00E5FF] text-[#080A0F] font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
+          >
+            <Plus className="w-4 h-4" strokeWidth={2.5} />
+            <span>Vuelo / Actividad</span>
+          </button>
+        </div>
       </div>
 
       {/* Alerta de solapamiento / conflictos (RF 3.1) */}

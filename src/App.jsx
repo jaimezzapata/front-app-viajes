@@ -15,10 +15,12 @@ import BovedaView from './features/boveda/ui/BovedaView';
 
 // Pantallas
 import AuthScreen from './features/auth/ui/AuthScreen';
+import SharedViajeView from './features/viajes/ui/SharedViajeView';
 
 // Modales
 import AuthModal from './features/auth/ui/AuthModal';
 import NuevoViajeModal from './features/viajes/ui/NuevoViajeModal';
+import CompartirViajeModal from './features/viajes/ui/CompartirViajeModal';
 import ConfirmDeleteViajeModal from './features/viajes/ui/ConfirmDeleteViajeModal';
 import NuevoEventoModal from './features/itinerario/ui/NuevoEventoModal';
 import ConfirmDeleteEventoModal from './features/itinerario/ui/ConfirmDeleteEventoModal';
@@ -32,6 +34,18 @@ import { useTheme } from './context/ThemeContext';
 
 export function App() {
   const { theme, isDark } = useTheme();
+  // Detección de vista compartida desde parámetros URL (pública, sin requerir login)
+  const [sharedViajeParams, setSharedViajeParams] = useState(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const share = params.get('share') || params.get('viajeCompartido');
+      const shareData = params.get('shareData');
+      if (share || shareData) return { shareId: share, shareDataRaw: shareData };
+    } catch {}
+    return null;
+  });
+
   // Tras iniciar sesión o registrarse, la pantalla principal es Mis Viajes y Mapa Mundi
   const [activeTab, setActiveTab] = useState('viajes');
 
@@ -40,6 +54,7 @@ export function App() {
   const [isNuevoViajeOpen, setIsNuevoViajeOpen] = useState(false);
   const [viajeAEditar, setViajeAEditar] = useState(null);
   const [viajeAEliminar, setViajeAEliminar] = useState(null);
+  const [viajeACompartir, setViajeACompartir] = useState(null);
   const [isNuevoEventoOpen, setIsNuevoEventoOpen] = useState(false);
   const [eventoAEditar, setEventoAEditar] = useState(null);
   const [eventoAEliminar, setEventoAEliminar] = useState(null);
@@ -69,6 +84,37 @@ export function App() {
     handleSaveGasto,
     handleSaveDocumento
   } = useAppViajes(usuario);
+
+  // Si se abre un enlace público de viaje compartido, se renderiza la vista pública sin exigir login
+  if (sharedViajeParams) {
+    return (
+      <>
+        <Toaster
+          position="top-right"
+          theme={theme}
+          toastOptions={{
+            style: {
+              background: isDark ? '#0E121B' : '#FFFFFF',
+              border: isDark ? '1px solid #1C2436' : '1px solid #E2E8F0',
+              color: isDark ? '#F1F5F9' : '#0F172A'
+            }
+          }}
+        />
+        <SharedViajeView
+          shareId={sharedViajeParams.shareId}
+          shareDataRaw={sharedViajeParams.shareDataRaw}
+          onExit={() => {
+            window.history.replaceState({}, '', window.location.pathname);
+            setSharedViajeParams(null);
+          }}
+          onGoToApp={() => {
+            window.history.replaceState({}, '', window.location.pathname);
+            setSharedViajeParams(null);
+          }}
+        />
+      </>
+    );
+  }
 
   // Si no hay usuario autenticado, la pantalla principal es obligatoriamente el inicio de sesión / registro
   // y se protegen todas las rutas, vistas y navegación de la bitácora
@@ -130,6 +176,7 @@ export function App() {
             setIsNuevoViajeOpen(true);
           }}
           onDeleteViaje={(viaje) => setViajeAEliminar(viaje)}
+          onCompartirViaje={(viaje) => setViajeACompartir(viaje)}
           isOnline={isOnline}
           usuario={usuario}
           onOpenAuth={() => setIsAuthOpen(true)}
@@ -163,6 +210,7 @@ export function App() {
                 const target = typeof viaje === 'string' ? viajes.find(v => v.id === viaje) : viaje;
                 setViajeAEliminar(target || { id: viaje, titulo: 'este viaje' });
               }}
+              onCompartirViaje={(viaje) => setViajeACompartir(viaje)}
             />
           )}
 
@@ -185,6 +233,7 @@ export function App() {
               onDeleteEvento={(evento) => {
                 setEventoAEliminar(evento);
               }}
+              onCompartirViaje={(viaje) => setViajeACompartir(viaje)}
             />
           )}
 
@@ -249,6 +298,18 @@ export function App() {
         onSaveViaje={handleSaveViaje}
         viajeAEditar={viajeAEditar}
         onUpdateViaje={handleUpdateViaje}
+      />
+
+      <CompartirViajeModal
+        isOpen={Boolean(viajeACompartir)}
+        onClose={() => setViajeACompartir(null)}
+        viaje={viajeACompartir}
+        eventos={viajeACompartir?.id === activeViajeId ? eventos : []}
+        gastos={viajeACompartir?.id === activeViajeId ? gastos : []}
+        onOpenPreview={(v) => {
+          setViajeACompartir(null);
+          setSharedViajeParams({ shareId: v.id });
+        }}
       />
 
       <ConfirmDeleteViajeModal

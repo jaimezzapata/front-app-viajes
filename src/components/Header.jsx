@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plane, Wifi, WifiOff, User, Plus, Globe2, Edit2, Trash2, MoreVertical, X } from 'lucide-react';
+import { Plane, Wifi, WifiOff, User, Plus, Globe2, Edit2, Trash2, MoreVertical, X, Share2 } from 'lucide-react';
 import { cleanCountryText, fixAccents } from '../utils/countries';
 import MiniFlag from './MiniFlag';
 import ThemeToggle from './ThemeToggle';
@@ -11,6 +11,7 @@ export function Header({
   onNewViaje,
   onEditViaje,
   onDeleteViaje,
+  onCompartirViaje,
   isOnline = true,
   usuario,
   onOpenAuth,
@@ -68,6 +69,16 @@ export function Header({
                 </button>
 
                 {/* Acciones de viaje en Desktop */}
+                {activeViaje && onCompartirViaje && (
+                  <button
+                    onClick={() => onCompartirViaje(activeViaje)}
+                    title="Compartir Bitácora de Viaje"
+                    className="hidden sm:inline-flex p-1 sm:p-1.5 rounded bg-[#151B27] border border-[#1C2436] hover:border-[#00FF85] text-[#8492A6] hover:text-[#00FF85] transition-colors cursor-pointer shrink-0"
+                  >
+                    <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2} />
+                  </button>
+                )}
+
                 {activeViaje && onEditViaje && (
                   <button
                     onClick={() => onEditViaje(activeViaje)}
@@ -165,6 +176,19 @@ export function Header({
             {/* Menú Desplegable Móvil */}
             {showMobileMenu && (
               <div className="absolute right-0 top-full mt-2 w-48 bg-[#0E121B] border border-[#1C2436] rounded-xl shadow-2xl p-1.5 z-50 flex flex-col gap-1 text-xs animate-in fade-in slide-in-from-top-2 duration-150">
+                {activeViaje && onCompartirViaje && (
+                  <button
+                    onClick={() => {
+                      setShowMobileMenu(false);
+                      onCompartirViaje(activeViaje);
+                    }}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[#00FF85] hover:bg-[#151B27] text-left cursor-pointer transition-colors"
+                  >
+                    <Share2 className="w-3.5 h-3.5 text-[#00FF85]" />
+                    <span>Compartir Viaje</span>
+                  </button>
+                )}
+
                 {activeViaje && onEditViaje && (
                   <button
                     onClick={() => {
