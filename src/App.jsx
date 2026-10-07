@@ -198,6 +198,10 @@ export function App() {
               viajes={viajes}
               activeViajeId={activeViajeId}
               eventos={eventos}
+              gastos={gastos}
+              documentos={documentos}
+              balance={balance}
+              onSelectTab={setActiveTab}
               onSelectViaje={(id) => {
                 setActiveViajeId(id);
               }}

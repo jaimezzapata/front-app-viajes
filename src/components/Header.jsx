@@ -52,9 +52,18 @@ export function Header({
               <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                 <select
                   value={activeViaje?.id || ''}
-                  onChange={(e) => onSelectViaje(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (!val) {
+                      onSelectViaje(null);
+                      if (onSelectTab) onSelectTab('viajes');
+                    } else {
+                      onSelectViaje(val);
+                    }
+                  }}
                   className="bg-[#151B27] text-[#F1F5F9] text-xs sm:text-sm font-semibold border border-[#1C2436] rounded px-2 sm:px-2.5 py-1 focus:outline-none focus:border-[#00E5FF] truncate cursor-pointer max-w-[125px] xs:max-w-[180px] sm:max-w-[280px]"
                 >
+                  <option value="">🌐 Resumen Global</option>
                   {viajes.map((v) => (
                     <option key={v.id} value={v.id}>
                       {fixAccents(v.titulo)} ({cleanCountryText(v.destino)})
@@ -125,7 +134,7 @@ export function Header({
             )}
 
             {/* Subtítulo limpio en móvil y desktop */}
-            {activeViaje && (
+            {activeViaje ? (
               <p className="text-[10px] sm:text-[11px] text-[#8492A6] m-0 mt-0.5 truncate flex items-center gap-1 sm:gap-1.5">
                 <span>{new Date(activeViaje.fechaInicio).toLocaleDateString()} - {new Date(activeViaje.fechaFin).toLocaleDateString()}</span>
                 <span>•</span>
@@ -133,6 +142,10 @@ export function Header({
                   <MiniFlag country={activeViaje.destino} className="w-3.5 h-2.5 sm:w-4 sm:h-2.5 shrink-0" />
                   <span className="text-[#F1F5F9] font-medium truncate">{cleanCountryText(activeViaje.destino)}</span>
                 </span>
+              </p>
+            ) : (
+              <p className="text-[10px] sm:text-[11px] text-[#00E5FF] m-0 mt-0.5 truncate">
+                Resumen Global • Exploración de Destinos
               </p>
             )}
           </div>
