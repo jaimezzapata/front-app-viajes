@@ -1,4 +1,4 @@
-import { COUNTRIES, getFlagEmoji, detectCountry, cleanCountryText, fixAccents } from '../utils/countries';
+import { COUNTRIES, getFlagEmoji, detectCountry, cleanCountryText, fixAccents } from '../utils/countries.js';
 
 const COUNTRIES_API = 'https://countriesnow.space/api/v0.1/countries';
 const AIRPORTS_API = 'https://raw.githubusercontent.com/algolia/datasets/master/airports/airports.json';
@@ -57,8 +57,12 @@ export function stripMiniFlag(text) {
 export function formatWithMiniFlag(countryName, isoCode) {
   if (!countryName) return '';
   const clean = cleanCountryText(countryName);
-  const detected = detectCountry(isoCode || clean);
-  const flag = detected?.flag || (isoCode ? getFlagEmoji(isoCode) : '🌍');
+  const detected = (isoCode && isoCode.length === 2)
+    ? detectCountry(isoCode)
+    : detectCountry(clean);
+  const flag = (isoCode && isoCode.length === 2)
+    ? getFlagEmoji(isoCode)
+    : (detected?.flag || '🌍');
   return `${flag} ${clean}`;
 }
 

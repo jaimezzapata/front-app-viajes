@@ -109,7 +109,36 @@ export function detectCountry(query) {
     }
   }
 
-  // 1. Detección por código de aeropuerto IATA (ej. MDE, MAD, ICN, ICH, BOG, MIA, DOH, IST) o ciudad conocida
+  const clean = normalize(query.replace(/^([\uD83C][\uDDE6-\uDDFF]){2}\s*/u, ''));
+  if (!clean) return null;
+
+  // 1. Coincidencia exacta por código ISO-2 (ej. "BR", "CO", "ES", "US", "CH", "FR", "DE", "IT")
+  if (clean.length === 2) {
+    const byCode = COUNTRIES.find(c => c.code.toLowerCase() === clean);
+    if (byCode) {
+      return { ...byCode, flag: getFlagEmoji(byCode.code) };
+    }
+  }
+
+  // 2. Coincidencia por nombre en Español o Inglés (ej. "Brasil", "Brazil", "Colombia", "Suiza")
+  const byName = COUNTRIES.find(c => {
+    const normEs = normalize(c.es);
+    const normEn = normalize(c.en);
+    return normEs === clean || normEn === clean;
+  });
+  if (byName) {
+    return { ...byName, flag: getFlagEmoji(byName.code) };
+  }
+
+  // 3. Coincidencia exacta por alias oficial (ej. "bra", "col", "jpn", "usa")
+  const byAlias = COUNTRIES.find(c =>
+    c.aliases && c.aliases.some(alias => normalize(alias) === clean)
+  );
+  if (byAlias) {
+    return { ...byAlias, flag: getFlagEmoji(byAlias.code) };
+  }
+
+  // 4. Detección por código de aeropuerto IATA (ej. MDE, MAD, ICN, BOG, MIA, DOH, IST) o ciudad conocida
   const airportMatch = findAirport(query);
   if (airportMatch && airportMatch.countryCode) {
     const byIso = COUNTRIES.find(c => c.code === airportMatch.countryCode);
@@ -122,33 +151,6 @@ export function detectCountry(query) {
       en: airportMatch.country,
       flag: getFlagEmoji(airportMatch.countryCode)
     };
-  }
-
-  const clean = normalize(query.replace(/^([\uD83C][\uDDE6-\uDDFF]){2}\s*/u, ''));
-  if (!clean) return null;
-
-  // 2. Coincidencia exacta por código ISO
-  const byCode = COUNTRIES.find(c => c.code.toLowerCase() === clean);
-  if (byCode) {
-    return { ...byCode, flag: getFlagEmoji(byCode.code) };
-  }
-
-  // 3. Coincidencia por nombre en Español o Inglés
-  const byName = COUNTRIES.find(c => {
-    const normEs = normalize(c.es);
-    const normEn = normalize(c.en);
-    return normEs === clean || normEn === clean;
-  });
-  if (byName) {
-    return { ...byName, flag: getFlagEmoji(byName.code) };
-  }
-
-  // 4. Coincidencia por alias
-  const byAlias = COUNTRIES.find(c =>
-    c.aliases && c.aliases.some(alias => normalize(alias) === clean)
-  );
-  if (byAlias) {
-    return { ...byAlias, flag: getFlagEmoji(byAlias.code) };
   }
 
   // 5. Búsqueda por subcadena / inclusión (ej. "Bogotá, Colombia" o "Tokyo, Japan")

@@ -84,11 +84,11 @@ export function CountryInput({
     .slice(0, 10);
 
   const handleSelect = (c) => {
-    const formatted = saveWithMiniFlag
-      ? formatWithMiniFlag(c.name, c.code)
-      : c.name;
-    onChange(formatted);
-    setFilter(formatted);
+    // Almacenar el nombre limpio del país (ej. "Brasil", "Colombia") evitando artefactos
+    // de texto de bandera regional en Windows ("CH Brasil", "BR Brasil")
+    const selectedName = c.name;
+    onChange(selectedName);
+    setFilter(selectedName);
     setIsOpen(false);
   };
 

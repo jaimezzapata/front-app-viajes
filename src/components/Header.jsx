@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plane, Wifi, WifiOff, User, Plus, Globe2, Edit2, Trash2, MoreVertical, X, Share2, LogOut } from 'lucide-react';
+import { Plane, Wifi, WifiOff, User, Plus, Globe2, Edit2, Trash2, MoreVertical, X, Share2, LogOut, RefreshCw } from 'lucide-react';
 import { cleanCountryText, fixAccents } from '../utils/countries';
 import MiniFlag from './MiniFlag';
 import ThemeToggle from './ThemeToggle';
@@ -17,7 +17,8 @@ export function Header({
   onOpenAuth,
   onLogout,
   activeTab,
-  onSelectTab
+  onSelectTab,
+  onOpenSyncClean
 }) {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const menuRef = useRef(null);
@@ -38,7 +39,7 @@ export function Header({
   }, [showMobileMenu]);
 
   return (
-    <header className="bg-[#0E121B] border-b border-[#1C2436] px-2.5 sm:px-4 py-2 sm:py-2.5 sticky top-0 z-30 w-full max-w-full overflow-hidden">
+    <header className="bg-[#0E121B] border-b border-[#1C2436] px-2.5 sm:px-4 py-2 sm:py-2.5 sticky top-0 z-30 w-full max-w-full">
       <div className="max-w-[1700px] w-full mx-auto flex items-center justify-between gap-1.5 sm:gap-3 min-w-0">
         {/* Selector de Viaje Activo */}
         <div className="flex items-center gap-1.5 sm:gap-3 min-w-0 flex-1">
@@ -159,6 +160,17 @@ export function Header({
             <span className="hidden sm:inline">{isOnline ? 'Online' : 'Offline'}</span>
           </div>
 
+          {/* Botón de Sincronización y Limpieza de Caché Local */}
+          {onOpenSyncClean && (
+            <button
+              onClick={onOpenSyncClean}
+              title="Sincronizar con Base de Datos y Limpiar Caché Local"
+              className="p-1.5 sm:p-2 rounded-lg bg-[#151B27] border border-[#1C2436] hover:border-[#00FF85] text-[#8492A6] hover:text-[#00FF85] transition-all cursor-pointer shrink-0 flex items-center justify-center group"
+            >
+              <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:rotate-180 transition-transform duration-500" />
+            </button>
+          )}
+
           {/* Botón de opciones móviles (Dropdown de acciones) */}
           <div className="relative sm:hidden" ref={menuRef}>
             <button
@@ -176,7 +188,33 @@ export function Header({
 
             {/* Menú Desplegable Móvil */}
             {showMobileMenu && (
-              <div className="absolute right-0 top-full mt-2 w-48 bg-[#0E121B] border border-[#1C2436] rounded-xl shadow-2xl p-1.5 z-50 flex flex-col gap-1 text-xs animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="absolute right-0 top-full mt-2 w-52 bg-[#0E121B] border border-[#1C2436] rounded-xl shadow-2xl p-1.5 z-50 flex flex-col gap-1 text-xs animate-in fade-in slide-in-from-top-2 duration-150">
+                {onOpenSyncClean && (
+                  <button
+                    onClick={() => {
+                      setShowMobileMenu(false);
+                      onOpenSyncClean();
+                    }}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[#00E5FF] hover:bg-[#151B27] text-left cursor-pointer transition-colors font-medium"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 text-[#00E5FF]" />
+                    <span>Sincronizar y Limpiar Caché</span>
+                  </button>
+                )}
+
+                {onNewViaje && (
+                  <button
+                    onClick={() => {
+                      setShowMobileMenu(false);
+                      onNewViaje();
+                    }}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[#00FF85] hover:bg-[#151B27] text-left cursor-pointer transition-colors font-medium"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Crear Nuevo Viaje</span>
+                  </button>
+                )}
+
                 {activeViaje && onCompartirViaje && (
                   <button
                     onClick={() => {
@@ -239,7 +277,7 @@ export function Header({
                   className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[#8492A6] hover:bg-[#151B27] hover:text-[#F1F5F9] text-left cursor-pointer transition-colors"
                 >
                   <User className="w-3.5 h-3.5 text-[#00FF85]" />
-                  <span className="truncate">{usuario ? usuario.nombre : 'Perfil'}</span>
+                  <span className="truncate">{usuario ? usuario.nombre : 'Iniciar Sesión / Perfil'}</span>
                 </button>
 
                 {usuario && onLogout && (
@@ -258,7 +296,7 @@ export function Header({
             )}
           </div>
 
-          {/* Botones de usuario y cerrar sesión en modo responsive (< 768px) */}
+          {/* Botones de usuario y cerrar sesión en modo tablet (640px a 768px) */}
           <button
             onClick={onOpenAuth}
             className="hidden sm:flex md:hidden p-1.5 rounded-lg bg-[#151B27] border border-[#1C2436] text-[#00FF85]"
@@ -270,7 +308,7 @@ export function Header({
           {usuario && onLogout && (
             <button
               onClick={onLogout}
-              className="p-1.5 rounded-lg bg-[#151B27] border border-[#1C2436] hover:border-[#FF2E55] text-[#8492A6] hover:text-[#FF2E55] transition-colors cursor-pointer shrink-0 md:hidden flex items-center justify-center"
+              className="p-1.5 rounded-lg bg-[#151B27] border border-[#1C2436] hover:border-[#FF2E55] text-[#8492A6] hover:text-[#FF2E55] transition-colors cursor-pointer shrink-0 hidden sm:flex md:hidden items-center justify-center"
               title="Cerrar Sesión"
             >
               <LogOut className="w-4 h-4 text-[#FF2E55]" strokeWidth={2.2} />

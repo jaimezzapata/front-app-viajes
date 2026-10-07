@@ -16,6 +16,24 @@ export function useAuth() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Reconciliación en segundo plano: si el usuario inició sesión de modo local/offline,
+  // sincronizarlo automáticamente con la base de datos de Supabase en cuanto haya conexión.
+  useEffect(() => {
+    if (usuario && (usuario.isLocal || (typeof usuario.id === 'string' && usuario.id.startsWith('offline-'))) && usuario.email) {
+      apiRequest('/auth/login-or-register', {
+        method: 'POST',
+        body: JSON.stringify({ nombre: usuario.nombre, email: usuario.email })
+      }).then(res => {
+        if (res && res.id && !res.id.startsWith('offline-')) {
+          setUsuario(res);
+          localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(res));
+        }
+      }).catch(() => {
+        // Continuar en modo local si el servidor sigue inaccesible
+      });
+    }
+  }, [usuario]);
+
   const loginOrRegister = async ({ nombre, email }) => {
     setLoading(true);
     setError(null);

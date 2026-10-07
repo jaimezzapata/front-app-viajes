@@ -1,10 +1,10 @@
 import React from 'react';
-import { Compass, User, Globe2, LogOut } from 'lucide-react';
+import { Compass, User, Globe2, LogOut, RefreshCw } from 'lucide-react';
 import { TABS } from './BottomNav';
 import WatermarkIcon from './WatermarkIcon';
 import ThemeToggle from './ThemeToggle';
 
-export function SidebarNav({ activeTab, onSelectTab, usuario, onOpenAuth, onLogout }) {
+export function SidebarNav({ activeTab, onSelectTab, usuario, onOpenAuth, onLogout, onOpenSyncClean }) {
   return (
     <aside className="hidden md:flex flex-col w-64 bg-[#0E121B] border-r border-[#1C2436] min-h-screen p-5 select-none relative overflow-hidden shrink-0">
       {/* Marca de agua sólida en el sidebar */}
@@ -56,6 +56,23 @@ export function SidebarNav({ activeTab, onSelectTab, usuario, onOpenAuth, onLogo
           </span>
           <ThemeToggle size="sm" showLabel={true} />
         </div>
+
+        {/* Botón de Sincronización y Limpieza de Caché */}
+        {onOpenSyncClean && (
+          <button
+            onClick={onOpenSyncClean}
+            title="Sincronizar con Base de Datos y Limpiar Caché Local"
+            className="flex items-center justify-between px-3 py-2 rounded-lg bg-[#151B27] border border-[#1C2436] hover:border-[#00FF85] text-[#8492A6] hover:text-[#00FF85] transition-all text-xs font-semibold cursor-pointer w-full group"
+          >
+            <span className="flex items-center gap-2">
+              <RefreshCw className="w-3.5 h-3.5 text-[#00E5FF] group-hover:rotate-180 transition-transform duration-500" />
+              <span>Sincronizar BD</span>
+            </span>
+            <span className="text-[10px] text-[#00FF85] bg-[#00FF85]/10 px-1.5 py-0.5 rounded font-mono">
+              Nube
+            </span>
+          </button>
+        )}
 
         <div className="flex items-center gap-1.5">
           <button

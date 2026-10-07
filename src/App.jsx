@@ -26,6 +26,7 @@ import NuevoEventoModal from './features/itinerario/ui/NuevoEventoModal';
 import ConfirmDeleteEventoModal from './features/itinerario/ui/ConfirmDeleteEventoModal';
 import NuevoGastoModal from './features/billetera/ui/NuevoGastoModal';
 import NuevoDocModal from './features/boveda/ui/NuevoDocModal';
+import SyncCleanModal from './features/viajes/ui/SyncCleanModal';
 
 // Custom Hooks
 import { useAuth } from './features/auth/use-cases/useAuth';
@@ -60,6 +61,7 @@ export function App() {
   const [eventoAEliminar, setEventoAEliminar] = useState(null);
   const [isNuevoGastoOpen, setIsNuevoGastoOpen] = useState(false);
   const [isNuevoDocOpen, setIsNuevoDocOpen] = useState(false);
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
   // Hook de autenticación simple (nombre y correo)
   const { usuario, loginOrRegister, logout } = useAuth();
@@ -82,7 +84,8 @@ export function App() {
     handleUpdateEvento,
     handleDeleteEvento,
     handleSaveGasto,
-    handleSaveDocumento
+    handleSaveDocumento,
+    handleSyncAndClearLocal
   } = useAppViajes(usuario);
 
   // Si se abre un enlace público de viaje compartido, se renderiza la vista pública sin exigir login
@@ -159,6 +162,7 @@ export function App() {
         usuario={usuario}
         onOpenAuth={() => setIsAuthOpen(true)}
         onLogout={logout}
+        onOpenSyncClean={() => setIsSyncModalOpen(true)}
       />
 
       {/* Contenedor Principal */}
@@ -184,6 +188,7 @@ export function App() {
           onLogout={logout}
           activeTab={activeTab}
           onSelectTab={setActiveTab}
+          onOpenSyncClean={() => setIsSyncModalOpen(true)}
         />
 
         {/* Área de Contenido por Tab con Contenedor Responsivo Ampliado (max-w-[1700px] en PC) */}
@@ -357,6 +362,13 @@ export function App() {
         isOpen={isNuevoDocOpen}
         onClose={() => setIsNuevoDocOpen(false)}
         onSaveDocumento={handleSaveDocumento}
+      />
+
+      {/* Modal de Sincronización y Limpieza de Caché Local */}
+      <SyncCleanModal
+        isOpen={isSyncModalOpen}
+        onClose={() => setIsSyncModalOpen(false)}
+        onConfirmSync={handleSyncAndClearLocal}
       />
     </div>
   );

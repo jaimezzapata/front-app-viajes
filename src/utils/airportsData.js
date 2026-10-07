@@ -169,14 +169,14 @@ export function findAirport(query) {
   // 4. Coincidencia por ciudad
   const matchByCity = AIRPORTS_AND_CITIES.find(a => {
     const normCity = normalizeAirportStr(a.city);
-    return normCity === norm || norm.includes(normCity) || normCity.includes(norm);
+    return normCity === norm || (norm.length >= 4 && normCity.startsWith(norm)) || (norm.length >= normCity.length && norm.includes(normCity));
   });
   if (matchByCity) return matchByCity;
 
   // 5. Coincidencia por nombre de aeropuerto
   const matchByName = AIRPORTS_AND_CITIES.find(a => {
     const normName = normalizeAirportStr(a.name);
-    return normName === norm || norm.includes(normName) || normName.includes(norm);
+    return normName === norm || (norm.length >= 4 && normName.startsWith(norm)) || (norm.length >= normName.length && norm.includes(normName));
   });
   if (matchByName) return matchByName;
 
