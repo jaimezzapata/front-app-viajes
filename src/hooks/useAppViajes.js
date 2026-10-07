@@ -16,11 +16,19 @@ export function repairViaje(v) {
   };
 }
 
+export function getUserStorageKey(user) {
+  if (!user) return null;
+  const identifier = user.email ? user.email.trim().toLowerCase() : (user.id || null);
+  return identifier ? `app_viajes_lista_${identifier}` : null;
+}
+
 export function useAppViajes(usuario) {
-  // Inicializar exclusivamente con datos reales guardados localmente (limpiando y reparando tildes/formatos)
+  // Inicializar exclusivamente con datos reales guardados localmente para este usuario
   const [viajes, setViajes] = useState(() => {
     try {
-      const saved = localStorage.getItem('app_viajes_lista');
+      const key = getUserStorageKey(usuario);
+      if (!key) return [];
+      const saved = localStorage.getItem(key);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
@@ -33,21 +41,7 @@ export function useAppViajes(usuario) {
     }
   });
 
-  const [activeViajeId, setActiveViajeId] = useState(() => {
-    try {
-      const saved = localStorage.getItem('app_viajes_lista');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          const real = parsed.filter(v => v.id && v.id !== 'viaje-demo-tokyo');
-          return real[0]?.id || null;
-        }
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  });
+  const [activeViajeId, setActiveViajeId] = useState(null);
 
   const activeViaje = viajes.find(v => v.id === activeViajeId) || viajes[0] || null;
 
@@ -122,23 +116,53 @@ export function useAppViajes(usuario) {
       localStorage.removeItem('app_viajes_eventos_viaje-demo-tokyo');
       localStorage.removeItem('app_viajes_gastos_viaje-demo-tokyo');
       localStorage.removeItem('app_viajes_docs_viaje-demo-tokyo');
+    } catch {}
+  }, []);
 
-      const saved = localStorage.getItem('app_viajes_lista');
+  // Sincronizar estado local al cambiar de usuario (evita ver viajes de otros usuarios)
+  useEffect(() => {
+    if (!usuario) {
+      setViajes([]);
+      setActiveViajeId(null);
+      setEventos([]);
+      setGastos([]);
+      setDocumentos([]);
+      return;
+    }
+
+    const key = getUserStorageKey(usuario);
+    if (!key) return;
+
+    try {
+      const saved = localStorage.getItem(key);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          const repaired = parsed
-            .filter(v => v.id !== 'viaje-demo-tokyo')
-            .map(repairViaje);
-          localStorage.setItem('app_viajes_lista', JSON.stringify(repaired));
-          setViajes(repaired);
-          if (activeViajeId === 'viaje-demo-tokyo' || !activeViajeId) {
-            setActiveViajeId(repaired[0]?.id || null);
+          const userTrips = parsed.filter(v => v.id && v.id !== 'viaje-demo-tokyo').map(repairViaje);
+          setViajes(userTrips);
+          return;
+        }
+      }
+
+      // Si no hay viajes guardados bajo la clave del usuario pero existe una lista heredada anterior
+      const legacy = localStorage.getItem('app_viajes_lista');
+      if (legacy) {
+        const parsedLegacy = JSON.parse(legacy);
+        if (Array.isArray(parsedLegacy)) {
+          const owned = parsedLegacy.filter(v => !v.usuarioId || v.usuarioId === usuario.id);
+          if (owned.length > 0) {
+            const repaired = owned.map(repairViaje);
+            setViajes(repaired);
+            localStorage.setItem(key, JSON.stringify(repaired));
+            return;
           }
         }
       }
-    } catch {}
-  }, []);
+      setViajes([]);
+    } catch {
+      setViajes([]);
+    }
+  }, [usuario?.id, usuario?.email]);
 
   // Monitorear estado de red con Sonner Toasts (REGLAS 1.2)
   useEffect(() => {
@@ -159,10 +183,13 @@ export function useAppViajes(usuario) {
     };
   }, []);
 
-  // Sincronizar persistencia local
+  // Sincronizar persistencia local estrictamente por usuario
   useEffect(() => {
-    localStorage.setItem('app_viajes_lista', JSON.stringify(viajes));
-  }, [viajes]);
+    const key = getUserStorageKey(usuario);
+    if (key) {
+      localStorage.setItem(key, JSON.stringify(viajes));
+    }
+  }, [viajes, usuario]);
 
   // Cargar datos locales al cambiar de viaje activo y auto-reconciliar
   useEffect(() => {
@@ -222,12 +249,14 @@ export function useAppViajes(usuario) {
 
   // Cargar datos reales desde la API (Base de Datos Real)
   const fetchViajeData = useCallback(async () => {
-    if (!navigator.onLine) return;
+    if (!navigator.onLine || !usuario) return;
 
     try {
-      // 1. Sincronizar automáticamente hacia el servidor cualquier viaje local creado offline
+      const storageKey = getUserStorageKey(usuario);
+
+      // 1. Sincronizar automáticamente hacia el servidor cualquier viaje local creado offline para este usuario
       try {
-        const rawLocalList = localStorage.getItem('app_viajes_lista');
+        const rawLocalList = storageKey ? localStorage.getItem(storageKey) : null;
         const localSavedList = rawLocalList ? JSON.parse(rawLocalList) : [];
         const pendingLocalViajes = Array.isArray(localSavedList)
           ? localSavedList.filter(v => typeof v.id === 'string' && v.id.startsWith('viaje-local-'))
@@ -242,7 +271,8 @@ export function useAppViajes(usuario) {
             method: 'POST',
             body: JSON.stringify({
               ...viajePayload,
-              usuarioId: validUid
+              usuarioId: validUid,
+              usuarioEmail: usuario.email || null
             })
           });
           const createdViaje = repairViaje(res?.data || res);
@@ -276,16 +306,25 @@ export function useAppViajes(usuario) {
         console.warn('Error sincronizando viajes offline:', syncErr);
       }
 
-      // 2. Obtener la lista oficial desde la base de datos
-      const queryParam = (usuario?.id && typeof usuario.id === 'string' && !usuario.id.startsWith('offline-')) ? `?usuarioId=${usuario.id}` : '';
-      const dataViajes = await apiRequest(`/viajes${queryParam}`);
+      // 2. Obtener la lista oficial exclusivamente para este usuario desde la base de datos
+      const queryParams = [];
+      if (usuario.id && typeof usuario.id === 'string' && !usuario.id.startsWith('offline-')) {
+        queryParams.push(`usuarioId=${encodeURIComponent(usuario.id)}`);
+      }
+      if (usuario.email) {
+        queryParams.push(`email=${encodeURIComponent(usuario.email.trim().toLowerCase())}`);
+      }
+
+      const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
+      const dataViajes = await apiRequest(`/viajes${queryString}`);
+
       if (Array.isArray(dataViajes)) {
         const cleanViajes = dataViajes
           .filter(v => v.id && v.id !== 'viaje-demo-tokyo')
           .map(repairViaje);
 
         // Preservar cualquier viaje local pendiente que no haya terminado de subir
-        const rawCurrent = localStorage.getItem('app_viajes_lista');
+        const rawCurrent = storageKey ? localStorage.getItem(storageKey) : null;
         const currentLocal = rawCurrent ? JSON.parse(rawCurrent) : [];
         const stillPending = Array.isArray(currentLocal)
           ? currentLocal.filter(v => typeof v.id === 'string' && v.id.startsWith('viaje-local-'))
@@ -294,14 +333,15 @@ export function useAppViajes(usuario) {
         const combinedViajes = [...stillPending, ...cleanViajes.filter(cv => !stillPending.some(sp => sp.id === cv.id))];
 
         setViajes(combinedViajes);
-        localStorage.setItem('app_viajes_lista', JSON.stringify(combinedViajes));
+        if (storageKey) {
+          localStorage.setItem(storageKey, JSON.stringify(combinedViajes));
+        }
 
         if (combinedViajes.length > 0) {
-          if (!activeViajeId || !combinedViajes.some(v => v.id === activeViajeId)) {
-            setActiveViajeId(combinedViajes[0].id);
+          if (activeViajeId && !combinedViajes.some(v => v.id === activeViajeId)) {
+            setActiveViajeId(null);
           }
         } else {
-          // Si no hay ningún viaje en la base de datos real, dejar todo vacío
           setActiveViajeId(null);
           setEventos([]);
           setGastos([]);
@@ -322,7 +362,7 @@ export function useAppViajes(usuario) {
     } catch {
       // Usar datos offline en IndexedDB / localStorage
     }
-  }, [activeViajeId, usuario?.id]);
+  }, [activeViajeId, usuario?.id, usuario?.email]);
 
   useEffect(() => {
     fetchViajeData();
@@ -442,11 +482,17 @@ export function useAppViajes(usuario) {
           method: 'POST',
           body: JSON.stringify({
             ...nuevoViajeData,
-            usuarioId: validUid
+            usuarioId: validUid,
+            usuarioEmail: usuario?.email || null
           })
         });
         savedViaje = repairViaje(res?.data || res);
-        setViajes(prev => [savedViaje, ...prev.filter(v => v.id !== savedViaje.id)]);
+        setViajes(prev => {
+          const updated = [savedViaje, ...prev.filter(v => v.id !== savedViaje.id)];
+          const key = getUserStorageKey(usuario);
+          if (key) localStorage.setItem(key, JSON.stringify(updated));
+          return updated;
+        });
         setActiveViajeId(savedViaje.id);
         toast.success('Viaje configurado y sincronizado con éxito');
       }
@@ -459,9 +505,15 @@ export function useAppViajes(usuario) {
       savedViaje = repairViaje({
         ...nuevoViajeData,
         id: 'viaje-local-' + Date.now(),
-        usuarioId: usuario?.id
+        usuarioId: usuario?.id,
+        usuarioEmail: usuario?.email
       });
-      setViajes(prev => [savedViaje, ...prev.filter(v => v.id !== savedViaje.id)]);
+      setViajes(prev => {
+        const updated = [savedViaje, ...prev.filter(v => v.id !== savedViaje.id)];
+        const key = getUserStorageKey(usuario);
+        if (key) localStorage.setItem(key, JSON.stringify(updated));
+        return updated;
+      });
       setActiveViajeId(savedViaje.id);
       toast.info('Configuración guardada localmente (Modo Offline).');
     }
@@ -794,7 +846,8 @@ export function useAppViajes(usuario) {
 
     try {
       // 1. Sincronizar hacia el servidor cualquier viaje local creado offline previamente
-      const rawLocalList = localStorage.getItem('app_viajes_lista');
+      const storageKey = getUserStorageKey(usuario);
+      const rawLocalList = storageKey ? localStorage.getItem(storageKey) : localStorage.getItem('app_viajes_lista');
       const localSavedList = rawLocalList ? JSON.parse(rawLocalList) : [];
       const pendingLocalViajes = Array.isArray(localSavedList)
         ? localSavedList.filter(v => typeof v.id === 'string' && v.id.startsWith('viaje-local-'))
@@ -807,7 +860,8 @@ export function useAppViajes(usuario) {
           method: 'POST',
           body: JSON.stringify({
             ...viajePayload,
-            usuarioId: usuario?.id
+            usuarioId: usuario?.id,
+            usuarioEmail: usuario?.email || null
           })
         });
         const createdViaje = repairViaje(res?.data || res);
@@ -850,6 +904,7 @@ export function useAppViajes(usuario) {
         if (
           k &&
           (k === 'app_viajes_lista' ||
+            k.startsWith('app_viajes_lista_') ||
             k.startsWith('app_viajes_eventos_') ||
             k.startsWith('app_viajes_gastos_') ||
             k.startsWith('app_viajes_docs_') ||
