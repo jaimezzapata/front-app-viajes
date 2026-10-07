@@ -225,6 +225,56 @@ export function useAppViajes(usuario) {
     if (!navigator.onLine) return;
 
     try {
+      // 1. Sincronizar automáticamente hacia el servidor cualquier viaje local creado offline
+      try {
+        const rawLocalList = localStorage.getItem('app_viajes_lista');
+        const localSavedList = rawLocalList ? JSON.parse(rawLocalList) : [];
+        const pendingLocalViajes = Array.isArray(localSavedList)
+          ? localSavedList.filter(v => typeof v.id === 'string' && v.id.startsWith('viaje-local-'))
+          : [];
+
+        for (const localV of pendingLocalViajes) {
+          const oldId = localV.id;
+          const { id: _, ...viajePayload } = localV;
+          const res = await apiRequest('/viajes', {
+            method: 'POST',
+            body: JSON.stringify({
+              ...viajePayload,
+              usuarioId: usuario?.id
+            })
+          });
+          const createdViaje = repairViaje(res?.data || res);
+
+          // Subir itinerario local asociado si existe
+          const localEvs = JSON.parse(localStorage.getItem(`app_viajes_eventos_${oldId}`) || '[]');
+          for (const ev of localEvs) {
+            const { id: _, ...evPayload } = ev;
+            await apiRequest(`/viajes/${createdViaje.id}/itinerario`, {
+              method: 'POST',
+              body: JSON.stringify(evPayload)
+            }).catch(() => null);
+          }
+
+          // Subir gastos locales asociados si existen
+          const localGs = JSON.parse(localStorage.getItem(`app_viajes_gastos_${oldId}`) || '[]');
+          for (const g of localGs) {
+            const { id: _, ...gPayload } = g;
+            await apiRequest(`/viajes/${createdViaje.id}/gastos`, {
+              method: 'POST',
+              body: JSON.stringify(gPayload)
+            }).catch(() => null);
+          }
+
+          // Limpiar llaves temporales del viaje local
+          localStorage.removeItem(`app_viajes_eventos_${oldId}`);
+          localStorage.removeItem(`app_viajes_gastos_${oldId}`);
+          localStorage.removeItem(`app_viajes_docs_${oldId}`);
+        }
+      } catch (syncErr) {
+        console.warn('Error sincronizando viajes offline:', syncErr);
+      }
+
+      // 2. Obtener la lista oficial desde la base de datos
       const dataViajes = await apiRequest(`/viajes${usuario?.id ? `?usuarioId=${usuario.id}` : ''}`);
       if (Array.isArray(dataViajes)) {
         const cleanViajes = dataViajes
