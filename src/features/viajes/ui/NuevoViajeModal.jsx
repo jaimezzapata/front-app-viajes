@@ -331,7 +331,7 @@ export function NuevoViajeModal({ isOpen, onClose, onSaveViaje, viajeAEditar, on
       {tipoViaje === 'unico' && (
         <div className="p-3.5 rounded-xl bg-[#0E121B] border border-[#1C2436]">
           <CountryInput
-            label="Destino Principal (País) *"
+            label="Destino Principal (País)"
             required
             placeholder="Ej. Brasil, México, Japón o España"
             value={destino}
@@ -377,7 +377,7 @@ export function NuevoViajeModal({ isOpen, onClose, onSaveViaje, viajeAEditar, on
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <CountryInput
-                    label="País de Destino *"
+                    label="País de Destino"
                     required
                     placeholder="Ej. Japón, Corea o Brasil"
                     value={item.destino}
