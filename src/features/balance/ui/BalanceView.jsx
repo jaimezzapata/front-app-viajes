@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   PieChart,
   FileDown,
+  FileSpreadsheet,
   TrendingDown,
   CreditCard,
   Banknote,
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react';
 import WatermarkIcon from '../../../components/WatermarkIcon';
 import { exportTripPdf } from '../use-cases/exportPdf';
+import { exportTripExcel } from '../use-cases/exportExcel';
 import {
   TRIP_CURRENCIES,
   getCurrenciesForTrip,
@@ -21,9 +23,23 @@ import {
 import { cleanCountryText } from '../../../utils/countries';
 
 export function BalanceView({ viaje, onOpenNuevoViaje, balance, gastos = [], eventos = [] }) {
+  const [exportingExcel, setExportingExcel] = useState(false);
+
   const handleExport = () => {
     if (!viaje) return;
     exportTripPdf({ viaje, balance, gastos, eventos });
+  };
+
+  const handleExportExcel = async () => {
+    if (!viaje || exportingExcel) return;
+    try {
+      setExportingExcel(true);
+      await exportTripExcel({ viaje, balance, gastos, eventos });
+    } catch (err) {
+      console.error('Error al exportar a Excel:', err);
+    } finally {
+      setExportingExcel(false);
+    }
   };
 
   const semaforoColorClass = {
@@ -81,13 +97,25 @@ export function BalanceView({ viaje, onOpenNuevoViaje, balance, gastos = [], eve
           <p className="hidden sm:block text-xs text-[#8492A6] m-0">Análisis presupuestario, costos hundidos y semáforo de consumo.</p>
         </div>
 
-        <button
-          onClick={handleExport}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#FFE500] text-[#080A0F] font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-opacity cursor-pointer shadow-sm self-start sm:self-auto"
-        >
-          <FileDown className="w-4 h-4" strokeWidth={2.5} />
-          Exportar PDF
-        </button>
+        <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#FFE500] text-[#080A0F] font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
+            title="Exportar reporte en PDF con KPIs y desglose"
+          >
+            <FileDown className="w-4 h-4" strokeWidth={2.5} />
+            Exportar PDF
+          </button>
+          <button
+            onClick={handleExportExcel}
+            disabled={exportingExcel}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#00FF85] text-[#080A0F] font-bold text-xs uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer shadow-sm"
+            title="Exportar libro de cálculo Excel (.xlsx) con fórmulas contables e itinerario"
+          >
+            <FileSpreadsheet className="w-4 h-4" strokeWidth={2.5} />
+            {exportingExcel ? 'Generando...' : 'Exportar Excel'}
+          </button>
+        </div>
       </div>
 
       {/* Tarjetas de KPIs Principales (Grid 2x2 en móvil) */}

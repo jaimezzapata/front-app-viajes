@@ -16,8 +16,8 @@ export const COUNTRIES = [
   { code: 'CO', es: 'Colombia', en: 'Colombia', aliases: ['col', 'colombiano'] },
   { code: 'JP', es: 'Japón', en: 'Japan', aliases: ['japon', 'nippon', 'nihon', 'jpn'] },
   { code: 'US', es: 'Estados Unidos', en: 'United States', aliases: ['usa', 'eeuu', 'ee.uu.', 'ee uu', 'us', 'america', 'united states of america'] },
-  { code: 'ES', es: 'España', en: 'Spain', aliases: ['espana', 'esp'] },
-  { code: 'FR', es: 'Francia', en: 'France', aliases: ['fra'] },
+  { code: 'ES', es: 'España', en: 'Spain', aliases: ['espana', 'esp', 'madrid', 'barcelona', 'mad', 'bcn', 'valencia', 'sevilla'] },
+  { code: 'FR', es: 'Francia', en: 'France', aliases: ['fra', 'paris', 'cdg', 'ory', 'marsella', 'lyon'] },
   { code: 'MX', es: 'México', en: 'Mexico', aliases: ['mex'] },
   { code: 'IT', es: 'Italia', en: 'Italy', aliases: ['ita'] },
   { code: 'DE', es: 'Alemania', en: 'Germany', aliases: ['deutschland', 'deu', 'ger'] },
@@ -35,7 +35,7 @@ export const COUNTRIES = [
   { code: 'NL', es: 'Países Bajos', en: 'Netherlands', aliases: ['holanda', 'holland', 'paises bajos', 'nld'] },
   { code: 'CH', es: 'Suiza', en: 'Switzerland', aliases: ['che', 'swiss'] },
   { code: 'TR', es: 'Turquía', en: 'Turkey', aliases: ['turquia', 'turkiye', 'tur'] },
-  { code: 'AE', es: 'Emiratos Árabes Unidos', en: 'United Arab Emirates', aliases: ['uae', 'eau', 'emiratos arabes', 'emiratos arabes unidos', 'emiratos', 'dubai', 'dubái', 'abu dhabi', 'abu dabi', 'abudhabi', 'abudabi', 'auh', 'dxb', 'sharjah', 'shj', 'are'] },
+  { code: 'AE', es: 'Emiratos Árabes Unidos', en: 'United Arab Emirates', aliases: ['uae', 'emiratos arabes', 'emiratos arabes unidos', 'emiratos', 'dubai', 'dubái', 'abu dhabi', 'abu dabi', 'abudhabi', 'abudabi', 'auh', 'dxb', 'sharjah'] },
   { code: 'AU', es: 'Australia', en: 'Australia', aliases: ['aus'] },
   { code: 'NZ', es: 'Nueva Zelanda', en: 'New Zealand', aliases: ['nzl'] },
   { code: 'KR', es: 'Corea del Sur', en: 'South Korea', aliases: ['korea', 'corea', 'kor'] },
@@ -57,7 +57,7 @@ export const COUNTRIES = [
   { code: 'FI', es: 'Finlandia', en: 'Finland', aliases: ['fin'] },
   { code: 'IE', es: 'Irlanda', en: 'Ireland', aliases: ['irl'] },
   { code: 'CZ', es: 'República Checa', en: 'Czech Republic', aliases: ['republica checa', 'chequia', 'cze'] },
-  { code: 'PL', es: 'Polonia', en: 'Poland', aliases: ['pol'] },
+  { code: 'PL', es: 'Polonia', en: 'Poland', aliases: ['pol', 'varsovia', 'warsaw', 'cracovia', 'krakow', 'waw', 'krk', 'polska'] },
   { code: 'HU', es: 'Hungría', en: 'Hungary', aliases: ['hungria', 'hun'] },
   { code: 'UY', es: 'Uruguay', en: 'Uruguay', aliases: ['ury'] },
   { code: 'PY', es: 'Paraguay', en: 'Paraguay', aliases: ['pry'] },
@@ -153,11 +153,32 @@ export function detectCountry(query) {
     };
   }
 
-  // 5. Búsqueda por subcadena / inclusión (ej. "Bogotá, Colombia" o "Tokyo, Japan")
+  // 5. Búsqueda por palabra completa o nombre de país (evita falsos positivos por subcadenas)
+  const cleanTokens = clean.split(/[^a-z0-9]+/).filter(Boolean);
+
   const bySubstring = COUNTRIES.find(c => {
     const normEs = normalize(c.es);
     const normEn = normalize(c.en);
-    return clean.includes(normEs) || clean.includes(normEn) || (c.aliases && c.aliases.some(a => clean.includes(normalize(a))));
+
+    // Coincidencia de nombre oficial (mínimo 4 caracteres con límites de palabra)
+    if (normEs.length >= 4 && clean.includes(normEs)) {
+      const regex = new RegExp(`(^|[^a-z0-9])${normEs}([^a-z0-9]|$)`);
+      if (regex.test(clean)) return true;
+    }
+    if (normEn.length >= 4 && clean.includes(normEn)) {
+      const regex = new RegExp(`(^|[^a-z0-9])${normEn}([^a-z0-9]|$)`);
+      if (regex.test(clean)) return true;
+    }
+
+    // Coincidencia con alias oficiales como token/palabra completa
+    if (c.aliases) {
+      return c.aliases.some(a => {
+        const normA = normalize(a);
+        return normA && cleanTokens.includes(normA);
+      });
+    }
+
+    return false;
   });
   if (bySubstring) {
     return { ...bySubstring, flag: getFlagEmoji(bySubstring.code) };

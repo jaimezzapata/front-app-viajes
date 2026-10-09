@@ -632,8 +632,9 @@ export function useAppViajes(usuario) {
       };
       setEventos(prev => [...prev, localEvento].sort((a, b) => new Date(a.fechaInicio) - new Date(b.fechaInicio)));
 
-      // Si tiene costo, crear gasto automáticamente vinculado
+      // Si tiene costo, crear gasto automáticamente vinculado con tasa exacta congelada
       if (costoNum > 0) {
+        const liveRate = getExactExchangeRate(monedaOriginal, 'COP');
         const nuevoGastoAuto = {
           id: 'g-auto-' + Date.now() + (i > 0 ? `-${i}` : ''),
           viajeId: activeViajeId,
@@ -644,6 +645,7 @@ export function useAppViajes(usuario) {
           monedaOriginal,
           montoCOP,
           montoUSD,
+          tasaCambioFecha: liveRate,
           fechaGasto: eventoData.fechaInicio,
           pagadoAdelantado: false,
           noComputar: false,

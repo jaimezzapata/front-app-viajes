@@ -88,6 +88,8 @@ export const AIRPORTS_AND_CITIES = [
   { code: 'DUB', city: 'Dublín', country: 'Irlanda', countryCode: 'IE', name: 'Dublin Airport', latitude: 53.4264, longitude: -6.2499 },
   { code: 'BRU', city: 'Bruselas', country: 'Bélgica', countryCode: 'BE', name: 'Brussels Airport', latitude: 50.9010, longitude: 4.4856 },
   { code: 'PRG', city: 'Praga', country: 'República Checa', countryCode: 'CZ', name: 'Václav Havel', latitude: 50.1008, longitude: 14.2600 },
+  { code: 'WAW', city: 'Varsovia', country: 'Polonia', countryCode: 'PL', name: 'Varsovia-Chopin', latitude: 52.1672, longitude: 20.9679 },
+  { code: 'KRK', city: 'Cracovia', country: 'Polonia', countryCode: 'PL', name: 'Cracovia-Juan Pablo II', latitude: 50.0777, longitude: 19.7848 },
 
   // Latinoamérica
   { code: 'MEX', city: 'Ciudad de México', country: 'México', countryCode: 'MX', name: 'Benito Juárez', latitude: 19.4361, longitude: -99.0719 },

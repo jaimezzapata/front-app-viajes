@@ -232,21 +232,51 @@ export function extractFlightTrajectories(eventos = [], viajes = []) {
       processedTripIdsWithFlights.add(ev.viajeId);
     }
 
-    // Resolver Origen
-    const originCoords = resolveLocationCoordinates({
+    // Resolver Origen con prioridad a logística de salida
+    let originCoords = resolveLocationCoordinates({
       ciudad: ev.ciudadOrigen || '',
       pais: ev.paisOrigen || '',
-      aeropuerto: ev.aeropuertoOrigen || '',
-      latitud: ev.latitud,
-      longitud: ev.longitud
+      aeropuerto: ev.aeropuertoOrigen || ''
     });
 
-    // Resolver Destino
-    const destCoords = resolveLocationCoordinates({
-      ciudad: ev.ciudadDestino || ev.ubicacion || '',
+    // Si no se pudo resolver origen por logística explícita y no hay destino separado
+    if (!originCoords && !ev.ciudadDestino && !ev.aeropuertoDestino) {
+      originCoords = resolveLocationCoordinates({
+        latitud: ev.latitud,
+        longitud: ev.longitud,
+        ciudad: ev.ubicacion || ''
+      });
+    }
+
+    // Resolver Destino con prioridad a logística de llegada
+    let destCoords = resolveLocationCoordinates({
+      ciudad: ev.ciudadDestino || '',
       pais: ev.paisDestino || '',
       aeropuerto: ev.aeropuertoDestino || ''
     });
+
+    // Fallback de destino a ubicación y coordenadas del evento
+    if (!destCoords) {
+      destCoords = resolveLocationCoordinates({
+        ciudad: ev.ubicacion || '',
+        latitud: ev.latitud,
+        longitud: ev.longitud
+      });
+    }
+
+    // Evitar que origen y destino colapsen en el mismo punto si hay coordenadas de origen disponibles
+    if (originCoords && destCoords && Math.abs(originCoords.latitude - destCoords.latitude) < 0.01 && Math.abs(originCoords.longitude - destCoords.longitude) < 0.01) {
+      if (ev.ciudadOrigen || ev.aeropuertoOrigen) {
+        const strictOrigin = resolveLocationCoordinates({
+          aeropuerto: ev.aeropuertoOrigen || '',
+          ciudad: ev.ciudadOrigen || '',
+          pais: ev.paisOrigen || ''
+        });
+        if (strictOrigin && (Math.abs(strictOrigin.latitude - destCoords.latitude) >= 0.01 || Math.abs(strictOrigin.longitude - destCoords.longitude) >= 0.01)) {
+          originCoords = strictOrigin;
+        }
+      }
+    }
 
     // Si ambos puntos tienen coordenadas, crear la ruta
     if (originCoords && destCoords) {

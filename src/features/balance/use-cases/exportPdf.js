@@ -91,22 +91,32 @@ export function exportTripPdf({ viaje, balance, gastos = [], eventos = [] }) {
     const startGastosY = nextY > 230 ? 20 : nextY;
     doc.text('3. DESGLOSE DETALLADO DE GASTOS', 14, startGastosY);
 
+    const getTasaDisplay = (g) => {
+      const curr = (g.monedaOriginal || 'COP').toUpperCase();
+      if (curr === 'COP') return '1:1 (COP)';
+      const rate = g.tasaCambioFecha || (g.montoOriginal > 0 && g.montoCOP > 0 ? (g.montoCOP / g.montoOriginal) : null);
+      if (!rate) return '1:1';
+      const decimals = (curr === 'JPY' || curr === 'KRW') ? 4 : 2;
+      return `1 ${curr} = $${Number(rate).toFixed(decimals)}`;
+    };
+
     const gastosRows = gastos.map(g => [
       new Date(g.fechaGasto).toLocaleDateString(),
       g.concepto,
       g.categoria,
       `${g.montoOriginal} ${g.monedaOriginal}`,
+      getTasaDisplay(g),
       `$ ${Number(g.montoCOP).toLocaleString()}`,
       g.pagadoAdelantado ? 'Adelantado' : (g.noComputar ? 'Terceros' : 'En Ruta')
     ]);
 
     autoTable(doc, {
       startY: startGastosY + 3,
-      head: [['Fecha', 'Concepto', 'Categoría', 'Monto Orig.', 'Equiv. COP', 'Tipo']],
+      head: [['Fecha', 'Concepto', 'Categoría', 'Monto Orig.', 'Tasa Aplicada', 'Equiv. COP', 'Tipo']],
       body: gastosRows,
       theme: 'striped',
       headStyles: { fillColor: [15, 20, 28], textColor: [0, 255, 133] },
-      styles: { fontSize: 8, cellPadding: 2 }
+      styles: { fontSize: 7.5, cellPadding: 2 }
     });
   }
 

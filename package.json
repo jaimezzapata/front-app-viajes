@@ -13,6 +13,7 @@
     "@amcharts/amcharts5": "^5.20.8",
     "@amcharts/amcharts5-geodata": "^5.1.6",
     "d3-geo": "^3.1.1",
+    "exceljs": "^4.4.0",
     "framer-motion": "^13.4.2",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
