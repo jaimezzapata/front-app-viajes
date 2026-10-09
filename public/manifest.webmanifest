@@ -1,0 +1,18 @@
+{
+  "name": "Bitácora de Viajes",
+  "short_name": "Viajes",
+  "description": "Aplicación Web Progresiva de Bitácora de Viajes con modo Offline-First, Itinerario y Control de Gastos",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07090E",
+  "theme_color": "#07090E",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "48x48 72x72 96x96 128x128 192x192 256x256 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
