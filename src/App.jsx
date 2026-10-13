@@ -85,7 +85,8 @@ export function App() {
     handleDeleteEvento,
     handleSaveGasto,
     handleSaveDocumento,
-    handleSyncAndClearLocal
+    handleSyncAndClearLocal,
+    handleSyncNow
   } = useAppViajes(usuario);
 
   // Si se abre un enlace público de viaje compartido, se renderiza la vista pública sin exigir login
@@ -189,6 +190,7 @@ export function App() {
           activeTab={activeTab}
           onSelectTab={setActiveTab}
           onOpenSyncClean={() => setIsSyncModalOpen(true)}
+          onRefresh={handleSyncNow}
         />
 
         {/* Área de Contenido por Tab con Contenedor Responsivo Ampliado (max-w-[1700px] en PC) */}
@@ -201,6 +203,7 @@ export function App() {
               gastos={gastos}
               documentos={documentos}
               balance={balance}
+              onSyncFromCloud={handleSyncNow}
               onSelectTab={setActiveTab}
               onSelectViaje={(id) => {
                 setActiveViajeId(id);

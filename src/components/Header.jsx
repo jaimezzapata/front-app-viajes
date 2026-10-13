@@ -18,7 +18,8 @@ export function Header({
   onLogout,
   activeTab,
   onSelectTab,
-  onOpenSyncClean
+  onOpenSyncClean,
+  onRefresh
 }) {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const menuRef = useRef(null);
@@ -173,11 +174,14 @@ export function Header({
             <span className="hidden sm:inline">{isOnline ? 'Online' : 'Offline'}</span>
           </div>
 
-          {/* Botón de Sincronización y Limpieza de Caché Local */}
-          {onOpenSyncClean && (
+          {/* Botón de Sincronización y Refresco en Tiempo Real */}
+          {(onRefresh || onOpenSyncClean) && (
             <button
-              onClick={onOpenSyncClean}
-              title="Sincronizar con Base de Datos y Limpiar Caché Local"
+              onClick={() => {
+                if (onRefresh) onRefresh();
+                else if (onOpenSyncClean) onOpenSyncClean();
+              }}
+              title="Sincronizar con la base de datos en la nube"
               className="p-1.5 sm:p-2 rounded-lg bg-[#151B27] border border-[#1C2436] hover:border-[#00FF85] text-[#8492A6] hover:text-[#00FF85] transition-all cursor-pointer shrink-0 flex items-center justify-center group"
             >
               <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:rotate-180 transition-transform duration-500" />
@@ -202,16 +206,17 @@ export function Header({
             {/* Menú Desplegable Móvil */}
             {showMobileMenu && (
               <div className="absolute right-0 top-full mt-2 w-52 bg-[#0E121B] border border-[#1C2436] rounded-xl shadow-2xl p-1.5 z-50 flex flex-col gap-1 text-xs animate-in fade-in slide-in-from-top-2 duration-150">
-                {onOpenSyncClean && (
+                {(onRefresh || onOpenSyncClean) && (
                   <button
                     onClick={() => {
                       setShowMobileMenu(false);
-                      onOpenSyncClean();
+                      if (onRefresh) onRefresh();
+                      else if (onOpenSyncClean) onOpenSyncClean();
                     }}
                     className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[#00E5FF] hover:bg-[#151B27] text-left cursor-pointer transition-colors font-medium"
                   >
                     <RefreshCw className="w-3.5 h-3.5 text-[#00E5FF]" />
-                    <span>Sincronizar y Limpiar Caché</span>
+                    <span>Sincronizar con la Nube</span>
                   </button>
                 )}
 

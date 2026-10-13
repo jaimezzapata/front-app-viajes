@@ -47,7 +47,8 @@ export function ViajesView({
   onCompartirViaje,
   onAddEvento,
   onAddGasto,
-  onAddDoc
+  onAddDoc,
+  onSyncFromCloud
 }) {
   // Estado local para controlar si estamos en el Resumen Inicial (null) o en el Detalle de un Viaje
   const [selectedViajeId, setSelectedViajeId] = useState(null);
@@ -805,12 +806,23 @@ export function ViajesView({
                 ? 'No hay bitácoras que coincidan con la búsqueda.'
                 : 'Crea tu primera bitácora de viaje para empezar a pintar tus destinos en el mapa.'}
             </p>
-            <button
-              onClick={onOpenNuevoViaje}
-              className="mt-4 px-4 py-2 bg-[#00FF85] text-[#080A0F] font-bold text-xs uppercase tracking-wider rounded-lg hover:opacity-90 transition-opacity cursor-pointer"
-            >
-              + Crear Primer Viaje
-            </button>
+            <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
+              <button
+                onClick={onOpenNuevoViaje}
+                className="px-4 py-2 bg-[#00FF85] text-[#080A0F] font-bold text-xs uppercase tracking-wider rounded-lg hover:opacity-90 transition-opacity cursor-pointer"
+              >
+                + Crear Primer Viaje
+              </button>
+              {onSyncFromCloud && (
+                <button
+                  onClick={onSyncFromCloud}
+                  className="px-4 py-2 bg-[#151B27] border border-[#1C2436] hover:border-[#00FF85] text-[#CBD5E1] hover:text-[#00FF85] font-semibold text-xs rounded-lg transition-colors cursor-pointer flex items-center gap-2 group"
+                >
+                  <RefreshCw className="w-3.5 h-3.5 text-[#00E5FF] group-hover:rotate-180 transition-transform duration-500" />
+                  <span>Sincronizar desde la Nube</span>
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4">

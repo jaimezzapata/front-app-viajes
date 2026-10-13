@@ -30,10 +30,30 @@ export async function apiRequest(endpoint, options = {}) {
       headers
     });
   } catch (netErr) {
-    const error = new Error('No se pudo conectar al servidor. Operando en modo local.');
-    error.isOffline = true;
-    error.originalError = netErr;
-    throw error;
+    // Si la llamada fue a localhost / local y falló (ej. servidor local no iniciado),
+    // intentar automáticamente contra el backend oficial en la nube (Render)
+    const isLocalApi = API_BASE.includes('localhost') || API_BASE.includes('127.0.0.1');
+    const CLOUD_FALLBACK = 'https://back-app-viajes.onrender.com/api';
+
+    if (isLocalApi) {
+      try {
+        const fallbackUrl = `${CLOUD_FALLBACK}${endpoint}`;
+        response = await fetch(fallbackUrl, {
+          ...options,
+          headers
+        });
+      } catch (fallbackErr) {
+        const error = new Error('No se pudo conectar al servidor local ni al servidor en la nube.');
+        error.isOffline = true;
+        error.originalError = fallbackErr;
+        throw error;
+      }
+    } else {
+      const error = new Error('No se pudo conectar al servidor. Operando en modo local.');
+      error.isOffline = true;
+      error.originalError = netErr;
+      throw error;
+    }
   }
 
   const json = await response.json().catch(() => ({}));

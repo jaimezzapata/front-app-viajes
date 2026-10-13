@@ -248,8 +248,13 @@ export function useAppViajes(usuario) {
   }, [activeViajeId, eventos, gastos, documentos]);
 
   // Cargar datos reales desde la API (Base de Datos Real)
-  const fetchViajeData = useCallback(async () => {
+  const fetchViajeData = useCallback(async (opts = {}) => {
     if (!navigator.onLine || !usuario) return;
+    const isManual = opts.isManual === true;
+    let toastId = null;
+    if (isManual) {
+      toastId = toast.loading('Sincronizando con la nube...');
+    }
 
     try {
       const storageKey = getUserStorageKey(usuario);
@@ -337,9 +342,11 @@ export function useAppViajes(usuario) {
           localStorage.setItem(storageKey, JSON.stringify(combinedViajes));
         }
 
+        let targetId = activeViajeId;
         if (combinedViajes.length > 0) {
-          if (activeViajeId && !combinedViajes.some(v => v.id === activeViajeId)) {
-            setActiveViajeId(null);
+          if (!targetId || !combinedViajes.some(v => v.id === targetId)) {
+            targetId = combinedViajes[0].id;
+            setActiveViajeId(targetId);
           }
         } else {
           setActiveViajeId(null);
@@ -347,25 +354,55 @@ export function useAppViajes(usuario) {
           setGastos([]);
           setDocumentos([]);
         }
+
+        if (targetId && targetId !== 'viaje-demo-tokyo') {
+          const [evs, gs, docs] = await Promise.all([
+            apiRequest(`/viajes/${targetId}/itinerario`).catch(() => null),
+            apiRequest(`/viajes/${targetId}/gastos`).catch(() => null),
+            apiRequest(`/viajes/${targetId}/boveda`).catch(() => null)
+          ]);
+          if (Array.isArray(evs)) setEventos(evs);
+          if (Array.isArray(gs)) setGastos(gs);
+          if (Array.isArray(docs)) setDocumentos(docs);
+        }
       }
 
-      if (activeViajeId && activeViajeId !== 'viaje-demo-tokyo') {
-        const evs = await apiRequest(`/viajes/${activeViajeId}/itinerario`);
-        if (Array.isArray(evs)) setEventos(evs);
-
-        const gs = await apiRequest(`/viajes/${activeViajeId}/gastos`);
-        if (Array.isArray(gs)) setGastos(gs);
-
-        const docs = await apiRequest(`/viajes/${activeViajeId}/boveda`);
-        if (Array.isArray(docs)) setDocumentos(docs);
+      if (isManual) {
+        toast.success('¡Bitácora sincronizada con la nube exitosamente!', { id: toastId });
       }
-    } catch {
-      // Usar datos offline en IndexedDB / localStorage
+    } catch (err) {
+      if (isManual) {
+        toast.error(`Error al sincronizar: ${err.message || 'Sin conexión'}`, { id: toastId });
+      }
     }
   }, [activeViajeId, usuario?.id, usuario?.email]);
 
   useEffect(() => {
     fetchViajeData();
+  }, [fetchViajeData]);
+
+  // Sincronización automática cuando el usuario vuelve a la pestaña o ventana del navegador
+  useEffect(() => {
+    const handleFocus = () => {
+      if (typeof navigator !== 'undefined' && navigator.onLine && usuario) {
+        fetchViajeData();
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && navigator.onLine && usuario) {
+        fetchViajeData();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [fetchViajeData, usuario]);
+
+  const handleSyncNow = useCallback(() => {
+    return fetchViajeData({ isManual: true });
   }, [fetchViajeData]);
 
   // Cálculo del Balance en tiempo real
@@ -595,13 +632,20 @@ export function useAppViajes(usuario) {
       const costoNum = (eventoData.costo && Number(eventoData.costo) > 0) ? Number(eventoData.costo) : 0;
       const montoCOP = costoNum > 0 ? convertCurrency(costoNum, monedaOriginal, 'COP') : 0;
       const montoUSD = costoNum > 0 ? convertCurrency(costoNum, monedaOriginal, 'USD') : 0;
+      const isDescontar = eventoData.descontarPresupuesto !== undefined ? Boolean(eventoData.descontarPresupuesto) : true;
+      const isAdelantado = Boolean(eventoData.pagadoAdelantado);
 
       let savedEvento = null;
       try {
         if (navigator.onLine) {
           const res = await apiRequest(`/viajes/${activeViajeId}/itinerario`, {
             method: 'POST',
-            body: JSON.stringify({ ...eventoData, moneda: monedaOriginal })
+            body: JSON.stringify({
+              ...eventoData,
+              moneda: monedaOriginal,
+              descontarPresupuesto: isDescontar,
+              pagadoAdelantado: isAdelantado
+            })
           });
           savedEvento = res.data || res;
           setEventos(prev => [...prev, savedEvento].sort((a, b) => new Date(a.fechaInicio) - new Date(b.fechaInicio)));
@@ -628,7 +672,9 @@ export function useAppViajes(usuario) {
         id: 'ev-local-' + Date.now() + (i > 0 ? `-${i}` : ''),
         viajeId: activeViajeId,
         fechaFin: endDate.toISOString(),
-        moneda: monedaOriginal
+        moneda: monedaOriginal,
+        descontarPresupuesto: isDescontar,
+        pagadoAdelantado: isAdelantado
       };
       setEventos(prev => [...prev, localEvento].sort((a, b) => new Date(a.fechaInicio) - new Date(b.fechaInicio)));
 
@@ -647,8 +693,8 @@ export function useAppViajes(usuario) {
           montoUSD,
           tasaCambioFecha: liveRate,
           fechaGasto: eventoData.fechaInicio,
-          pagadoAdelantado: false,
-          noComputar: false,
+          pagadoAdelantado: isAdelantado,
+          noComputar: !isDescontar,
           esIngreso: false
         };
         setGastos(prev => [nuevoGastoAuto, ...prev]);
@@ -674,12 +720,19 @@ export function useAppViajes(usuario) {
       : 0;
     const montoCOP = costoNum > 0 ? convertCurrency(costoNum, monedaOriginal, 'COP') : 0;
     const montoUSD = costoNum > 0 ? convertCurrency(costoNum, monedaOriginal, 'USD') : 0;
+    const isDescontar = updatedEventoData.descontarPresupuesto !== undefined ? Boolean(updatedEventoData.descontarPresupuesto) : undefined;
+    const isAdelantado = updatedEventoData.pagadoAdelantado !== undefined ? Boolean(updatedEventoData.pagadoAdelantado) : undefined;
 
     try {
       if (navigator.onLine) {
         const res = await apiRequest(`/itinerario/${id}`, {
           method: 'PUT',
-          body: JSON.stringify({ ...updatedEventoData, moneda: monedaOriginal })
+          body: JSON.stringify({
+            ...updatedEventoData,
+            moneda: monedaOriginal,
+            ...(isDescontar !== undefined ? { descontarPresupuesto: isDescontar } : {}),
+            ...(isAdelantado !== undefined ? { pagadoAdelantado: isAdelantado } : {})
+          })
         });
         saved = res?.data || res || updatedEventoData;
         setEventos(prev => prev.map(e => (e.id === id ? { ...e, ...saved } : e)));
@@ -696,9 +749,21 @@ export function useAppViajes(usuario) {
     }
 
     if (!saved) {
-      setEventos(prev => prev.map(e => (e.id === id ? { ...e, ...updatedEventoData, moneda: monedaOriginal } : e)));
+      setEventos(prev => prev.map(e => (e.id === id ? {
+        ...e,
+        ...updatedEventoData,
+        moneda: monedaOriginal,
+        ...(isDescontar !== undefined ? { descontarPresupuesto: isDescontar } : {}),
+        ...(isAdelantado !== undefined ? { pagadoAdelantado: isAdelantado } : {})
+      } : e)));
       toast.info('Cambios guardados localmente.');
-      saved = { ...updatedEventoData, id, moneda: monedaOriginal };
+      saved = {
+        ...updatedEventoData,
+        id,
+        moneda: monedaOriginal,
+        ...(isDescontar !== undefined ? { descontarPresupuesto: isDescontar } : {}),
+        ...(isAdelantado !== undefined ? { pagadoAdelantado: isAdelantado } : {})
+      };
     }
 
     // Sincronizar el gasto asociado al evento tanto online como offline
@@ -709,6 +774,9 @@ export function useAppViajes(usuario) {
       if (costoNum > 0) {
         if (existingGastoIndex >= 0) {
           const updatedGastos = [...prev];
+          const currentAdelantado = isAdelantado !== undefined ? isAdelantado : Boolean(updatedGastos[existingGastoIndex].pagadoAdelantado);
+          const currentNoComputar = isDescontar !== undefined ? !isDescontar : Boolean(updatedGastos[existingGastoIndex].noComputar);
+
           updatedGastos[existingGastoIndex] = {
             ...updatedGastos[existingGastoIndex],
             eventoId: id,
@@ -717,10 +785,14 @@ export function useAppViajes(usuario) {
             montoOriginal: costoNum,
             monedaOriginal,
             montoCOP,
-            montoUSD
+            montoUSD,
+            pagadoAdelantado: currentAdelantado,
+            noComputar: currentNoComputar
           };
           return updatedGastos;
         } else {
+          const currentAdelantado = isAdelantado !== undefined ? isAdelantado : false;
+          const currentNoComputar = isDescontar !== undefined ? !isDescontar : false;
           const newGasto = {
             id: 'g-auto-' + Date.now(),
             viajeId: activeViajeId,
@@ -732,8 +804,8 @@ export function useAppViajes(usuario) {
             montoCOP,
             montoUSD,
             fechaGasto: updatedEventoData.fechaInicio || new Date().toISOString(),
-            pagadoAdelantado: false,
-            noComputar: false,
+            pagadoAdelantado: currentAdelantado,
+            noComputar: currentNoComputar,
             esIngreso: false
           };
           return [newGasto, ...prev];
@@ -946,6 +1018,7 @@ export function useAppViajes(usuario) {
     handleDeleteEvento,
     handleSaveGasto,
     handleSaveDocumento,
-    handleSyncAndClearLocal
+    handleSyncAndClearLocal,
+    handleSyncNow
   };
 }

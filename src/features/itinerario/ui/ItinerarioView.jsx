@@ -356,6 +356,12 @@ export function ItinerarioView({
             const routeColor = matchingRoute?.color || (ev.tramo === 'regreso' ? '#FF9100' : '#00E5FF');
             const isRoundTrip = ev.tipoTrayecto === 'round-trip';
             const tramo = ev.tramo;
+            const isDescontado = ev.descontarPresupuesto !== undefined
+              ? ev.descontarPresupuesto
+              : (ev.gastoAsociado?.noComputar !== undefined ? !ev.gastoAsociado.noComputar : true);
+            const isAdelantado = ev.pagadoAdelantado !== undefined
+              ? ev.pagadoAdelantado
+              : (ev.gastoAsociado?.pagadoAdelantado !== undefined ? ev.gastoAsociado.pagadoAdelantado : (ev.tipo === 'vuelo'));
 
             return (
               <div key={ev.id} className="relative group">
@@ -421,21 +427,56 @@ export function ItinerarioView({
                       )}
                     </div>
 
-                    {ev.costo && Number(ev.costo) > 0 && (
-                      <div className="flex items-center gap-1 shrink-0 ml-auto">
-                        <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold text-[#00FF85] bg-[#00FF85]/10 px-2 py-0.5 rounded border border-[#00FF85]/20">
-                          <span>{CURRENCY_MAP[(ev.moneda || 'COP').toUpperCase()]?.flag || '💱'}</span>
-                          {formatCurrencyDisplay(ev.costo, ev.moneda || 'COP', true)}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setExpandedCostId(expandedCostId === ev.id ? null : ev.id)}
-                          className="px-1.5 py-0.5 rounded bg-[#151B27] border border-[#1C2436] text-[#8492A6] hover:text-[#00E5FF] transition-colors cursor-pointer text-[10px] font-medium"
-                          title="Ver en otras divisas"
-                        >
-                          <ArrowRightLeft className="w-3 h-3 inline text-[#00E5FF]" />
-                        </button>
+                    {ev.costo && Number(ev.costo) > 0 ? (
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 shrink-0 ml-auto items-end">
+                        <div className="flex items-center gap-1">
+                          <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold text-[#00FF85] bg-[#00FF85]/10 px-2 py-0.5 rounded border border-[#00FF85]/20">
+                            <span>{CURRENCY_MAP[(ev.moneda || 'COP').toUpperCase()]?.flag || '💱'}</span>
+                            {formatCurrencyDisplay(ev.costo, ev.moneda || 'COP', true)}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setExpandedCostId(expandedCostId === ev.id ? null : ev.id)}
+                            className="px-1.5 py-0.5 rounded bg-[#151B27] border border-[#1C2436] text-[#8492A6] hover:text-[#00E5FF] transition-colors cursor-pointer text-[10px] font-medium"
+                            title="Ver en otras divisas"
+                          >
+                            <ArrowRightLeft className="w-3 h-3 inline text-[#00E5FF]" />
+                          </button>
+                        </div>
+
+                        {/* Badges de Presupuesto y Pago Anticipado */}
+                        <div className="flex items-center gap-1 flex-wrap justify-end">
+                          {isAdelantado && (
+                            <span
+                              className="text-[9px] font-bold text-[#FFE500] bg-[#FFE500]/10 border border-[#FFE500]/30 px-1.5 py-0.5 rounded uppercase"
+                              title="Comprado / pagado antes del viaje (Costo hundido)"
+                            >
+                              Pre-viaje
+                            </span>
+                          )}
+                          {!isDescontado ? (
+                            <span
+                              className="text-[9px] font-bold text-[#B55FE6] bg-[#B55FE6]/10 border border-[#B55FE6]/30 px-1.5 py-0.5 rounded uppercase"
+                              title="No computa en el presupuesto personal"
+                            >
+                              No descuenta
+                            </span>
+                          ) : (
+                            <span
+                              className="text-[9px] font-bold text-[#00FF85] bg-[#00FF85]/10 border border-[#00FF85]/20 px-1.5 py-0.5 rounded uppercase"
+                              title="Descontado del presupuesto de viaje"
+                            >
+                              En Presupuesto
+                            </span>
+                          )}
+                        </div>
                       </div>
+                    ) : (
+                      isVuelo && tramo === 'regreso' && (
+                        <span className="text-[10px] text-[#8492A6] bg-[#151B27] border border-[#1C2436] px-2 py-0.5 rounded ml-auto shrink-0">
+                          Costo en tramo ida
+                        </span>
+                      )
                     )}
                   </div>
 
