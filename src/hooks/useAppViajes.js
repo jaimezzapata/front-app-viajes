@@ -1,18 +1,21 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 import { apiRequest } from '../services/api';
 import { convertCurrency, getExactExchangeRate } from '../utils/currencies';
 import { fixAccents, cleanCountryText } from '../utils/countries';
+import { calculateTripBalance } from '../utils/balance';
+import { parseEventoMeta, parseViajeMeta } from '../utils/meta';
 
 export function repairViaje(v) {
   if (!v) return v;
+  const parsed = parseViajeMeta(v);
   return {
-    ...v,
-    titulo: fixAccents(v.titulo || ''),
-    descripcion: v.descripcion ? fixAccents(v.descripcion) : v.descripcion,
-    destino: cleanCountryText(v.destino || ''),
-    origen: v.origen ? cleanCountryText(v.origen) : v.origen,
-    escalas: v.escalas ? cleanCountryText(v.escalas) : v.escalas,
+    ...parsed,
+    titulo: fixAccents(parsed.titulo || ''),
+    descripcion: parsed.descripcion ? fixAccents(parsed.descripcion) : parsed.descripcion,
+    destino: cleanCountryText(parsed.destino || ''),
+    origen: parsed.origen ? cleanCountryText(parsed.origen) : parsed.origen,
+    escalas: parsed.escalas ? cleanCountryText(parsed.escalas) : parsed.escalas,
   };
 }
 
@@ -52,12 +55,13 @@ export function useAppViajes(usuario) {
       if (saved) {
         let evs = JSON.parse(saved);
         if (Array.isArray(evs)) {
-          // Reconciliar eventos donde un valor en pesos colombianos (>=50.000) fue erróneamente guardado en USD
+          // Reconciliar y deserializar metadata oculta de eventos
           return evs.map(ev => {
-            if (ev.costo && Number(ev.costo) >= 50000 && ev.moneda === 'USD') {
-              return { ...ev, moneda: 'COP' };
+            const parsed = parseEventoMeta(ev);
+            if (parsed.costo && Number(parsed.costo) >= 50000 && parsed.moneda === 'USD') {
+              return { ...parsed, moneda: 'COP' };
             }
-            return ev;
+            return parsed;
           });
         }
       }
@@ -204,10 +208,11 @@ export function useAppViajes(usuario) {
       let evs = savedEvs ? JSON.parse(savedEvs) : [];
       if (Array.isArray(evs)) {
         evs = evs.map(ev => {
-          if (ev.costo && Number(ev.costo) >= 50000 && ev.moneda === 'USD') {
-            return { ...ev, moneda: 'COP' };
+          const parsed = parseEventoMeta(ev);
+          if (parsed.costo && Number(parsed.costo) >= 50000 && parsed.moneda === 'USD') {
+            return { ...parsed, moneda: 'COP' };
           }
-          return ev;
+          return parsed;
         });
       }
       setEventos(evs);
@@ -405,110 +410,12 @@ export function useAppViajes(usuario) {
     return fetchViajeData({ isManual: true });
   }, [fetchViajeData]);
 
-  // Cálculo del Balance en tiempo real
-  const calculateBalance = useCallback(() => {
-    if (!activeViaje) {
-      return {
-        presupuestoTotalCOP: 0,
-        totalGastadoCOP: 0,
-        totalGastadoUSD: 0,
-        pagadoAdelantadoCOP: 0,
-        dineroRequeridoEnRutaCOP: 0,
-        comprasTercerosCOP: 0,
-        ingresosReembolsosCOP: 0,
-        balanceDisponibleCOP: 0,
-        porcentajeConsumido: 0,
-        semaforoGlobal: 'verde',
-        semaforoCategorias: [],
-        monedaBase: 'COP'
-      };
-    }
-
-    const presupuestoTotalCOP = activeViaje?.presupuestoTotal || 0;
-    let totalGastadoCOP = 0;
-    let totalGastadoUSD = 0;
-    let pagadoAdelantadoCOP = 0;
-    let enRutaCOP = 0;
-    let comprasTercerosCOP = 0;
-    let ingresosCOP = 0;
-
-    const categoriasMap = {
-      transporte: { gastoCOP: 0, gastoUSD: 0, limiteCOP: presupuestoTotalCOP * 0.3 },
-      alojamiento: { gastoCOP: 0, gastoUSD: 0, limiteCOP: presupuestoTotalCOP * 0.35 },
-      comida: { gastoCOP: 0, gastoUSD: 0, limiteCOP: presupuestoTotalCOP * 0.15 },
-      actividades: { gastoCOP: 0, gastoUSD: 0, limiteCOP: presupuestoTotalCOP * 0.1 },
-      compras: { gastoCOP: 0, gastoUSD: 0, limiteCOP: presupuestoTotalCOP * 0.05 },
-      otros: { gastoCOP: 0, gastoUSD: 0, limiteCOP: presupuestoTotalCOP * 0.05 }
-    };
-
-    for (const g of gastos) {
-      if (g.pagadoAdelantado) {
-        pagadoAdelantadoCOP += (g.montoCOP || 0);
-      }
-
-      if (g.noComputar) {
-        comprasTercerosCOP += (g.montoCOP || 0);
-        continue;
-      }
-      if (g.esIngreso) {
-        ingresosCOP += (g.montoCOP || 0);
-        totalGastadoCOP -= (g.montoCOP || 0);
-        totalGastadoUSD -= (g.montoUSD || 0);
-        continue;
-      }
-
-      totalGastadoCOP += (g.montoCOP || 0);
-      totalGastadoUSD += (g.montoUSD || 0);
-
-      if (!g.pagadoAdelantado) {
-        enRutaCOP += (g.montoCOP || 0);
-      }
-
-      const cat = g.categoria?.toLowerCase() || 'otros';
-      if (categoriasMap[cat]) {
-        categoriasMap[cat].gastoCOP += g.montoCOP;
-        categoriasMap[cat].gastoUSD += g.montoUSD;
-      }
-    }
-
-    const semaforoCategorias = Object.entries(categoriasMap).map(([key, val]) => {
-      const porcentaje = val.limiteCOP > 0 ? (val.gastoCOP / val.limiteCOP) * 100 : 0;
-      let color = 'verde';
-      if (porcentaje >= 100) color = 'rojo';
-      else if (porcentaje >= 75) color = 'amarillo';
-
-      return {
-        categoria: key,
-        limiteCOP: val.limiteCOP,
-        consumidoCOP: val.gastoCOP,
-        consumidoUSD: val.gastoUSD,
-        porcentaje: Number(porcentaje.toFixed(1)),
-        color
-      };
-    });
-
-    const porcentajeConsumido = presupuestoTotalCOP > 0 ? (totalGastadoCOP / presupuestoTotalCOP) * 100 : 0;
-    let semaforoGlobal = 'verde';
-    if (porcentajeConsumido >= 100) semaforoGlobal = 'rojo';
-    else if (porcentajeConsumido >= 75) semaforoGlobal = 'amarillo';
-
-    return {
-      presupuestoTotalCOP,
-      totalGastadoCOP,
-      totalGastadoUSD,
-      pagadoAdelantadoCOP,
-      dineroRequeridoEnRutaCOP: enRutaCOP,
-      comprasTercerosCOP,
-      ingresosReembolsosCOP: ingresosCOP,
-      balanceDisponibleCOP: presupuestoTotalCOP - totalGastadoCOP,
-      porcentajeConsumido: Number(porcentajeConsumido.toFixed(1)),
-      semaforoGlobal,
-      semaforoCategorias,
-      monedaBase: activeViaje?.monedaBase || 'COP'
-    };
+  // Cálculo del Balance en tiempo real usando la función centralizada
+  const balance = useMemo(() => {
+    return calculateTripBalance(activeViaje, gastos);
   }, [activeViaje, gastos]);
 
-  const balance = calculateBalance();
+  const calculateBalance = useCallback(() => balance, [balance]);
 
   // Acciones
   const handleSaveViaje = async (nuevoViajeData) => {

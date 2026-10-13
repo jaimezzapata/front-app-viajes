@@ -27,6 +27,7 @@ import WorldMapModal from '../../../components/WorldMapModal';
 import MiniFlag from '../../../components/MiniFlag';
 import { extractVisitedCountries, cleanCountryText } from '../../../utils/countries';
 import { extractFlightTrajectories } from '../../../utils/geoCoordinates';
+import { cleanMetaText } from '../../../utils/meta';
 import {
   CURRENCY_MAP,
   formatCurrencyDisplay,
@@ -583,9 +584,9 @@ export function ItinerarioView({
                   )}
 
                   {/* Notas */}
-                  {ev.notas && (
+                  {cleanMetaText(ev.notas) && (
                     <p className="text-xs text-[#8492A6] bg-[#151B27] p-2 rounded-lg border border-[#1C2436] m-0 relative z-10 mb-2">
-                      {ev.notas}
+                      {cleanMetaText(ev.notas)}
                     </p>
                   )}
 

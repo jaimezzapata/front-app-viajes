@@ -32,6 +32,8 @@ import CompartirViajeModal from './CompartirViajeModal';
 import { cleanCountryText, fixAccents, extractVisitedCountries, getCountryFlag } from '../../../utils/countries';
 import { extractFlightTrajectories } from '../../../utils/geoCoordinates';
 import { formatCurrencyDisplay, CURRENCY_MAP } from '../../../utils/currencies';
+import { calculateTripBalance } from '../../../utils/balance';
+import { cleanMetaText, parseEventoMeta, parseViajeMeta } from '../../../utils/meta';
 import { apiRequest } from '../../../services/api';
 
 const EVENT_TYPE_ICONS = {
@@ -73,8 +75,8 @@ export function SharedViajeView({ shareId, shareDataRaw, onExit, onGoToApp }) {
           const parsed = JSON.parse(jsonStr);
           if (parsed && parsed.viaje) {
             if (isMounted) {
-              setViaje(parsed.viaje);
-              setEventos(parsed.eventos || parsed.itinerario || []);
+              setViaje(parseViajeMeta(parsed.viaje));
+              setEventos((parsed.eventos || parsed.itinerario || []).map(parseEventoMeta));
               setGastos(parsed.gastos || []);
               setDocumentos(parsed.documentos || []);
               setLoading(false);
@@ -93,8 +95,8 @@ export function SharedViajeView({ shareId, shareDataRaw, onExit, onGoToApp }) {
           const res = await apiRequest(`/viajes/${shareId}`);
           const data = res?.data || res;
           if (data && isMounted) {
-            setViaje(data);
-            setEventos(data.itinerarios || data.eventos || []);
+            setViaje(parseViajeMeta(data));
+            setEventos((data.itinerarios || data.eventos || []).map(parseEventoMeta));
             setGastos(data.gastos || []);
             setDocumentos(data.documentos || []);
             setLoading(false);
@@ -110,8 +112,8 @@ export function SharedViajeView({ shareId, shareDataRaw, onExit, onGoToApp }) {
           if (directShared) {
             const parsed = JSON.parse(directShared);
             if (parsed && parsed.viaje && isMounted) {
-              setViaje(parsed.viaje);
-              setEventos(parsed.eventos || parsed.itinerario || []);
+              setViaje(parseViajeMeta(parsed.viaje));
+              setEventos((parsed.eventos || parsed.itinerario || []).map(parseEventoMeta));
               setGastos(parsed.gastos || []);
               setDocumentos(parsed.documentos || []);
               setLoading(false);
@@ -124,10 +126,10 @@ export function SharedViajeView({ shareId, shareDataRaw, onExit, onGoToApp }) {
             const list = JSON.parse(savedViajes);
             const found = list.find((v) => v.id === shareId);
             if (found && isMounted) {
-              setViaje(found);
+              setViaje(parseViajeMeta(found));
 
               const savedEv = localStorage.getItem(`app_viajes_eventos_${shareId}`);
-              if (savedEv) setEventos(JSON.parse(savedEv) || []);
+              if (savedEv) setEventos((JSON.parse(savedEv) || []).map(parseEventoMeta));
 
               const savedGastos = localStorage.getItem(`app_viajes_gastos_${shareId}`);
               if (savedGastos) setGastos(JSON.parse(savedGastos) || []);
@@ -169,18 +171,11 @@ export function SharedViajeView({ shareId, shareDataRaw, onExit, onGoToApp }) {
     return extractFlightTrajectories(eventos, [viaje]);
   }, [viaje, eventos]);
 
-  // Cálculo de totales financieros y estado
+  // Cálculo de totales financieros y estado unificado (Single Source of Truth)
   const { totalGastadoCOP, totalGastadoUSD, diffDays, status } = useMemo(() => {
     if (!viaje) return { totalGastadoCOP: 0, totalGastadoUSD: 0, diffDays: 0, status: null };
 
-    let cop = 0;
-    let usd = 0;
-    gastos.forEach((g) => {
-      if (!g.noComputar) {
-        cop += Number(g.montoCOP) || 0;
-        usd += Number(g.montoUSD) || 0;
-      }
-    });
+    const tripBalance = calculateTripBalance(viaje, gastos);
 
     const start = new Date(viaje.fechaInicio);
     const end = new Date(viaje.fechaFin);
@@ -195,8 +190,8 @@ export function SharedViajeView({ shareId, shareDataRaw, onExit, onGoToApp }) {
     }
 
     return {
-      totalGastadoCOP: Math.round(cop),
-      totalGastadoUSD: Math.round(usd),
+      totalGastadoCOP: Math.round(tripBalance.totalGastadoCOP),
+      totalGastadoUSD: Math.round(tripBalance.totalGastadoUSD),
       diffDays: days,
       status: st
     };
@@ -570,11 +565,26 @@ export function SharedViajeView({ shareId, shareDataRaw, onExit, onGoToApp }) {
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <h4 className="text-sm font-bold text-[#F1F5F9] m-0 truncate">
-                                    {fixAccents(ev.titulo)}
+                                    {cleanMetaText(fixAccents(ev.titulo))}
                                   </h4>
                                   <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#151B27] text-[#00E5FF] border border-[#1C2436]">
                                     {ev.tipo || 'Actividad'}
                                   </span>
+                                  {isVuelo && ev.tramo && (
+                                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#00E5FF]/10 text-[#00E5FF] border border-[#00E5FF]/30">
+                                      {ev.tramo === 'ida' ? 'Ida' : 'Regreso'}
+                                    </span>
+                                  )}
+                                  {ev.descontarPresupuesto === false && (
+                                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#8492A6]/10 text-[#8492A6] border border-[#8492A6]/30">
+                                      Fuera de Presupuesto
+                                    </span>
+                                  )}
+                                  {ev.pagadoAdelantado && (
+                                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#B55FE6]/10 text-[#B55FE6] border border-[#B55FE6]/30">
+                                      Pre-Viaje
+                                    </span>
+                                  )}
                                 </div>
 
                                 <p className="text-xs text-[#8492A6] m-0 mt-0.5 flex items-center gap-1.5">
@@ -596,27 +606,30 @@ export function SharedViajeView({ shareId, shareDataRaw, onExit, onGoToApp }) {
                           {/* Detalles logísticos para vuelos */}
                           {isVuelo && (ev.ciudadOrigen || ev.ciudadDestino || ev.aeropuertoOrigen || ev.aeropuertoDestino) && (
                             <div className="mt-2.5 p-2.5 rounded-lg bg-[#151B27]/60 border border-[#1C2436] flex items-center gap-2 text-xs flex-wrap">
-                              <span className="text-[#00FF85] font-semibold">
+                              <span className="text-[#00FF85] font-semibold flex items-center gap-1">
+                                {ev.paisOrigen && <MiniFlag country={ev.paisOrigen} className="w-3 h-2" />}
                                 {ev.aeropuertoOrigen || ev.ciudadOrigen || 'Origen'}
                               </span>
                               <span className="text-[#8492A6]">➔</span>
                               {ev.tieneConexion && (
                                 <>
-                                  <span className="text-[#FFE500] font-semibold">
-                                    Escala: {ev.aeropuertoConexion || ev.ciudadConexion || 'Conexión'}
+                                  <span className="text-[#FFE500] font-semibold flex items-center gap-1">
+                                    {ev.escalaMayor24h ? 'Stopover' : 'Escala'}: {ev.aeropuertoConexion || ev.ciudadConexion || 'Conexión'}
+                                    {ev.horasEscala ? ` (${ev.horasEscala}h)` : ''}
                                   </span>
                                   <span className="text-[#8492A6]">➔</span>
                                 </>
                               )}
-                              <span className="text-[#00E5FF] font-semibold">
+                              <span className="text-[#00E5FF] font-semibold flex items-center gap-1">
                                 {ev.aeropuertoDestino || ev.ciudadDestino || 'Destino'}
+                                {ev.paisDestino && <MiniFlag country={ev.paisDestino} className="w-3 h-2" />}
                               </span>
                             </div>
                           )}
 
-                          {ev.notas && (
-                            <p className="mt-2 text-xs text-[#8492A6] bg-[#0A0D14] p-2 rounded border border-[#1C2436]/40 m-0">
-                              {ev.notas}
+                          {cleanMetaText(ev.notas) && (
+                            <p className="mt-2 text-xs text-[#8492A6] bg-[#0A0D14] p-2.5 rounded-lg border border-[#1C2436]/40 m-0">
+                              {cleanMetaText(ev.notas)}
                             </p>
                           )}
                         </div>

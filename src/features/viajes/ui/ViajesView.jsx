@@ -30,6 +30,7 @@ import WatermarkIcon from '../../../components/WatermarkIcon';
 import MiniFlag from '../../../components/MiniFlag';
 import { extractVisitedCountries, getCountryFlag, cleanCountryText, fixAccents } from '../../../utils/countries';
 import { extractFlightTrajectories } from '../../../utils/geoCoordinates';
+import { calculateTripBalance } from '../../../utils/balance';
 
 export function ViajesView({
   viajes = [],
@@ -171,69 +172,13 @@ export function ViajesView({
     }
   }, [selectedViajeId, activeViajeId, documentos]);
 
-  // Métricas financieras calculadas exclusivamente para el viaje seleccionado
+  // Métricas financieras calculadas con la función canónica única del sistema (Single Source of Truth)
   const tripMetrics = useMemo(() => {
-    if (!currentViaje) {
-      return {
-        presupuesto: 0,
-        monedaBase: 'COP',
-        totalGastadoCOP: 0,
-        totalGastadoUSD: 0,
-        totalFueraPresupuestoCOP: 0,
-        gastosComputablesCount: 0,
-        saldoRestante: 0,
-        porcentajePresupuesto: 0,
-        isOverBudget: false
-      };
+    if (selectedViajeId === activeViajeId && balance) {
+      return balance;
     }
-
-    const presupuesto = Number(currentViaje.presupuestoTotal) || 0;
-    const monedaBase = (currentViaje.monedaBase || 'COP').toUpperCase();
-
-    let totalGastadoCOP = 0;
-    let totalGastadoUSD = 0;
-    let totalFueraPresupuestoCOP = 0;
-    let gastosComputablesCount = 0;
-
-    tripGastos.forEach((g) => {
-      const cop = Number(g.montoCOP) || 0;
-      const usd = Number(g.montoUSD) || 0;
-
-      // Si no computa (ej. vuelos marcados para no descontar de presupuesto o compras a terceros)
-      if (g.noComputar) {
-        totalFueraPresupuestoCOP += cop;
-        return;
-      }
-
-      if (g.esIngreso) {
-        totalGastadoCOP -= cop;
-        totalGastadoUSD -= usd;
-        return;
-      }
-
-      totalGastadoCOP += cop;
-      totalGastadoUSD += usd;
-      gastosComputablesCount++;
-    });
-
-    const gastoBase = monedaBase === 'USD' ? totalGastadoUSD : totalGastadoCOP;
-    const saldoRestante = presupuesto - gastoBase;
-    const porcentajePresupuesto = presupuesto > 0 ? Math.round((gastoBase / presupuesto) * 100) : 0;
-    const isOverBudget = saldoRestante < 0;
-
-    return {
-      presupuesto,
-      monedaBase,
-      totalGastadoCOP,
-      totalGastadoUSD,
-      totalFueraPresupuestoCOP,
-      gastosComputablesCount,
-      gastoBase,
-      saldoRestante,
-      porcentajePresupuesto,
-      isOverBudget
-    };
-  }, [currentViaje, tripGastos]);
+    return calculateTripBalance(currentViaje, tripGastos);
+  }, [selectedViajeId, activeViajeId, balance, currentViaje, tripGastos]);
 
   // Calcular estado del viaje (en curso, próximo, finalizado)
   const getViajeStatus = (viaje) => {

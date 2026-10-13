@@ -15,6 +15,7 @@ import {
 import Modal from '../../../components/Modal';
 import MiniFlag from '../../../components/MiniFlag';
 import { cleanCountryText, fixAccents } from '../../../utils/countries';
+import { parseEventoMeta, parseViajeMeta } from '../../../utils/meta';
 import { toast } from 'sonner';
 
 export function CompartirViajeModal({
@@ -33,8 +34,8 @@ export function CompartirViajeModal({
     if (viaje && viaje.id) {
       try {
         const sharedPayload = {
-          viaje,
-          eventos: eventos || [],
+          viaje: parseViajeMeta(viaje),
+          eventos: (eventos || []).map(parseEventoMeta),
           gastos: gastos || []
         };
         localStorage.setItem(`app_viajes_shared_${viaje.id}`, JSON.stringify(sharedPayload));
@@ -83,8 +84,8 @@ ${shareUrl}`;
         app: 'Bitácora de Viajes',
         version: '1.0',
         fechaExportacion: new Date().toISOString(),
-        viaje,
-        itinerario: eventos,
+        viaje: parseViajeMeta(viaje),
+        itinerario: (eventos || []).map(parseEventoMeta),
         gastos
       };
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
