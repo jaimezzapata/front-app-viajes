@@ -179,6 +179,8 @@ export function ViajesView({
         monedaBase: 'COP',
         totalGastadoCOP: 0,
         totalGastadoUSD: 0,
+        totalFueraPresupuestoCOP: 0,
+        gastosComputablesCount: 0,
         saldoRestante: 0,
         porcentajePresupuesto: 0,
         isOverBudget: false
@@ -188,8 +190,31 @@ export function ViajesView({
     const presupuesto = Number(currentViaje.presupuestoTotal) || 0;
     const monedaBase = (currentViaje.monedaBase || 'COP').toUpperCase();
 
-    const totalGastadoCOP = tripGastos.reduce((sum, g) => sum + (Number(g.montoCOP) || 0), 0);
-    const totalGastadoUSD = tripGastos.reduce((sum, g) => sum + (Number(g.montoUSD) || 0), 0);
+    let totalGastadoCOP = 0;
+    let totalGastadoUSD = 0;
+    let totalFueraPresupuestoCOP = 0;
+    let gastosComputablesCount = 0;
+
+    tripGastos.forEach((g) => {
+      const cop = Number(g.montoCOP) || 0;
+      const usd = Number(g.montoUSD) || 0;
+
+      // Si no computa (ej. vuelos marcados para no descontar de presupuesto o compras a terceros)
+      if (g.noComputar) {
+        totalFueraPresupuestoCOP += cop;
+        return;
+      }
+
+      if (g.esIngreso) {
+        totalGastadoCOP -= cop;
+        totalGastadoUSD -= usd;
+        return;
+      }
+
+      totalGastadoCOP += cop;
+      totalGastadoUSD += usd;
+      gastosComputablesCount++;
+    });
 
     const gastoBase = monedaBase === 'USD' ? totalGastadoUSD : totalGastadoCOP;
     const saldoRestante = presupuesto - gastoBase;
@@ -201,6 +226,8 @@ export function ViajesView({
       monedaBase,
       totalGastadoCOP,
       totalGastadoUSD,
+      totalFueraPresupuestoCOP,
+      gastosComputablesCount,
       gastoBase,
       saldoRestante,
       porcentajePresupuesto,
@@ -600,10 +627,11 @@ export function ViajesView({
                 Gastado (COP)
               </p>
               <p className="text-lg sm:text-xl font-black text-[#00E5FF] mt-0.5 m-0 truncate">
-                ${tripMetrics.totalGastadoCOP.toLocaleString('es-CO')}
+                ${Math.round(tripMetrics.totalGastadoCOP).toLocaleString('es-CO')}
               </p>
               <span className="text-[10px] text-[#8492A6] mt-0.5 inline-block">
-                {tripGastos.length} gastos registrados
+                {tripMetrics.gastosComputablesCount} en presupuesto
+                {tripMetrics.totalFueraPresupuestoCOP > 0 && ` • $${Math.round(tripMetrics.totalFueraPresupuestoCOP).toLocaleString('es-CO')} fuera`}
               </span>
             </div>
 
@@ -628,11 +656,11 @@ export function ViajesView({
                   Saldo Disponible
                 </p>
                 <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${tripMetrics.isOverBudget ? 'text-[#FF2E55] bg-[#FF2E55]/10' : 'text-[#00FF85] bg-[#00FF85]/10'}`}>
-                  {tripMetrics.porcentajePresupuesto}%
+                  {tripMetrics.isOverBudget ? `${tripMetrics.porcentajePresupuesto}%` : `${Math.max(0, 100 - tripMetrics.porcentajePresupuesto)}% libre`}
                 </span>
               </div>
               <p className={`text-lg sm:text-xl font-black mt-0.5 m-0 truncate ${tripMetrics.isOverBudget ? 'text-[#FF2E55]' : 'text-[#00FF85]'}`}>
-                ${tripMetrics.saldoRestante.toLocaleString('es-CO')}
+                ${Math.round(tripMetrics.saldoRestante).toLocaleString('es-CO')}
               </p>
               <span className="text-[10px] text-[#8492A6] mt-0.5 inline-block">
                 {tripMetrics.isOverBudget ? '⚠️ Presupuesto excedido' : 'Dentro de lo planeado'}

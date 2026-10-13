@@ -102,7 +102,7 @@ export function NuevoEventoModal({
       setUbicacion(eventoAEditar.ubicacion || '');
       setCosto(eventoAEditar.costo !== undefined && eventoAEditar.costo !== null ? String(eventoAEditar.costo) : '');
       setMoneda(eventoAEditar.moneda || monedaDefault || 'COP');
-      setNotas(eventoAEditar.notas || '');
+      setNotas((eventoAEditar.notas || '').replace(/\n?<!--META:.*?:META-->/g, '').trim());
 
       const initialDescontar = eventoAEditar.descontarPresupuesto !== undefined
         ? Boolean(eventoAEditar.descontarPresupuesto)

@@ -218,7 +218,7 @@ export function BilleteraView({
                         )}
                         {isTerceros && (
                           <span className="text-[10px] font-bold text-[#B55FE6] bg-[#B55FE6]/10 border border-[#B55FE6]/30 px-1.5 py-0.2 rounded">
-                            Encargo (No Computa)
+                            {g.eventoId || g.categoria === 'transporte' || g.categoria === 'alojamiento' ? 'Fuera de Presupuesto' : 'Encargo (No Computa)'}
                           </span>
                         )}
                         {isIngreso && (

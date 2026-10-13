@@ -442,24 +442,26 @@ export function useAppViajes(usuario) {
     };
 
     for (const g of gastos) {
+      if (g.pagadoAdelantado) {
+        pagadoAdelantadoCOP += (g.montoCOP || 0);
+      }
+
       if (g.noComputar) {
-        comprasTercerosCOP += g.montoCOP;
+        comprasTercerosCOP += (g.montoCOP || 0);
         continue;
       }
       if (g.esIngreso) {
-        ingresosCOP += g.montoCOP;
-        totalGastadoCOP -= g.montoCOP;
-        totalGastadoUSD -= g.montoUSD;
+        ingresosCOP += (g.montoCOP || 0);
+        totalGastadoCOP -= (g.montoCOP || 0);
+        totalGastadoUSD -= (g.montoUSD || 0);
         continue;
       }
 
-      totalGastadoCOP += g.montoCOP;
-      totalGastadoUSD += g.montoUSD;
+      totalGastadoCOP += (g.montoCOP || 0);
+      totalGastadoUSD += (g.montoUSD || 0);
 
-      if (g.pagadoAdelantado) {
-        pagadoAdelantadoCOP += g.montoCOP;
-      } else {
-        enRutaCOP += g.montoCOP;
+      if (!g.pagadoAdelantado) {
+        enRutaCOP += (g.montoCOP || 0);
       }
 
       const cat = g.categoria?.toLowerCase() || 'otros';
