@@ -115,12 +115,12 @@ export function ItinerarioView({
   const cleanDestino = cleanCountryText(activeViaje.destino);
 
   return (
-    <div className="relative min-h-[calc(100vh-140px)] pb-24 md:pb-8 w-full max-w-full overflow-hidden">
+    <div className="relative min-h-[calc(100vh-140px)] pb-24 md:pb-8 w-full max-w-full">
       {/* Marca de agua sólida del módulo de itinerario */}
       <WatermarkIcon icon={Compass} className="w-72 h-72 top-4 right-2 pointer-events-none" opacity="opacity-[0.02]" color="text-[#00E5FF]" />
 
-      {/* Header y Acciones - Mobile First */}
-      <div className="flex items-start sm:items-center justify-between gap-3 mb-4 sm:mb-6 relative z-10">
+      {/* Header y Botón Original - Fijado con el scroll vertical (PC y Móvil) */}
+      <div className="sticky top-[48px] sm:top-[53px] z-25 -mx-3 sm:-mx-5 lg:-mx-6 px-3 sm:px-5 lg:px-6 py-2.5 sm:py-3 bg-[#080A0F]/95 backdrop-blur-md border-b border-[#1C2436]/80 flex items-center justify-between gap-3 mb-4 sm:mb-6 shadow-md transition-all">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="w-2 h-2 rounded-full bg-[#00E5FF] shrink-0" />
@@ -128,12 +128,12 @@ export function ItinerarioView({
               Itinerario
             </h2>
             {cleanDestino && (
-              <span className="text-xs sm:text-sm font-semibold text-[#00E5FF] bg-[#00E5FF]/10 border border-[#00E5FF]/20 px-2 py-0.5 rounded-md truncate max-w-[220px] sm:max-w-md">
+              <span className="text-xs sm:text-sm font-semibold text-[#00E5FF] bg-[#00E5FF]/10 border border-[#00E5FF]/20 px-2 py-0.5 rounded-md truncate max-w-[150px] sm:max-w-md">
                 {cleanDestino}
               </span>
             )}
           </div>
-          <p className="hidden sm:block text-xs text-[#8492A6] mt-1 m-0">
+          <p className="hidden md:block text-xs text-[#8492A6] mt-0.5 m-0">
             Línea de tiempo cronológica: orígenes, conexiones aéreas, horarios y actividades.
           </p>
         </div>
@@ -153,7 +153,7 @@ export function ItinerarioView({
 
           <button
             onClick={onAddEvento}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#00E5FF] text-[#080A0F] font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-lg bg-[#00E5FF] text-[#080A0F] font-bold text-xs uppercase tracking-wider hover:opacity-90 hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] transition-all cursor-pointer shadow-sm"
           >
             <Plus className="w-4 h-4" strokeWidth={2.5} />
             <span>Vuelo / Actividad</span>

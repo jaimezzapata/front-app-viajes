@@ -28,7 +28,7 @@
   html {
     width: 100%;
     max-width: 100%;
-    overflow-x: hidden !important;
+    overflow-x: clip;
   }
 
   body {
@@ -39,7 +39,7 @@
     padding: 0;
     width: 100%;
     max-width: 100%;
-    overflow-x: hidden !important;
+    overflow-x: clip;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     transition: background-color 0.2s ease, color 0.2s ease;
@@ -48,7 +48,6 @@
   #root {
     width: 100%;
     max-width: 100%;
-    overflow-x: hidden !important;
     min-height: 100vh;
   }
 }

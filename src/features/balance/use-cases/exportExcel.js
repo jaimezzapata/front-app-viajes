@@ -1,351 +1,842 @@
 import ExcelJS from 'exceljs';
 
 /**
- * exportTripExcel: Genera una hoja de cálculo profesional (.xlsx) con diseño premium,
- * formato numérico contable, colores y desglose detallado de bitácora y finanzas.
+ * exportTripExcel: Genera un libro de cálculo profesional (.xlsx)
+ * con diseño Ejecutivo Moderno (fondos oscuros elegantes #0F172A,
+ * tarjetas KPI estilo dashboard, fórmulas nativas de Excel y desglose contable exhaustivo).
  */
 export async function exportTripExcel({ viaje, balance, gastos = [], eventos = [] }) {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'Bitácora de Viajes App';
+  workbook.creator = 'Bitácora de Viajes App - Z-Suite';
   workbook.lastModifiedBy = 'Bitácora de Viajes App';
   workbook.created = new Date();
   workbook.modified = new Date();
 
-  // Paleta de colores corporativa (Diseño Oscuro / Ejecutivo)
-  const HEADER_FILL = {
-    type: 'pattern',
-    pattern: 'solid',
-    fgColor: { argb: 'FF0E121B' } // #0E121B
-  };
-  const SUBHEADER_FILL = {
-    type: 'pattern',
-    pattern: 'solid',
-    fgColor: { argb: 'FF151B27' } // #151B27
-  };
-  const HIGHLIGHT_FILL = {
-    type: 'pattern',
-    pattern: 'solid',
-    fgColor: { argb: 'FF00FF85' } // #00FF85 (Verde Neón)
-  };
-  const CYAN_TEXT = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF00E5FF' } };
-  const WHITE_TEXT = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFF1F5F9' } };
-  const MUTED_TEXT = { name: 'Arial', size: 9, color: { argb: 'FF8492A6' } };
-  const THIN_BORDER = {
-    top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-    left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-    bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-    right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+  // =========================================================================
+  // PALETA DE COLORES - DISEÑO EJECUTIVO MODERNO (#0F172A / SLATE / NEON)
+  // =========================================================================
+  const PALETTE = {
+    darkHeader: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } }, // #0F172A
+    slateCard: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } },  // #1E293B
+    cardHeader: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } }, // #334155
+    zebraLight: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } }, // #F8FAFC
+    highlightRow: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } },
+    greenTag: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDCFCE7' } },
+    yellowTag: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF9C3' } },
+    redTag: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEE2E2' } },
   };
 
+  const FONTS = {
+    titleMain: { name: 'Segoe UI', size: 14, bold: true, color: { argb: 'FF00FF85' } }, // Neon Green
+    titleSub: { name: 'Segoe UI', size: 9.5, italic: true, color: { argb: 'FFCBD5E1' } },
+    sectionHeader: { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FF38BDF8' } }, // Sky Cyan
+    tableHeader: { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FFF8FAFC' } },
+    kpiLabel: { name: 'Segoe UI', size: 8.5, bold: true, color: { argb: 'FF94A3B8' } },
+    kpiValueGreen: { name: 'Segoe UI', size: 15, bold: true, color: { argb: 'FF00FF85' } },
+    kpiValueCyan: { name: 'Segoe UI', size: 15, bold: true, color: { argb: 'FF38BDF8' } },
+    kpiValueWhite: { name: 'Segoe UI', size: 15, bold: true, color: { argb: 'FFF8FAFC' } },
+    kpiValueAmber: { name: 'Segoe UI', size: 15, bold: true, color: { argb: 'FFFBBF24' } },
+    kpiSubtext: { name: 'Segoe UI', size: 8.5, color: { argb: 'FF94A3B8' } },
+    boldText: { name: 'Segoe UI', size: 9.5, bold: true, color: { argb: 'FF0F172A' } },
+    regularText: { name: 'Segoe UI', size: 9.5, color: { argb: 'FF334155' } },
+    mutedText: { name: 'Segoe UI', size: 8.5, color: { argb: 'FF64748B' } },
+    totalLabel: { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FF00FF85' } }
+  };
+
+  const BORDERS = {
+    thinSlate: {
+      top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+      left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+      bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+      right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+    },
+    cardBorder: {
+      top: { style: 'medium', color: { argb: 'FF475569' } },
+      left: { style: 'medium', color: { argb: 'FF475569' } },
+      bottom: { style: 'medium', color: { argb: 'FF475569' } },
+      right: { style: 'medium', color: { argb: 'FF475569' } }
+    },
+    totalDouble: {
+      top: { style: 'thin', color: { argb: 'FF475569' } },
+      bottom: { style: 'double', color: { argb: 'FF00FF85' } },
+      left: { style: 'thin', color: { argb: 'FF475569' } },
+      right: { style: 'thin', color: { argb: 'FF475569' } }
+    }
+  };
+
+  // Metadatos calculados de viaje
+  const fechaInicio = viaje?.fechaInicio ? new Date(viaje.fechaInicio) : null;
+  const fechaFin = viaje?.fechaFin ? new Date(viaje.fechaFin) : null;
+  const diasTotales = (fechaInicio && fechaFin && fechaFin >= fechaInicio)
+    ? Math.max(1, Math.round((fechaFin - fechaInicio) / (1000 * 60 * 60 * 24)) + 1)
+    : 1;
+
+  const monedaBase = (viaje?.monedaBase || 'COP').toUpperCase();
+  const monedaRef = (viaje?.monedaReferencia || 'USD').toUpperCase();
+  const monedaLocal = (viaje?.monedaLocal || 'USD').toUpperCase();
+  const safeGastos = Array.isArray(gastos) ? gastos : [];
+  const safeEventos = Array.isArray(eventos) ? eventos : [];
+
+  // Filas en Hoja de Gastos (para fórmulas de suma y sumifs)
+  const gastosStartRow = 4;
+  const gastosEndRow = safeGastos.length > 0 ? (gastosStartRow + safeGastos.length - 1) : 4;
+
   // =========================================================================
-  // HOJA 1: RESUMEN FINANCIERO Y PRESUPUESTO
+  // HOJA 1: 📊 DASHBOARD EJECUTIVO & RESUMEN FINANCIERO
   // =========================================================================
-  const wsBalance = workbook.addWorksheet('📊 Resumen Financiero', {
+  const wsDashboard = workbook.addWorksheet('📊 Dashboard Ejecutivo', {
     views: [{ showGridLines: true }]
   });
 
-  // Título del Viaje
-  wsBalance.mergeCells('A1:E1');
-  const titleCell = wsBalance.getCell('A1');
-  titleCell.value = `BITÁCORA DE VIAJE - REPORTE EJECUTIVO: ${(viaje?.titulo || 'Mi Viaje').toUpperCase()}`;
-  titleCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FF00FF85' } };
-  titleCell.fill = HEADER_FILL;
-  titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
-  wsBalance.getRow(1).height = 30;
+  // Anchos optimizados de columnas para el Dashboard (A a F)
+  wsDashboard.getColumn(1).width = 28; // A: Categoría / Concepto
+  wsDashboard.getColumn(2).width = 24; // B: Límite / Metadato
+  wsDashboard.getColumn(3).width = 24; // C: Consumido / Gasto
+  wsDashboard.getColumn(4).width = 22; // D: Saldo / Diferencia
+  wsDashboard.getColumn(5).width = 18; // E: % Consumido
+  wsDashboard.getColumn(6).width = 22; // F: Estado Semáforo
 
-  // Subtítulo con metadatos
-  wsBalance.mergeCells('A2:E2');
-  const subCell = wsBalance.getCell('A2');
-  subCell.value = `Destino: ${viaje?.destino || 'Varios'} | Fechas: ${viaje?.fechaInicio ? new Date(viaje.fechaInicio).toLocaleDateString() : ''} - ${viaje?.fechaFin ? new Date(viaje.fechaFin).toLocaleDateString() : ''} | Moneda Base: ${viaje?.monedaBase || 'COP'}`;
-  subCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FFCBD5E1' } };
-  subCell.fill = SUBHEADER_FILL;
-  subCell.alignment = { vertical: 'middle', horizontal: 'center' };
-  wsBalance.getRow(2).height = 20;
+  // 1. BANNER PRINCIPAL DEL VIAJE
+  wsDashboard.mergeCells('A1:F1');
+  const mainTitle = wsDashboard.getCell('A1');
+  mainTitle.value = `✈️ BITÁCORA DE VIAJE | REPORTE EJECUTIVO: ${(viaje?.titulo || 'Mi Viaje').toUpperCase()}`;
+  mainTitle.font = FONTS.titleMain;
+  mainTitle.fill = PALETTE.darkHeader;
+  mainTitle.alignment = { vertical: 'middle', horizontal: 'center' };
+  wsDashboard.getRow(1).height = 36;
 
-  // Espacio
-  wsBalance.addRow([]);
+  wsDashboard.mergeCells('A2:F2');
+  const subTitle = wsDashboard.getCell('A2');
+  const fechasStr = fechaInicio && fechaFin
+    ? `${fechaInicio.toLocaleDateString('es-CO')} al ${fechaFin.toLocaleDateString('es-CO')}`
+    : 'Fechas no definidas';
+  subTitle.value = `Destino: ${viaje?.destino || 'Varios'}  •  Duración: ${diasTotales} días (${fechasStr})  •  Moneda Base: ${monedaBase}  •  Referencia: ${monedaRef}  •  Moneda Local: ${monedaLocal}`;
+  subTitle.font = FONTS.titleSub;
+  subTitle.fill = PALETTE.slateCard;
+  subTitle.alignment = { vertical: 'middle', horizontal: 'center' };
+  wsDashboard.getRow(2).height = 24;
 
-  // Sección 1: Indicadores Financieros Clave (KPIs)
-  wsBalance.mergeCells('A4:C4');
-  const kpiHeader = wsBalance.getCell('A4');
-  kpiHeader.value = '1. INDICADORES FINANCIEROS CLAVE (KPIs)';
-  kpiHeader.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FF00E5FF' } };
-  kpiHeader.fill = HEADER_FILL;
+  // Espacio fila 3
+  wsDashboard.getRow(3).height = 12;
 
-  const kpis = [
-    ['Presupuesto Total Estimado (COP)', Number(balance?.presupuestoTotalCOP || 0), '$#,##0'],
-    ['Total Gastado Real (COP)', Number(balance?.totalGastadoCOP || 0), '$#,##0'],
-    ['Total Gastado de Referencia (USD)', Number(balance?.totalGastadoUSD || 0), '$#,##0.00'],
-    ['Costos Hundidos (Pagado por Adelantado)', Number(balance?.pagadoAdelantadoCOP || 0), '$#,##0'],
-    ['Dinero Requerido en Ruta (Efectivo / Tarjetas)', Number(balance?.dineroRequeridoEnRutaCOP || 0), '$#,##0'],
-    ['Balance Disponible Restante (COP)', Number(balance?.balanceDisponibleCOP || 0), '$#,##0'],
-    ['Porcentaje de Presupuesto Consumido', (Number(balance?.porcentajeConsumido || 0)) / 100, '0.0%']
+  // -------------------------------------------------------------------------
+  // 2. TARJETAS KPI EJECUTIVAS (FILA 1: PRESUPUESTO, GASTO REAL, BALANCE)
+  // -------------------------------------------------------------------------
+  // Helper para dibujar una tarjeta KPI elegante de 2 columnas de ancho
+  function renderKpiCard({ startCol, endCol, startRow, label, formulaVal, rawVal, numFmt, fontVal, subtext }) {
+    const colA = startCol;
+    const colB = endCol;
+
+    // Fila 1: Encabezado de la Tarjeta (Label)
+    wsDashboard.mergeCells(`${colA}${startRow}:${colB}${startRow}`);
+    const lblCell = wsDashboard.getCell(`${colA}${startRow}`);
+    lblCell.value = label;
+    lblCell.font = FONTS.kpiLabel;
+    lblCell.fill = PALETTE.cardHeader;
+    lblCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Fila 2: Valor principal
+    wsDashboard.mergeCells(`${colA}${startRow + 1}:${colB}${startRow + 1}`);
+    const valCell = wsDashboard.getCell(`${colA}${startRow + 1}`);
+    if (formulaVal) {
+      valCell.value = { formula: formulaVal, result: rawVal };
+    } else {
+      valCell.value = rawVal;
+    }
+    valCell.numFmt = numFmt;
+    valCell.font = fontVal;
+    valCell.fill = PALETTE.slateCard;
+    valCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Fila 3: Subtexto / Contexto
+    wsDashboard.mergeCells(`${colA}${startRow + 2}:${colB}${startRow + 2}`);
+    const subCell = wsDashboard.getCell(`${colA}${startRow + 2}`);
+    if (typeof subtext === 'object' && subtext.formula) {
+      subCell.value = subtext;
+    } else {
+      subCell.value = subtext;
+    }
+    subCell.font = FONTS.kpiSubtext;
+    subCell.fill = PALETTE.slateCard;
+    subCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Bordes de la tarjeta
+    for (let r = startRow; r <= startRow + 2; r++) {
+      const cellA = wsDashboard.getCell(`${colA}${r}`);
+      const cellB = wsDashboard.getCell(`${colB}${r}`);
+      cellA.border = {
+        top: r === startRow ? { style: 'medium', color: { argb: 'FF475569' } } : undefined,
+        bottom: r === startRow + 2 ? { style: 'medium', color: { argb: 'FF475569' } } : undefined,
+        left: { style: 'medium', color: { argb: 'FF475569' } }
+      };
+      cellB.border = {
+        top: r === startRow ? { style: 'medium', color: { argb: 'FF475569' } } : undefined,
+        bottom: r === startRow + 2 ? { style: 'medium', color: { argb: 'FF475569' } } : undefined,
+        right: { style: 'medium', color: { argb: 'FF475569' } }
+      };
+    }
+  }
+
+  // Alturas para filas de KPIs Fila 1
+  wsDashboard.getRow(4).height = 18;
+  wsDashboard.getRow(5).height = 30;
+  wsDashboard.getRow(6).height = 20;
+
+  const presTotalCOP = Number(balance?.presupuestoTotalCOP || viaje?.presupuestoTotal || 0);
+  const gastoRealCOP = Number(balance?.totalGastadoCOP || 0);
+  const balDispCOP = Number(balance?.balanceDisponibleCOP || (presTotalCOP - gastoRealCOP));
+  const promPresDiario = diasTotales > 0 ? Math.round(presTotalCOP / diasTotales) : 0;
+  const promGastoDiario = diasTotales > 0 ? Math.round(gastoRealCOP / diasTotales) : 0;
+
+  // Tarjeta 1: Presupuesto Total
+  renderKpiCard({
+    startCol: 'A', endCol: 'B', startRow: 4,
+    label: '💰 PRESUPUESTO TOTAL ESTIMADO',
+    rawVal: presTotalCOP,
+    numFmt: '$#,##0',
+    fontVal: FONTS.kpiValueCyan,
+    subtext: `Promedio: $${promPresDiario.toLocaleString('es-CO')} / día (${diasTotales} días)`
+  });
+
+  // Tarjeta 2: Total Gastado Real (con fórmula apuntando a la hoja de Gastos)
+  const formulaSumaGastos = safeGastos.length > 0
+    ? `SUM('💳 Desglose de Gastos'!H${gastosStartRow}:H${gastosEndRow})`
+    : '0';
+
+  renderKpiCard({
+    startCol: 'C', endCol: 'D', startRow: 4,
+    label: '💳 TOTAL GASTADO REAL (COP)',
+    formulaVal: formulaSumaGastos,
+    rawVal: gastoRealCOP,
+    numFmt: '$#,##0',
+    fontVal: FONTS.kpiValueWhite,
+    subtext: `Equivalente Ref: $${Number(balance?.totalGastadoUSD || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${monedaRef}`
+  });
+
+  // Tarjeta 3: Balance Disponible (Fórmula: Presupuesto - Gastado)
+  renderKpiCard({
+    startCol: 'E', endCol: 'F', startRow: 4,
+    label: '⚖️ BALANCE DISPONIBLE RESTANTE',
+    formulaVal: 'A5-C5',
+    rawVal: balDispCOP,
+    numFmt: '$#,##0',
+    fontVal: balDispCOP >= 0 ? FONTS.kpiValueGreen : { name: 'Segoe UI', size: 15, bold: true, color: { argb: 'FFFF2E55' } },
+    subtext: { formula: 'IF(E5>=0, "🟢 Superávit Presupuestario", "🔴 Presupuesto Excedido")', result: balDispCOP >= 0 ? '🟢 Superávit Presupuestario' : '🔴 Presupuesto Excedido' }
+  });
+
+  // Espacio fila 7
+  wsDashboard.getRow(7).height = 10;
+
+  // -------------------------------------------------------------------------
+  // 3. TARJETAS KPI EJECUTIVAS (FILA 2: % CONSUMIDO, COSTOS HUNDIDOS, EN RUTA)
+  // -------------------------------------------------------------------------
+  wsDashboard.getRow(8).height = 18;
+  wsDashboard.getRow(9).height = 30;
+  wsDashboard.getRow(10).height = 20;
+
+  const pctConsumido = presTotalCOP > 0 ? (gastoRealCOP / presTotalCOP) : 0;
+  const pagadoAdelantado = Number(balance?.pagadoAdelantadoCOP || 0);
+  const dineroEnRuta = Number(balance?.dineroRequeridoEnRutaCOP || (gastoRealCOP - pagadoAdelantado));
+
+  // Tarjeta 4: % Consumo de Presupuesto
+  renderKpiCard({
+    startCol: 'A', endCol: 'B', startRow: 8,
+    label: '📊 CONSUMO DEL PRESUPUESTO',
+    formulaVal: 'IF(A5>0, C5/A5, 0)',
+    rawVal: pctConsumido,
+    numFmt: '0.0%',
+    fontVal: pctConsumido > 1 ? { name: 'Segoe UI', size: 15, bold: true, color: { argb: 'FFFF2E55' } } : FONTS.kpiValueCyan,
+    subtext: { formula: 'IF(A9>1, "🔴 Sobregiro Crítico", IF(A9>0.8, "🟡 En Alerta Preventiva", "🟢 Consumo Bajo Control"))', result: pctConsumido > 1 ? '🔴 Sobregiro Crítico' : (pctConsumido > 0.8 ? '🟡 En Alerta' : '🟢 Consumo Bajo Control') }
+  });
+
+  // Tarjeta 5: Costos Hundidos (Pre-viaje)
+  renderKpiCard({
+    startCol: 'C', endCol: 'D', startRow: 8,
+    label: '✈️ COSTOS HUNDIDOS (PAGADO PRE-VIAJE)',
+    rawVal: pagadoAdelantado,
+    numFmt: '$#,##0',
+    fontVal: FONTS.kpiValueWhite,
+    subtext: 'Vuelos y hoteles pagados con anterioridad'
+  });
+
+  // Tarjeta 6: Dinero en Ruta Requerido (Efectivo / Tarjeta en destino)
+  renderKpiCard({
+    startCol: 'E', endCol: 'F', startRow: 8,
+    label: '💵 DINERO REQUERIDO EN RUTA',
+    formulaVal: 'C5-C9',
+    rawVal: dineroEnRuta,
+    numFmt: '$#,##0',
+    fontVal: FONTS.kpiValueAmber,
+    subtext: `Ritmo diario real: $${promGastoDiario.toLocaleString('es-CO')} / día`
+  });
+
+  // Espacio fila 11
+  wsDashboard.getRow(11).height = 14;
+
+  // -------------------------------------------------------------------------
+  // 4. SECCIÓN: SEMÁFORO DE CONTROL POR CATEGORÍA
+  // -------------------------------------------------------------------------
+  wsDashboard.mergeCells('A12:F12');
+  const semTitle = wsDashboard.getCell('A12');
+  semTitle.value = '🎯 CONTROL Y SEMÁFORO PRESUPUESTARIO POR CATEGORÍA';
+  semTitle.font = FONTS.sectionHeader;
+  semTitle.fill = PALETTE.darkHeader;
+  semTitle.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+  wsDashboard.getRow(12).height = 26;
+
+  // Cabecera de la tabla de categorías
+  const catHeaders = [
+    'CATEGORÍA',
+    'LÍMITE PRESUPUESTADO (COP)',
+    'CONSUMIDO REAL (COP)',
+    'SALDO RESTANTE (COP)',
+    '% CONSUMIDO',
+    'ESTADO SEMÁFORO'
+  ];
+  const catHeadRow = wsDashboard.addRow(catHeaders);
+  catHeadRow.font = FONTS.tableHeader;
+  catHeadRow.fill = PALETTE.slateCard;
+  catHeadRow.alignment = { vertical: 'middle', horizontal: 'center' };
+  catHeadRow.height = 24;
+
+  // Categorías base estandarizadas
+  const defaultCategories = [
+    { key: 'TRANSPORTE', label: '✈️ TRANSPORTE Y VUELOS', pctDef: 0.30 },
+    { key: 'ALOJAMIENTO', label: '🏨 ALOJAMIENTO Y HOTELES', pctDef: 0.35 },
+    { key: 'COMIDA', label: '🍔 ALIMENTACIÓN Y GASTRONOMÍA', pctDef: 0.15 },
+    { key: 'ACTIVIDADES', label: '🎟️ ACTIVIDADES Y TOURS', pctDef: 0.10 },
+    { key: 'COMPRAS', label: '🛍️ COMPRAS Y RECUERDOS', pctDef: 0.05 },
+    { key: 'OTROS', label: '📦 OTROS Y SERVICIOS', pctDef: 0.05 }
   ];
 
-  kpis.forEach(([concepto, valor, format], i) => {
-    const row = wsBalance.addRow([concepto, valor]);
-    row.getCell(1).font = { name: 'Arial', size: 10, bold: true };
-    row.getCell(1).border = THIN_BORDER;
-    row.getCell(2).font = { name: 'Arial', size: 10, bold: true };
-    row.getCell(2).numFmt = format;
-    row.getCell(2).border = THIN_BORDER;
+  // Si hay semáforo personalizado en balance, lo aprovechamos
+  const semaforoItems = (balance?.semaforoCategorias && balance.semaforoCategorias.length > 0)
+    ? balance.semaforoCategorias.map(sc => {
+        const catKey = (sc.categoria || 'OTROS').toUpperCase();
+        const found = defaultCategories.find(d => d.key === catKey);
+        return {
+          key: catKey,
+          label: found ? found.label : `🏷️ ${catKey}`,
+          limiteCOP: Number(sc.limiteCOP || 0),
+          consumidoCOP: Number(sc.consumidoCOP || 0)
+        };
+      })
+    : defaultCategories.map(d => ({
+        key: d.key,
+        label: d.label,
+        limiteCOP: Math.round(presTotalCOP * d.pctDef),
+        consumidoCOP: 0
+      }));
+
+  const catStartRowNumber = wsDashboard.lastRow.number + 1;
+
+  semaforoItems.forEach((c, idx) => {
+    const currentRowNum = catStartRowNumber + idx;
+    const formulaConsumido = safeGastos.length > 0
+      ? `SUMIFS('💳 Desglose de Gastos'!$H$${gastosStartRow}:'💳 Desglose de Gastos'!$H$${gastosEndRow}, '💳 Desglose de Gastos'!$D$${gastosStartRow}:'💳 Desglose de Gastos'!$D$${gastosEndRow}, "${c.key}")`
+      : '0';
+
+    const formulaSaldo = `B${currentRowNum}-C${currentRowNum}`;
+    const formulaPct = `IF(B${currentRowNum}>0, C${currentRowNum}/B${currentRowNum}, 0)`;
+    const formulaEstado = `IF(E${currentRowNum}>1, "🔴 EXCEDIDO", IF(E${currentRowNum}>0.8, "🟡 EN ALERTA", "🟢 EN CONTROL"))`;
+
+    const realConsumed = c.consumidoCOP || 0;
+    const realPct = c.limiteCOP > 0 ? (realConsumed / c.limiteCOP) : 0;
+    const realEstado = realPct > 1 ? '🔴 EXCEDIDO' : (realPct > 0.8 ? '🟡 EN ALERTA' : '🟢 EN CONTROL');
+
+    const row = wsDashboard.addRow([
+      c.label,
+      c.limiteCOP,
+      { formula: formulaConsumido, result: realConsumed },
+      { formula: formulaSaldo, result: c.limiteCOP - realConsumed },
+      { formula: formulaPct, result: realPct },
+      { formula: formulaEstado, result: realEstado }
+    ]);
+
+    row.height = 22;
+    row.getCell(1).font = FONTS.boldText;
+    row.getCell(2).numFmt = '$#,##0';
+    row.getCell(2).font = FONTS.regularText;
     row.getCell(2).alignment = { horizontal: 'right' };
-    if (i % 2 === 0) {
-      row.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
-      row.getCell(2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+    row.getCell(3).numFmt = '$#,##0';
+    row.getCell(3).font = FONTS.boldText;
+    row.getCell(3).alignment = { horizontal: 'right' };
+    row.getCell(4).numFmt = '$#,##0';
+    row.getCell(4).font = FONTS.regularText;
+    row.getCell(4).alignment = { horizontal: 'right' };
+    row.getCell(5).numFmt = '0.0%';
+    row.getCell(5).alignment = { horizontal: 'center' };
+    row.getCell(5).font = FONTS.boldText;
+    row.getCell(6).alignment = { horizontal: 'center' };
+    row.getCell(6).font = FONTS.boldText;
+
+    // Colores visuales condicionales para la etiqueta del semáforo
+    if (realPct > 1) {
+      row.getCell(6).fill = PALETTE.redTag;
+      row.getCell(6).font = { name: 'Segoe UI', size: 9.5, bold: true, color: { argb: 'FFDC2626' } };
+    } else if (realPct > 0.8) {
+      row.getCell(6).fill = PALETTE.yellowTag;
+      row.getCell(6).font = { name: 'Segoe UI', size: 9.5, bold: true, color: { argb: 'FFCA8A04' } };
+    } else {
+      row.getCell(6).fill = PALETTE.greenTag;
+      row.getCell(6).font = { name: 'Segoe UI', size: 9.5, bold: true, color: { argb: 'FF16A34A' } };
+    }
+
+    if (idx % 2 === 1) {
+      for (let col = 1; col <= 5; col++) {
+        row.getCell(col).fill = PALETTE.zebraLight;
+      }
+    }
+
+    for (let col = 1; col <= 6; col++) {
+      row.getCell(col).border = BORDERS.thinSlate;
     }
   });
 
-  // Espacio
-  wsBalance.addRow([]);
+  const catEndRowNumber = wsDashboard.lastRow.number;
 
-  // Sección 2: Semáforo de Consumo por Categoría
-  if (balance?.semaforoCategorias && balance.semaforoCategorias.length > 0) {
-    const semRowStart = wsBalance.lastRow.number + 1;
-    wsBalance.mergeCells(`A${semRowStart}:E${semRowStart}`);
-    const semHeader = wsBalance.getCell(`A${semRowStart}`);
-    semHeader.value = '2. CONTROL DE PRESUPUESTO POR CATEGORÍA (SEMÁFORO)';
-    semHeader.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFE500' } };
-    semHeader.fill = HEADER_FILL;
+  // Fila de Total de Categorías
+  const totalCatRow = wsDashboard.addRow([
+    'TOTAL PRESUPUESTO CATEGORIZADO',
+    { formula: `SUM(B${catStartRowNumber}:B${catEndRowNumber})`, result: presTotalCOP },
+    { formula: `SUM(C${catStartRowNumber}:C${catEndRowNumber})`, result: gastoRealCOP },
+    { formula: `SUM(D${catStartRowNumber}:D${catEndRowNumber})`, result: presTotalCOP - gastoRealCOP },
+    { formula: `IF(B${catEndRowNumber + 1}>0, C${catEndRowNumber + 1}/B${catEndRowNumber + 1}, 0)`, result: pctConsumido },
+    { formula: `IF(E${catEndRowNumber + 1}>1, "🔴 EXCEDIDO", "🟢 EN CONTROL")`, result: pctConsumido > 1 ? '🔴 EXCEDIDO' : '🟢 EN CONTROL' }
+  ]);
+  totalCatRow.height = 26;
+  totalCatRow.fill = PALETTE.darkHeader;
+  totalCatRow.getCell(1).font = FONTS.totalLabel;
+  totalCatRow.getCell(2).numFmt = '$#,##0';
+  totalCatRow.getCell(2).font = FONTS.totalLabel;
+  totalCatRow.getCell(2).alignment = { horizontal: 'right' };
+  totalCatRow.getCell(3).numFmt = '$#,##0';
+  totalCatRow.getCell(3).font = FONTS.totalLabel;
+  totalCatRow.getCell(3).alignment = { horizontal: 'right' };
+  totalCatRow.getCell(4).numFmt = '$#,##0';
+  totalCatRow.getCell(4).font = FONTS.totalLabel;
+  totalCatRow.getCell(4).alignment = { horizontal: 'right' };
+  totalCatRow.getCell(5).numFmt = '0.0%';
+  totalCatRow.getCell(5).font = FONTS.totalLabel;
+  totalCatRow.getCell(5).alignment = { horizontal: 'center' };
+  totalCatRow.getCell(6).alignment = { horizontal: 'center' };
+  totalCatRow.getCell(6).font = FONTS.totalLabel;
 
-    const headersRow = wsBalance.addRow(['Categoría', 'Límite Presupuestado (COP)', 'Consumido Real (COP)', '% Consumido', 'Estado Semáforo']);
-    headersRow.font = WHITE_TEXT;
-    headersRow.fill = SUBHEADER_FILL;
-    headersRow.alignment = { vertical: 'middle', horizontal: 'center' };
+  for (let col = 1; col <= 6; col++) {
+    totalCatRow.getCell(col).border = BORDERS.totalDouble;
+  }
 
-    balance.semaforoCategorias.forEach(c => {
-      const row = wsBalance.addRow([
-        c.categoria.toUpperCase(),
-        Number(c.limiteCOP || 0),
-        Number(c.consumidoCOP || 0),
-        (Number(c.porcentaje || 0)) / 100,
-        c.color.toUpperCase()
+  // -------------------------------------------------------------------------
+  // 5. SECCIÓN: RESUMEN ANALÍTICO DE MONEDAS EXTRANJERAS UTILIZADAS
+  // -------------------------------------------------------------------------
+  // Agrupar gastos por moneda
+  const monedasMap = {};
+  safeGastos.forEach(g => {
+    const cur = (g.monedaOriginal || monedaBase).toUpperCase();
+    if (!monedasMap[cur]) {
+      monedasMap[cur] = { moneda: cur, count: 0, totalOrig: 0, totalCOP: 0 };
+    }
+    monedasMap[cur].count += 1;
+    monedasMap[cur].totalOrig += Number(g.montoOriginal || 0);
+    monedasMap[cur].totalCOP += Number(g.montoCOP || 0);
+  });
+
+  const monedasList = Object.values(monedasMap);
+
+  if (monedasList.length > 0) {
+    wsDashboard.addRow([]); // Espacio
+    const currTitleRowNumber = wsDashboard.lastRow.number + 1;
+    wsDashboard.mergeCells(`A${currTitleRowNumber}:F${currTitleRowNumber}`);
+    const currTitle = wsDashboard.getCell(`A${currTitleRowNumber}`);
+    currTitle.value = '💱 DESGLOSE Y CONTROL DE DIVISAS UTILIZADAS EN RUTA';
+    currTitle.font = FONTS.sectionHeader;
+    currTitle.fill = PALETTE.darkHeader;
+    currTitle.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+    wsDashboard.getRow(currTitleRowNumber).height = 24;
+
+    const currHeaders = [
+      'DIVISA / MONEDA',
+      'CANTIDAD DE GASTOS',
+      'TOTAL EN MONEDA ORIGINAL',
+      'TASA DE CAMBIO PROMEDIO',
+      'EQUIVALENTE TOTAL (COP)',
+      'PARTICIPACIÓN %'
+    ];
+    const currHeadRow = wsDashboard.addRow(currHeaders);
+    currHeadRow.font = FONTS.tableHeader;
+    currHeadRow.fill = PALETTE.slateCard;
+    currHeadRow.alignment = { vertical: 'middle', horizontal: 'center' };
+    currHeadRow.height = 22;
+
+    const currStartRowNumber = wsDashboard.lastRow.number + 1;
+
+    monedasList.forEach((m, idx) => {
+      const rowNum = currStartRowNumber + idx;
+      const tasaPromedio = m.totalOrig > 0 ? (m.totalCOP / m.totalOrig) : 1;
+      const pctShare = gastoRealCOP > 0 ? (m.totalCOP / gastoRealCOP) : 0;
+
+      const row = wsDashboard.addRow([
+        m.moneda,
+        m.count,
+        m.totalOrig,
+        m.moneda === 'COP' ? '1:1 (Moneda Base)' : tasaPromedio,
+        m.totalCOP,
+        { formula: `E${rowNum}/C5`, result: pctShare }
       ]);
-      row.getCell(1).font = { name: 'Arial', size: 10, bold: true };
-      row.getCell(2).numFmt = '$#,##0';
-      row.getCell(3).numFmt = '$#,##0';
-      row.getCell(4).numFmt = '0.0%';
-      row.getCell(4).alignment = { horizontal: 'center' };
-      row.getCell(5).alignment = { horizontal: 'center' };
-      row.getCell(5).font = { name: 'Arial', size: 10, bold: true };
 
-      // Color visual para el semáforo
-      if (c.color === 'rojo') {
-        row.getCell(5).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFE2E2' } };
-        row.getCell(5).font = { color: { argb: 'FFDC2626' }, bold: true };
-      } else if (c.color === 'amarillo') {
-        row.getCell(5).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF9C3' } };
-        row.getCell(5).font = { color: { argb: 'FFCA8A04' }, bold: true };
+      row.height = 20;
+      row.getCell(1).alignment = { horizontal: 'center' };
+      row.getCell(1).font = FONTS.boldText;
+      row.getCell(2).alignment = { horizontal: 'center' };
+      row.getCell(2).font = FONTS.regularText;
+      row.getCell(3).numFmt = m.moneda === 'JPY' || m.moneda === 'KRW' ? '#,##0' : '#,##0.00';
+      row.getCell(3).alignment = { horizontal: 'right' };
+      row.getCell(3).font = FONTS.regularText;
+
+      if (m.moneda === 'COP') {
+        row.getCell(4).alignment = { horizontal: 'center' };
+        row.getCell(4).font = FONTS.mutedText;
       } else {
-        row.getCell(5).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDCFCE7' } };
-        row.getCell(5).font = { color: { argb: 'FF16A34A' }, bold: true };
+        row.getCell(4).numFmt = '$#,##0.00';
+        row.getCell(4).alignment = { horizontal: 'right' };
+        row.getCell(4).font = FONTS.regularText;
       }
 
-      for (let col = 1; col <= 5; col++) {
-        row.getCell(col).border = THIN_BORDER;
+      row.getCell(5).numFmt = '$#,##0';
+      row.getCell(5).alignment = { horizontal: 'right' };
+      row.getCell(5).font = FONTS.boldText;
+      row.getCell(6).numFmt = '0.0%';
+      row.getCell(6).alignment = { horizontal: 'center' };
+      row.getCell(6).font = FONTS.boldText;
+
+      if (idx % 2 === 1) {
+        for (let col = 1; col <= 6; col++) {
+          row.getCell(col).fill = PALETTE.zebraLight;
+        }
+      }
+
+      for (let col = 1; col <= 6; col++) {
+        row.getCell(col).border = BORDERS.thinSlate;
       }
     });
   }
 
-  // Autoajuste de anchos para la Hoja 1
-  wsBalance.getColumn(1).width = 46;
-  wsBalance.getColumn(2).width = 28;
-  wsBalance.getColumn(3).width = 26;
-  wsBalance.getColumn(4).width = 18;
-  wsBalance.getColumn(5).width = 20;
-
   // =========================================================================
-  // HOJA 2: DESGLOSE DETALLADO DE GASTOS Y TRANSACCIONES
+  // HOJA 2: 💳 DESGLOSE DE GASTOS Y TRANSACCIONES
   // =========================================================================
   const wsGastos = workbook.addWorksheet('💳 Desglose de Gastos', {
     views: [{ showGridLines: true }]
   });
 
-  // Cabecera de la hoja de gastos
-  wsGastos.mergeCells('A1:H1');
+  // Título de la Hoja de Gastos
+  wsGastos.mergeCells('A1:K1');
   const gTitle = wsGastos.getCell('A1');
-  gTitle.value = `BITÁCORA CONTABLE - GASTOS DETALLADOS (${gastos.length} TRANSACCIONES)`;
-  gTitle.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF00FF85' } };
-  gTitle.fill = HEADER_FILL;
+  gTitle.value = `BITÁCORA CONTABLE - REGISTRO DETALLADO DE TRANSACCIONES (${safeGastos.length} REGISTROS)`;
+  gTitle.font = FONTS.titleMain;
+  gTitle.fill = PALETTE.darkHeader;
   gTitle.alignment = { vertical: 'middle', horizontal: 'center' };
-  wsGastos.getRow(1).height = 26;
+  wsGastos.getRow(1).height = 32;
 
-  // Cabecera de Columnas
+  // Subtítulo con instrucciones y filtros
+  wsGastos.mergeCells('A2:K2');
+  const gSub = wsGastos.getCell('A2');
+  gSub.value = '💡 Tip: Puedes utilizar las flechas de filtro de cada columna para segmentar por Categoría, Divisa o Modalidad de pago.';
+  gSub.font = FONTS.titleSub;
+  gSub.fill = PALETTE.slateCard;
+  gSub.alignment = { vertical: 'middle', horizontal: 'center' };
+  wsGastos.getRow(2).height = 20;
+
+  // Cabecera de columnas de gastos
   const gastosHeaders = [
-    'Fecha de Gasto',
-    'Concepto / Descripción',
-    'Categoría',
-    'Monto Original',
-    'Moneda',
-    'Tasa de Cambio Aplicada',
-    'Equivalente en COP',
-    'Tipo de Transacción'
+    '#',
+    'FECHA GASTO',
+    'CONCEPTO / DESCRIPCIÓN',
+    'CATEGORÍA',
+    'MONTO ORIGINAL',
+    'DIVISA',
+    'TASA DE CAMBIO (COP)',
+    'EQUIVALENTE (COP)',
+    'REF. USD',
+    'MODALIDAD / TIPO',
+    'COMPUTABLE'
   ];
 
   const gHeadRow = wsGastos.addRow(gastosHeaders);
-  gHeadRow.font = CYAN_TEXT;
-  gHeadRow.fill = SUBHEADER_FILL;
+  gHeadRow.font = FONTS.tableHeader;
+  gHeadRow.fill = PALETTE.cardHeader;
   gHeadRow.alignment = { vertical: 'middle', horizontal: 'center' };
-  gHeadRow.height = 22;
+  gHeadRow.height = 24;
 
-  // Filas de Gastos
-  gastos.forEach((g, idx) => {
-    const origCurr = (g.monedaOriginal || 'COP').toUpperCase();
-    const rate = g.tasaCambioFecha || (g.montoOriginal > 0 && g.montoCOP > 0 ? (g.montoCOP / g.montoOriginal) : null);
-    const tasaStr = origCurr === 'COP'
-      ? '1:1 (Moneda Base)'
-      : (rate ? `1 ${origCurr} = $${Number(rate).toLocaleString('es-CO', { minimumFractionDigits: origCurr === 'JPY' || origCurr === 'KRW' ? 4 : 2, maximumFractionDigits: 4 })} COP` : 'N/A');
+  // Filas individuales de transacciones
+  safeGastos.forEach((g, idx) => {
+    const rowIdx = gastosStartRow + idx;
+    const origCurr = (g.monedaOriginal || monedaBase).toUpperCase();
+    const rate = Number(g.tasaCambioFecha) || (g.montoOriginal > 0 && g.montoCOP > 0 ? (g.montoCOP / g.montoOriginal) : 1);
+    const montoOrig = Number(g.montoOriginal || 0);
+    const montoCOP = Number(g.montoCOP || 0);
+    const montoUSD = Number(g.montoUSD || 0);
+
+    // Estandarización de categoría para que coincida con el SUMIFS del semáforo
+    const rawCat = (g.categoria || 'OTROS').toUpperCase();
+    const catClean = rawCat.includes('TRANS') || rawCat.includes('VUEL') ? 'TRANSPORTE'
+      : rawCat.includes('ALOJ') || rawCat.includes('HOTEL') ? 'ALOJAMIENTO'
+      : rawCat.includes('COMID') || rawCat.includes('ALIMENT') || rawCat.includes('REST') ? 'COMIDA'
+      : rawCat.includes('ACTIV') || rawCat.includes('TOUR') || rawCat.includes('ENTRAD') ? 'ACTIVIDADES'
+      : rawCat.includes('COMPR') || rawCat.includes('SHOP') ? 'COMPRAS'
+      : 'OTROS';
 
     const tipoStr = g.pagadoAdelantado
       ? 'Costo Hundido (Adelantado)'
       : (g.noComputar ? 'Encargo (Terceros)' : (g.esIngreso ? 'Reembolso / Tax-Free' : 'Consumo en Ruta'));
 
+    const computableStr = g.noComputar ? 'NO (Excluido)' : 'SÍ';
+
+    // Fórmula para total en COP si no es moneda base: Monto Original * Tasa
+    const formulaCOP = origCurr === 'COP'
+      ? montoOrig
+      : { formula: `E${rowIdx}*G${rowIdx}`, result: montoCOP };
+
     const row = wsGastos.addRow([
-      g.fechaGasto ? new Date(g.fechaGasto).toLocaleDateString() : '',
-      g.concepto,
-      g.categoria ? g.categoria.toUpperCase() : 'OTROS',
-      Number(g.montoOriginal || 0),
+      idx + 1,
+      g.fechaGasto ? new Date(g.fechaGasto).toLocaleDateString('es-CO') : '',
+      g.concepto || 'Sin concepto',
+      catClean,
+      montoOrig,
       origCurr,
-      tasaStr,
-      Number(g.montoCOP || 0),
-      tipoStr
+      rate,
+      formulaCOP,
+      montoUSD,
+      tipoStr,
+      computableStr
     ]);
 
+    row.height = 20;
     row.getCell(1).alignment = { horizontal: 'center' };
-    row.getCell(4).numFmt = '#,##0.00';
-    row.getCell(4).alignment = { horizontal: 'right' };
-    row.getCell(5).alignment = { horizontal: 'center' };
-    row.getCell(6).alignment = { horizontal: 'center' };
-    row.getCell(7).numFmt = '$#,##0';
-    row.getCell(7).font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF0F172A' } };
-    row.getCell(7).alignment = { horizontal: 'right' };
-    row.getCell(8).alignment = { horizontal: 'center' };
+    row.getCell(1).font = FONTS.mutedText;
 
-    // Cebrado suave
+    row.getCell(2).alignment = { horizontal: 'center' };
+    row.getCell(2).font = FONTS.regularText;
+
+    row.getCell(3).font = FONTS.boldText;
+
+    row.getCell(4).alignment = { horizontal: 'center' };
+    row.getCell(4).font = FONTS.boldText;
+
+    row.getCell(5).numFmt = origCurr === 'JPY' || origCurr === 'KRW' ? '#,##0' : '#,##0.00';
+    row.getCell(5).alignment = { horizontal: 'right' };
+    row.getCell(5).font = FONTS.regularText;
+
+    row.getCell(6).alignment = { horizontal: 'center' };
+    row.getCell(6).font = FONTS.boldText;
+
+    row.getCell(7).numFmt = '$#,##0.00';
+    row.getCell(7).alignment = { horizontal: 'right' };
+    row.getCell(7).font = FONTS.regularText;
+
+    row.getCell(8).numFmt = '$#,##0';
+    row.getCell(8).alignment = { horizontal: 'right' };
+    row.getCell(8).font = FONTS.boldText;
+
+    row.getCell(9).numFmt = '$#,##0.00';
+    row.getCell(9).alignment = { horizontal: 'right' };
+    row.getCell(9).font = FONTS.mutedText;
+
+    row.getCell(10).alignment = { horizontal: 'center' };
+    row.getCell(10).font = FONTS.regularText;
+
+    row.getCell(11).alignment = { horizontal: 'center' };
+    row.getCell(11).font = g.noComputar ? { name: 'Segoe UI', size: 9, bold: true, color: { argb: 'FFDC2626' } } : FONTS.regularText;
+
+    // Alternancia de colores sutil (zebra)
     if (idx % 2 === 1) {
-      for (let c = 1; c <= 8; c++) {
-        row.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+      for (let c = 1; c <= 11; c++) {
+        row.getCell(c).fill = PALETTE.zebraLight;
       }
     }
 
-    for (let c = 1; c <= 8; c++) {
-      row.getCell(c).border = THIN_BORDER;
+    for (let c = 1; c <= 11; c++) {
+      row.getCell(c).border = BORDERS.thinSlate;
     }
   });
 
-  // Fila de Total de Gastos
-  if (gastos.length > 0) {
-    const totalRow = wsGastos.addRow([
-      'TOTAL GENERAL',
-      `Total ${gastos.length} registros`,
+  // Fila de TOTALES de Gastos con Fórmulas nativas
+  if (safeGastos.length > 0) {
+    const totalGastosRow = wsGastos.addRow([
+      'TOTAL',
+      `${safeGastos.length} transacciones`,
       '',
       '',
       '',
       '',
-      { formula: `SUM(G3:G${wsGastos.lastRow.number})` },
+      'SUMA TOTAL:',
+      { formula: `SUM(H${gastosStartRow}:H${gastosEndRow})`, result: gastoRealCOP },
+      { formula: `SUM(I${gastosStartRow}:I${gastosEndRow})`, result: Number(balance?.totalGastadoUSD || 0) },
+      '',
       ''
     ]);
-    totalRow.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FF00FF85' } };
-    totalRow.fill = HEADER_FILL;
-    totalRow.getCell(7).numFmt = '$#,##0';
-    totalRow.getCell(7).alignment = { horizontal: 'right' };
-    totalRow.height = 24;
+
+    totalGastosRow.height = 26;
+    totalGastosRow.fill = PALETTE.darkHeader;
+    totalGastosRow.getCell(1).font = FONTS.totalLabel;
+    totalGastosRow.getCell(1).alignment = { horizontal: 'center' };
+    totalGastosRow.getCell(2).font = FONTS.titleSub;
+    totalGastosRow.getCell(7).font = FONTS.totalLabel;
+    totalGastosRow.getCell(7).alignment = { horizontal: 'right' };
+    totalGastosRow.getCell(8).numFmt = '$#,##0';
+    totalGastosRow.getCell(8).font = FONTS.totalLabel;
+    totalGastosRow.getCell(8).alignment = { horizontal: 'right' };
+    totalGastosRow.getCell(9).numFmt = '$#,##0.00';
+    totalGastosRow.getCell(9).font = FONTS.totalLabel;
+    totalGastosRow.getCell(9).alignment = { horizontal: 'right' };
+
+    for (let c = 1; c <= 11; c++) {
+      totalGastosRow.getCell(c).border = BORDERS.totalDouble;
+    }
   }
 
-  // Anchos automáticos de la Hoja de Gastos
-  wsGastos.getColumn(1).width = 16;
-  wsGastos.getColumn(2).width = 40;
-  wsGastos.getColumn(3).width = 18;
-  wsGastos.getColumn(4).width = 18;
-  wsGastos.getColumn(5).width = 12;
-  wsGastos.getColumn(6).width = 30;
-  wsGastos.getColumn(7).width = 24;
-  wsGastos.getColumn(8).width = 28;
+  // Activar AutoFiltro nativo de Excel en la fila de cabeceras
+  wsGastos.autoFilter = {
+    from: { row: 3, column: 1 },
+    to: { row: 3, column: 11 }
+  };
+
+  // Anchos de columna optimizados para Hoja de Gastos
+  wsGastos.getColumn(1).width = 6;   // #
+  wsGastos.getColumn(2).width = 14;  // Fecha
+  wsGastos.getColumn(3).width = 38;  // Concepto
+  wsGastos.getColumn(4).width = 18;  // Categoría
+  wsGastos.getColumn(5).width = 18;  // Monto Original
+  wsGastos.getColumn(6).width = 10;  // Divisa
+  wsGastos.getColumn(7).width = 22;  // Tasa de cambio
+  wsGastos.getColumn(8).width = 24;  // Equivalente COP
+  wsGastos.getColumn(9).width = 16;  // Ref USD
+  wsGastos.getColumn(10).width = 26; // Modalidad
+  wsGastos.getColumn(11).width = 16; // Computable
 
   // =========================================================================
-  // HOJA 3: ITINERARIO Y LOGÍSTICA DE VIAJE
+  // HOJA 3: 🗓️ ITINERARIO Y LOGÍSTICA DE VIAJE
   // =========================================================================
-  if (eventos && eventos.length > 0) {
+  if (safeEventos.length > 0) {
     const wsItin = workbook.addWorksheet('🗓️ Itinerario y Logística', {
       views: [{ showGridLines: true }]
     });
 
-    wsItin.mergeCells('A1:G1');
+    wsItin.mergeCells('A1:J1');
     const iTitle = wsItin.getCell('A1');
-    iTitle.value = `CRONOGRAMA Y LOGÍSTICA DEL VIAJE (${eventos.length} ACTIVIDADES)`;
-    iTitle.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF00E5FF' } };
-    iTitle.fill = HEADER_FILL;
+    iTitle.value = `CRONOGRAMA Y LOGÍSTICA DEL VIAJE (${safeEventos.length} ACTIVIDADES / EVENTOS)`;
+    iTitle.font = FONTS.titleMain;
+    iTitle.fill = PALETTE.darkHeader;
     iTitle.alignment = { vertical: 'middle', horizontal: 'center' };
-    wsItin.getRow(1).height = 26;
+    wsItin.getRow(1).height = 32;
 
     const itinHeaders = [
-      'Fecha / Hora Inicio',
-      'Actividad / Título',
-      'Tipo de Evento',
-      'Ubicación / Trayecto',
-      'Origen ➔ Destino',
-      'Costo Asociado',
-      'Notas / Observaciones'
+      '#',
+      'FECHA / HORA INICIO',
+      'FECHA / HORA FIN',
+      'ACTIVIDAD / EVENTO',
+      'TIPO',
+      'UBICACIÓN / CIUDAD',
+      'ORIGEN ➔ DESTINO / RUTA',
+      'COSTO ASOCIADO',
+      'DIVISA',
+      'NOTAS / OBSERVACIONES'
     ];
 
     const iHeadRow = wsItin.addRow(itinHeaders);
-    iHeadRow.font = WHITE_TEXT;
-    iHeadRow.fill = SUBHEADER_FILL;
+    iHeadRow.font = FONTS.tableHeader;
+    iHeadRow.fill = PALETTE.cardHeader;
     iHeadRow.alignment = { vertical: 'middle', horizontal: 'center' };
-    iHeadRow.height = 22;
+    iHeadRow.height = 24;
 
-    eventos.forEach((ev, idx) => {
-      const rutaStr = ev.ciudadOrigen || ev.ciudadDestino
-        ? `${ev.aeropuertoOrigen || ev.ciudadOrigen || ''} ➔ ${ev.aeropuertoDestino || ev.ciudadDestino || ''}`
+    safeEventos.forEach((ev, idx) => {
+      const rutaStr = (ev.ciudadOrigen || ev.aeropuertoOrigen || ev.ciudadDestino || ev.aeropuertoDestino)
+        ? `${ev.aeropuertoOrigen || ev.ciudadOrigen || 'Origen'} ➔ ${ev.tieneConexion && ev.aeropuertoConexion ? `(Escala ${ev.aeropuertoConexion}) ➔ ` : ''}${ev.aeropuertoDestino || ev.ciudadDestino || 'Destino'}`
         : '-';
 
-      const costoStr = ev.costo && Number(ev.costo) > 0
-        ? `${Number(ev.costo).toLocaleString()} ${ev.moneda || 'COP'}`
-        : 'Incluido / Gratis';
+      const costoNum = Number(ev.costo) || 0;
 
       const row = wsItin.addRow([
-        ev.fechaInicio ? new Date(ev.fechaInicio).toLocaleString() : '',
-        ev.titulo,
-        (ev.tipo || '').toUpperCase(),
+        idx + 1,
+        ev.fechaInicio ? new Date(ev.fechaInicio).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }) : '',
+        ev.fechaFin ? new Date(ev.fechaFin).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }) : '',
+        ev.titulo || 'Sin título',
+        (ev.tipo || 'OTRO').toUpperCase(),
         ev.ubicacion || '-',
         rutaStr,
-        costoStr,
+        costoNum,
+        ev.moneda || monedaBase,
         ev.notas || ''
       ]);
 
+      row.height = 20;
       row.getCell(1).alignment = { horizontal: 'center' };
-      row.getCell(2).font = { name: 'Arial', size: 10, bold: true };
+      row.getCell(1).font = FONTS.mutedText;
+
+      row.getCell(2).alignment = { horizontal: 'center' };
+      row.getCell(2).font = FONTS.regularText;
+
       row.getCell(3).alignment = { horizontal: 'center' };
+      row.getCell(3).font = FONTS.regularText;
+
+      row.getCell(4).font = FONTS.boldText;
+
       row.getCell(5).alignment = { horizontal: 'center' };
-      row.getCell(6).alignment = { horizontal: 'right' };
+      row.getCell(5).font = FONTS.boldText;
+
+      row.getCell(6).font = FONTS.regularText;
+      row.getCell(7).alignment = { horizontal: 'center' };
+      row.getCell(7).font = FONTS.regularText;
+
+      row.getCell(8).numFmt = costoNum > 0 ? '$#,##0' : '@';
+      row.getCell(8).alignment = { horizontal: 'right' };
+      row.getCell(8).font = costoNum > 0 ? FONTS.boldText : FONTS.mutedText;
+
+      row.getCell(9).alignment = { horizontal: 'center' };
+      row.getCell(9).font = FONTS.boldText;
+
+      row.getCell(10).font = FONTS.mutedText;
 
       if (idx % 2 === 1) {
-        for (let c = 1; c <= 7; c++) {
-          row.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+        for (let c = 1; c <= 10; c++) {
+          row.getCell(c).fill = PALETTE.zebraLight;
         }
       }
 
-      for (let c = 1; c <= 7; c++) {
-        row.getCell(c).border = THIN_BORDER;
+      for (let c = 1; c <= 10; c++) {
+        row.getCell(c).border = BORDERS.thinSlate;
       }
     });
 
-    wsItin.getColumn(1).width = 22;
-    wsItin.getColumn(2).width = 38;
-    wsItin.getColumn(3).width = 16;
-    wsItin.getColumn(4).width = 32;
-    wsItin.getColumn(5).width = 24;
-    wsItin.getColumn(6).width = 20;
-    wsItin.getColumn(7).width = 40;
+    // Activar AutoFiltro nativo en Itinerario
+    wsItin.autoFilter = {
+      from: { row: 2, column: 1 },
+      to: { row: 2, column: 10 }
+    };
+
+    // Anchos de columna Hoja Itinerario
+    wsItin.getColumn(1).width = 6;   // #
+    wsItin.getColumn(2).width = 20;  // Fecha Inicio
+    wsItin.getColumn(3).width = 20;  // Fecha Fin
+    wsItin.getColumn(4).width = 36;  // Actividad
+    wsItin.getColumn(5).width = 16;  // Tipo
+    wsItin.getColumn(6).width = 28;  // Ubicación
+    wsItin.getColumn(7).width = 36;  // Ruta
+    wsItin.getColumn(8).width = 18;  // Costo
+    wsItin.getColumn(9).width = 10;  // Divisa
+    wsItin.getColumn(10).width = 40; // Notas
   }
 
-  // Generar buffer y descargar archivo en el navegador
+  // =========================================================================
+  // GENERAR ARCHIVO Y DESCARGAR EN NAVEGADOR
+  // =========================================================================
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
   });
 
-  const filename = `Reporte_${(viaje?.destino || 'Viaje').replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+  const destinoSanitizado = (viaje?.destino || 'Viaje').replace(/[^a-zA-Z0-9_\-]/g, '_');
+  const fechaHoy = new Date().toISOString().split('T')[0];
+  const filename = `Reporte_Ejecutivo_${destinoSanitizado}_${fechaHoy}.xlsx`;
 
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
