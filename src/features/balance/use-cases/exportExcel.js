@@ -530,7 +530,7 @@ export async function exportTripExcel({ viaje, balance, gastos = [], eventos = [
   });
 
   // Título de la Hoja de Gastos
-  wsGastos.mergeCells('A1:M1');
+  wsGastos.mergeCells('A1:N1');
   const gTitle = wsGastos.getCell('A1');
   gTitle.value = `BITÁCORA CONTABLE - REGISTRO DETALLADO DE TRANSACCIONES (${safeGastos.length} REGISTROS)`;
   gTitle.font = FONTS.titleMain;
@@ -539,7 +539,7 @@ export async function exportTripExcel({ viaje, balance, gastos = [], eventos = [
   wsGastos.getRow(1).height = 32;
 
   // Subtítulo con instrucciones y filtros
-  wsGastos.mergeCells('A2:M2');
+  wsGastos.mergeCells('A2:N2');
   const gSub = wsGastos.getCell('A2');
   gSub.value = filterTitle
     ? `🎯 Filtros Aplicados: ${filterTitle} | 💡 Puedes usar las flechas de cada columna para segmentar.`
@@ -563,11 +563,13 @@ export async function exportTripExcel({ viaje, balance, gastos = [], eventos = [
     'MODALIDAD / TIPO',
     'COMPUTABLE',
     'CIUDAD',
-    'PAÍS'
+    'PAÍS',
+    'TARJETA (TC) / MEDIO'
   ];
 
   wsGastos.getColumn(12).width = 18;
   wsGastos.getColumn(13).width = 18;
+  wsGastos.getColumn(14).width = 24;
 
   const gHeadRow = wsGastos.addRow(gastosHeaders);
   gHeadRow.font = FONTS.tableHeader;
@@ -619,7 +621,8 @@ export async function exportTripExcel({ viaje, balance, gastos = [], eventos = [
       tipoStr,
       computableStr,
       enrichedG.cityName || '-',
-      enrichedG.countryName || '-'
+      enrichedG.countryName || '-',
+      g.tarjetaCredito || 'Efectivo / Sin TC'
     ]);
 
     row.height = 20;
@@ -665,14 +668,17 @@ export async function exportTripExcel({ viaje, balance, gastos = [], eventos = [
     row.getCell(13).alignment = { horizontal: 'center' };
     row.getCell(13).font = FONTS.regularText;
 
+    row.getCell(14).alignment = { horizontal: 'center' };
+    row.getCell(14).font = g.tarjetaCredito ? FONTS.boldText : FONTS.mutedText;
+
     // Alternancia de colores sutil (zebra)
     if (idx % 2 === 1) {
-      for (let c = 1; c <= 13; c++) {
+      for (let c = 1; c <= 14; c++) {
         row.getCell(c).fill = PALETTE.zebraLight;
       }
     }
 
-    for (let c = 1; c <= 13; c++) {
+    for (let c = 1; c <= 14; c++) {
       row.getCell(c).border = BORDERS.thinSlate;
     }
   });
@@ -689,6 +695,9 @@ export async function exportTripExcel({ viaje, balance, gastos = [], eventos = [
       'SUMA TOTAL:',
       { formula: `SUM(H${gastosStartRow}:H${gastosEndRow})`, result: gastoRealCOP },
       { formula: `SUM(I${gastosStartRow}:I${gastosEndRow})`, result: Number(balance?.totalGastadoUSD || 0) },
+      '',
+      '',
+      '',
       '',
       ''
     ]);
@@ -707,7 +716,7 @@ export async function exportTripExcel({ viaje, balance, gastos = [], eventos = [
     totalGastosRow.getCell(9).font = FONTS.totalLabel;
     totalGastosRow.getCell(9).alignment = { horizontal: 'right' };
 
-    for (let c = 1; c <= 11; c++) {
+    for (let c = 1; c <= 14; c++) {
       totalGastosRow.getCell(c).border = BORDERS.totalDouble;
     }
   }
@@ -715,7 +724,7 @@ export async function exportTripExcel({ viaje, balance, gastos = [], eventos = [
   // Activar AutoFiltro nativo de Excel en la fila de cabeceras
   wsGastos.autoFilter = {
     from: { row: 3, column: 1 },
-    to: { row: 3, column: 11 }
+    to: { row: 3, column: 14 }
   };
 
   // Anchos de columna optimizados para Hoja de Gastos

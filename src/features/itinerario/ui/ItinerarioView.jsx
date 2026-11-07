@@ -21,10 +21,12 @@ import {
   ChevronDown,
   ChevronUp,
   Share2,
-  Calendar
+  Calendar,
+  Eye
 } from 'lucide-react';
 import WatermarkIcon from '../../../components/WatermarkIcon';
 import WorldMapModal from '../../../components/WorldMapModal';
+import DetalleEventoModal from './DetalleEventoModal';
 import MiniFlag from '../../../components/MiniFlag';
 import { extractVisitedCountries, cleanCountryText } from '../../../utils/countries';
 import { extractFlightTrajectories } from '../../../utils/geoCoordinates';
@@ -69,6 +71,7 @@ export function ItinerarioView({
   const [showMap, setShowMap] = useState(false);
   const [showRoutesList, setShowRoutesList] = useState(false);
   const [expandedCostId, setExpandedCostId] = useState(null);
+  const [selectedEventoDetalle, setSelectedEventoDetalle] = useState(null);
 
   // Extraer países visitados (>24h y stopovers) de este itinerario y viaje
   const visitedCountries = useMemo(() => {
@@ -466,7 +469,7 @@ export function ItinerarioView({
             const startDate = parseDate(ev.fechaInicio) || parseDate(ev.fecha) || new Date();
             const endDate = parseDate(ev.fechaFin) || startDate;
 
-            const hasFlightLogistics = ev.ciudadOrigen || ev.aeropuertoOrigen || ev.tieneConexion || ev.ciudadDestino;
+            const hasFlightLogistics = isVuelo && Boolean(ev.ciudadOrigen || ev.aeropuertoOrigen || ev.tieneConexion || ev.ciudadDestino);
 
             const matchingRoute = flightRoutes.find(
               r => r.id === ev.id || r.event?.id === ev.id || (ev.roundTripGroupId && r.roundTripGroupId === ev.roundTripGroupId && r.tramo === ev.tramo)
@@ -496,8 +499,10 @@ export function ItinerarioView({
 
                 {/* Tarjeta del evento */}
                 <div
-                  className="relative p-3.5 sm:p-5 rounded-xl bg-[#0E121B] border border-[#1C2436] hover:border-[#00E5FF]/40 transition-colors overflow-hidden shadow-xs"
+                  onClick={() => setSelectedEventoDetalle(ev)}
+                  className="relative p-3.5 sm:p-5 rounded-xl bg-[#0E121B] border border-[#1C2436] hover:border-[#00E5FF]/50 transition-all overflow-hidden shadow-xs cursor-pointer group/card hover:bg-[#111622]"
                   style={isVuelo ? { borderLeft: `3px solid ${routeColor}` } : {}}
+                  title="Haz clic para ver el detalle de la actividad"
                 >
                   <WatermarkIcon icon={Icon} className="w-24 h-24 -bottom-3 -right-3 pointer-events-none" opacity="opacity-[0.02]" color="text-[#00E5FF]" />
 
@@ -554,7 +559,10 @@ export function ItinerarioView({
                           </span>
                           <button
                             type="button"
-                            onClick={() => setExpandedCostId(expandedCostId === ev.id ? null : ev.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedCostId(expandedCostId === ev.id ? null : ev.id);
+                            }}
                             className="px-1.5 py-0.5 rounded bg-[#151B27] border border-[#1C2436] text-[#8492A6] hover:text-[#00E5FF] transition-colors cursor-pointer text-[10px] font-medium"
                             title="Ver en otras divisas"
                           >
@@ -710,13 +718,28 @@ export function ItinerarioView({
                   {/* Acciones de Tarjeta */}
                   <div className="pt-2 border-t border-[#1C2436] flex items-center justify-between gap-2 relative z-10">
                     <span className="text-[10px] text-[#8492A6]">
-                      {isVuelo ? '✈️ Vuelo' : '📍 Actividad'}
+                      {isVuelo ? '✈️ Vuelo' : (ev.tipo === 'hotel' ? '🏨 Hotel' : (ev.tipo === 'atraccion' ? '📍 Atracción' : (ev.tipo === 'transporte' ? '🚆 Transporte' : (ev.tipo === 'comida' ? '🍴 Comida' : '📌 Evento'))))}
                     </span>
                     <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedEventoDetalle(ev);
+                        }}
+                        className="px-2 py-1 rounded bg-[#151B27] border border-[#1C2436] hover:border-[#00E5FF] text-[#CBD5E1] hover:text-[#00E5FF] transition-colors cursor-pointer flex items-center gap-1 text-[11px] font-semibold"
+                        title="Ver detalle de la actividad"
+                      >
+                        <Eye className="w-3 h-3 text-[#00E5FF]" />
+                        <span>Detalle</span>
+                      </button>
                       {onEditEvento && (
                         <button
                           type="button"
-                          onClick={() => onEditEvento(ev)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEditEvento(ev);
+                          }}
                           className="px-2 py-1 rounded bg-[#151B27] border border-[#1C2436] hover:border-[#00E5FF] text-[#CBD5E1] hover:text-[#00E5FF] transition-colors cursor-pointer flex items-center gap-1 text-[11px] font-semibold"
                         >
                           <Edit2 className="w-3 h-3" />
@@ -726,7 +749,10 @@ export function ItinerarioView({
                       {onDeleteEvento && (
                         <button
                           type="button"
-                          onClick={() => onDeleteEvento(ev)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteEvento(ev);
+                          }}
                           className="px-2 py-1 rounded bg-[#151B27] border border-[#1C2436] hover:border-[#FF2E55] text-[#8492A6] hover:text-[#FF2E55] transition-colors cursor-pointer flex items-center gap-1 text-[11px] font-semibold"
                         >
                           <Trash2 className="w-3 h-3" />
@@ -751,6 +777,19 @@ export function ItinerarioView({
           })}
         </div>
       )}
+
+      {/* Modal de Detalle de Evento / Actividad */}
+      <DetalleEventoModal
+        isOpen={Boolean(selectedEventoDetalle)}
+        onClose={() => setSelectedEventoDetalle(null)}
+        evento={selectedEventoDetalle}
+        onEdit={(ev) => {
+          if (onEditEvento) onEditEvento(ev);
+        }}
+        onDelete={(ev) => {
+          if (onDeleteEvento) onDeleteEvento(ev);
+        }}
+      />
     </div>
   );
 }

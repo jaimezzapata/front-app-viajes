@@ -12,7 +12,8 @@ import {
   ChevronDown,
   ChevronUp,
   Coins,
-  RefreshCw
+  RefreshCw,
+  CreditCard
 } from 'lucide-react';
 import { toast } from 'sonner';
 import WatermarkIcon from '../../../components/WatermarkIcon';
@@ -210,7 +211,13 @@ export function BilleteraView({
                       </div>
 
                       {/* Chips de reglas de negocio especiales (RF 3.2) */}
-                      <div className="flex flex-wrap gap-1.5 mt-2">
+                      <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                        {g.tarjetaCredito && (
+                          <span className="text-[10px] font-bold text-[#00E5FF] bg-[#00E5FF]/10 border border-[#00E5FF]/30 px-1.5 py-0.2 rounded inline-flex items-center gap-1">
+                            <CreditCard className="w-2.5 h-2.5 text-[#00E5FF]" />
+                            <span>{g.tarjetaCredito}</span>
+                          </span>
+                        )}
                         {isAdelantado && (
                           <span className="text-[10px] font-bold text-[#FFE500] bg-[#FFE500]/10 border border-[#FFE500]/30 px-1.5 py-0.2 rounded">
                             Costo Hundido (Adelantado)

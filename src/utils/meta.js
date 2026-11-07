@@ -33,7 +33,8 @@ export function parseEventoMeta(evento) {
     tramo: evento.tramo || meta.tramo || null,
     roundTripGroupId: evento.roundTripGroupId || meta.roundTripGroupId || null,
     descontarPresupuesto: evento.descontarPresupuesto !== undefined ? Boolean(evento.descontarPresupuesto) : (meta.descontarPresupuesto !== undefined ? Boolean(meta.descontarPresupuesto) : true),
-    pagadoAdelantado: evento.pagadoAdelantado !== undefined ? Boolean(evento.pagadoAdelantado) : (meta.pagadoAdelantado !== undefined ? Boolean(meta.pagadoAdelantado) : false)
+    pagadoAdelantado: evento.pagadoAdelantado !== undefined ? Boolean(evento.pagadoAdelantado) : (meta.pagadoAdelantado !== undefined ? Boolean(meta.pagadoAdelantado) : false),
+    tarjetaCredito: evento.tarjetaCredito !== undefined ? evento.tarjetaCredito : (meta.tarjetaCredito || null)
   };
 }
 

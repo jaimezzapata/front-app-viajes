@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Modal from '../../../components/Modal';
 import { CurrencySelector, LiveCurrencyConversions } from '../../../components/CurrencySelector';
 import { getExactExchangeRate, convertCurrency, formatCurrencyDisplay } from '../../../utils/currencies';
-import { TrendingUp, ShieldCheck } from 'lucide-react';
+import { TrendingUp, ShieldCheck, CreditCard } from 'lucide-react';
 
 export function NuevoGastoModal({
   isOpen,
@@ -15,6 +15,7 @@ export function NuevoGastoModal({
   const [concepto, setConcepto] = useState('');
   const [categoria, setCategoria] = useState('comida');
   const [fechaGasto, setFechaGasto] = useState(todayStr);
+  const [tarjetaCredito, setTarjetaCredito] = useState('');
   const [montoOriginal, setMontoOriginal] = useState('');
   const [monedaOriginal, setMonedaOriginal] = useState(monedaDefault);
   const [usarTasaManual, setUsarTasaManual] = useState(false);
@@ -31,6 +32,7 @@ export function NuevoGastoModal({
       const initialCurr = activeViaje?.monedaLocal || monedaDefault || 'COP';
       setMonedaOriginal(initialCurr);
       setConcepto('');
+      setTarjetaCredito('');
       setMontoOriginal('');
       setErrorMsg('');
       setFechaGasto(new Date().toISOString().split('T')[0]);
@@ -81,6 +83,7 @@ export function NuevoGastoModal({
       await onSaveGasto({
         concepto: concepto.trim(),
         categoria,
+        tarjetaCredito: tarjetaCredito.trim() || undefined,
         montoOriginal: numMonto,
         monedaOriginal: currentCode,
         tasaCambioFecha: appliedRate, // Congelar tasa exacta (1 unidad extranjera = X COP)
@@ -152,6 +155,59 @@ export function NuevoGastoModal({
               onChange={(e) => setFechaGasto(e.target.value)}
               className="w-full bg-[#151B27] border border-[#1C2436] focus:border-[#00FF85] rounded-lg px-3 py-2 text-sm text-[#F1F5F9] focus:outline-none cursor-pointer"
             />
+          </div>
+        </div>
+
+        {/* Tarjeta de Crédito (TC) / Medio de Pago */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs font-semibold text-[#8492A6] uppercase tracking-wider flex items-center gap-1.5">
+              <CreditCard className="w-3.5 h-3.5 text-[#00E5FF]" />
+              Tarjeta de Crédito (TC) / Medio de Pago
+            </label>
+            {tarjetaCredito && (
+              <button
+                type="button"
+                onClick={() => setTarjetaCredito('')}
+                className="text-[10px] text-[#8492A6] hover:text-[#FF2E55] transition-colors cursor-pointer"
+              >
+                Limpiar
+              </button>
+            )}
+          </div>
+          <input
+            type="text"
+            list="tc-presets-gasto"
+            placeholder="Ej. Visa Bancolombia, Mastercard Nubank, Amex, Efectivo..."
+            value={tarjetaCredito}
+            onChange={(e) => setTarjetaCredito(e.target.value)}
+            className="w-full bg-[#151B27] border border-[#1C2436] focus:border-[#00E5FF] rounded-lg px-3 py-2 text-sm text-[#F1F5F9] focus:outline-none placeholder-[#8492A6]"
+          />
+          <datalist id="tc-presets-gasto">
+            <option value="Visa Bancolombia" />
+            <option value="Mastercard Bancolombia" />
+            <option value="Mastercard Nubank" />
+            <option value="American Express" />
+            <option value="Scotiabank Colpatria" />
+            <option value="Tarjeta Débito" />
+            <option value="Efectivo" />
+          </datalist>
+          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+            <span className="text-[10px] text-[#8492A6]">Sugerencias rápidas:</span>
+            {['Visa', 'Mastercard', 'Nubank', 'Amex', 'Débito', 'Efectivo'].map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => setTarjetaCredito(preset)}
+                className={`text-[10px] px-2 py-0.5 rounded border transition-colors cursor-pointer ${
+                  tarjetaCredito.toLowerCase().includes(preset.toLowerCase())
+                    ? 'bg-[#00E5FF]/20 border-[#00E5FF] text-[#00E5FF] font-bold'
+                    : 'bg-[#151B27] border-[#1C2436] text-[#8492A6] hover:text-[#F1F5F9]'
+                }`}
+              >
+                {preset}
+              </button>
+            ))}
           </div>
         </div>
 

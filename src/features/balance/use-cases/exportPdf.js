@@ -107,6 +107,7 @@ export function exportTripPdf({ viaje, balance, gastos = [], eventos = [], filte
       g.concepto,
       g.categoria,
       g.cityName ? `${g.cityName}${g.countryName ? `, ${g.countryName}` : ''}` : (g.countryName || '-'),
+      g.tarjetaCredito || 'Efectivo',
       `${g.montoOriginal} ${g.monedaOriginal}`,
       getTasaDisplay(g),
       `$ ${Number(g.montoCOP).toLocaleString()}`,
@@ -115,7 +116,7 @@ export function exportTripPdf({ viaje, balance, gastos = [], eventos = [], filte
 
     autoTable(doc, {
       startY: startGastosY + 3,
-      head: [['Fecha', 'Concepto', 'Categoría', 'Ciudad / País', 'Monto Orig.', 'Tasa Aplicada', 'Equiv. COP', 'Modalidad']],
+      head: [['Fecha', 'Concepto', 'Categoría', 'Ciudad / País', 'TC / Medio', 'Monto Orig.', 'Tasa Aplicada', 'Equiv. COP', 'Modalidad']],
       body: gastosRows,
       theme: 'striped',
       headStyles: { fillColor: [15, 20, 28], textColor: [0, 255, 133] },

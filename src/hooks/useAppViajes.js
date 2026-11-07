@@ -553,7 +553,8 @@ export function useAppViajes(usuario) {
               ...eventoData,
               moneda: monedaOriginal,
               descontarPresupuesto: isDescontar,
-              pagadoAdelantado: isAdelantado
+              pagadoAdelantado: isAdelantado,
+              tarjetaCredito: eventoData.tarjetaCredito || undefined
             })
           });
           savedEvento = res.data || res;
@@ -583,7 +584,8 @@ export function useAppViajes(usuario) {
         fechaFin: endDate.toISOString(),
         moneda: monedaOriginal,
         descontarPresupuesto: isDescontar,
-        pagadoAdelantado: isAdelantado
+        pagadoAdelantado: isAdelantado,
+        tarjetaCredito: eventoData.tarjetaCredito || undefined
       };
       setEventos(prev => [...prev, localEvento].sort((a, b) => new Date(a.fechaInicio) - new Date(b.fechaInicio)));
 
@@ -604,7 +606,8 @@ export function useAppViajes(usuario) {
           fechaGasto: eventoData.fechaInicio,
           pagadoAdelantado: isAdelantado,
           noComputar: !isDescontar,
-          esIngreso: false
+          esIngreso: false,
+          tarjetaCredito: eventoData.tarjetaCredito || undefined
         };
         setGastos(prev => [nuevoGastoAuto, ...prev]);
       }
@@ -640,11 +643,13 @@ export function useAppViajes(usuario) {
             ...updatedEventoData,
             moneda: monedaOriginal,
             ...(isDescontar !== undefined ? { descontarPresupuesto: isDescontar } : {}),
-            ...(isAdelantado !== undefined ? { pagadoAdelantado: isAdelantado } : {})
+            ...(isAdelantado !== undefined ? { pagadoAdelantado: isAdelantado } : {}),
+            ...(updatedEventoData.tarjetaCredito !== undefined ? { tarjetaCredito: updatedEventoData.tarjetaCredito } : {})
           })
         });
         saved = res?.data || res || updatedEventoData;
-        setEventos(prev => prev.map(e => (e.id === id ? { ...e, ...saved } : e)));
+        const targetTipo = (updatedEventoData.tipo || saved.tipo || '').toLowerCase();
+        setEventos(prev => prev.map(e => (e.id === id ? { ...e, ...saved, tipo: targetTipo || e.tipo } : e)));
 
         try {
           const gs = await apiRequest(`/viajes/${activeViajeId}/gastos`);
@@ -658,26 +663,40 @@ export function useAppViajes(usuario) {
     }
 
     if (!saved) {
+      const targetTipo = (updatedEventoData.tipo || '').toLowerCase();
       setEventos(prev => prev.map(e => (e.id === id ? {
         ...e,
         ...updatedEventoData,
+        tipo: targetTipo || e.tipo,
         moneda: monedaOriginal,
         ...(isDescontar !== undefined ? { descontarPresupuesto: isDescontar } : {}),
-        ...(isAdelantado !== undefined ? { pagadoAdelantado: isAdelantado } : {})
+        ...(isAdelantado !== undefined ? { pagadoAdelantado: isAdelantado } : {}),
+        ...(updatedEventoData.tarjetaCredito !== undefined ? { tarjetaCredito: updatedEventoData.tarjetaCredito } : {})
       } : e)));
       toast.info('Cambios guardados localmente.');
       saved = {
         ...updatedEventoData,
         id,
+        tipo: targetTipo || updatedEventoData.tipo,
         moneda: monedaOriginal,
         ...(isDescontar !== undefined ? { descontarPresupuesto: isDescontar } : {}),
-        ...(isAdelantado !== undefined ? { pagadoAdelantado: isAdelantado } : {})
+        ...(isAdelantado !== undefined ? { pagadoAdelantado: isAdelantado } : {}),
+        ...(updatedEventoData.tarjetaCredito !== undefined ? { tarjetaCredito: updatedEventoData.tarjetaCredito } : {})
       };
     }
 
     // Sincronizar el gasto asociado al evento tanto online como offline
     setGastos(prev => {
-      const concepto = `${updatedEventoData.tipo ? updatedEventoData.tipo.toUpperCase() + ': ' : ''}${updatedEventoData.titulo || ''}`;
+      const targetTipo = (updatedEventoData.tipo || '').toLowerCase();
+      const categoriaGasto = targetTipo === 'hotel'
+        ? 'alojamiento'
+        : (targetTipo === 'vuelo' || targetTipo === 'transporte'
+          ? 'transporte'
+          : (targetTipo === 'comida'
+            ? 'comida'
+            : 'actividades'));
+
+      const concepto = `${targetTipo ? targetTipo.toUpperCase() + ': ' : ''}${updatedEventoData.titulo || ''}`;
       const existingGastoIndex = prev.findIndex(g => g.eventoId === id || (g.concepto && updatedEventoData.titulo && g.concepto.includes(updatedEventoData.titulo)));
 
       if (costoNum > 0) {
@@ -685,18 +704,20 @@ export function useAppViajes(usuario) {
           const updatedGastos = [...prev];
           const currentAdelantado = isAdelantado !== undefined ? isAdelantado : Boolean(updatedGastos[existingGastoIndex].pagadoAdelantado);
           const currentNoComputar = isDescontar !== undefined ? !isDescontar : Boolean(updatedGastos[existingGastoIndex].noComputar);
+          const currentTC = updatedEventoData.tarjetaCredito !== undefined ? updatedEventoData.tarjetaCredito : updatedGastos[existingGastoIndex].tarjetaCredito;
 
           updatedGastos[existingGastoIndex] = {
             ...updatedGastos[existingGastoIndex],
             eventoId: id,
             concepto,
-            categoria: updatedEventoData.tipo === 'hotel' ? 'alojamiento' : (updatedEventoData.tipo === 'vuelo' || updatedEventoData.tipo === 'transporte' ? 'transporte' : 'actividades'),
+            categoria: categoriaGasto,
             montoOriginal: costoNum,
             monedaOriginal,
             montoCOP,
             montoUSD,
             pagadoAdelantado: currentAdelantado,
-            noComputar: currentNoComputar
+            noComputar: currentNoComputar,
+            tarjetaCredito: currentTC || undefined
           };
           return updatedGastos;
         } else {
@@ -707,7 +728,7 @@ export function useAppViajes(usuario) {
             viajeId: activeViajeId,
             eventoId: id,
             concepto,
-            categoria: updatedEventoData.tipo === 'hotel' ? 'alojamiento' : (updatedEventoData.tipo === 'vuelo' || updatedEventoData.tipo === 'transporte' ? 'transporte' : 'actividades'),
+            categoria: categoriaGasto,
             montoOriginal: costoNum,
             monedaOriginal,
             montoCOP,
@@ -715,7 +736,8 @@ export function useAppViajes(usuario) {
             fechaGasto: updatedEventoData.fechaInicio || new Date().toISOString(),
             pagadoAdelantado: currentAdelantado,
             noComputar: currentNoComputar,
-            esIngreso: false
+            esIngreso: false,
+            tarjetaCredito: updatedEventoData.tarjetaCredito || undefined
           };
           return [newGasto, ...prev];
         }
