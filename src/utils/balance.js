@@ -1,3 +1,117 @@
+import { resolveEventCountry, resolveEventCity } from './itinerarioGrouping';
+import { detectCountry, cleanCountryText, getCountryFlag } from './countries';
+import { findAirport } from './airportsData';
+
+/**
+ * Enriquece un gasto con país y ciudad basándose en el evento vinculado,
+ * el viaje activo, o el concepto/fecha del gasto.
+ */
+export function enrichGastoWithLocation(gasto, eventos = [], viaje = null) {
+  if (!gasto) return gasto;
+
+  let countryName = '';
+  let countryCode = '';
+  let flag = '';
+  let cityName = '';
+
+  // 1. Si está vinculado a un evento del itinerario
+  if (gasto.eventoId && Array.isArray(eventos)) {
+    const ev = eventos.find(e => e.id === gasto.eventoId);
+    if (ev) {
+      const c = resolveEventCountry(ev, viaje);
+      countryName = c.countryName;
+      countryCode = c.countryCode;
+      flag = c.flag;
+      cityName = resolveEventCity(ev, countryName, viaje);
+    }
+  }
+
+  // 2. Si el gasto ya contiene campos directos
+  if (!countryName && (gasto.paisDestino || gasto.pais)) {
+    const c = detectCountry(gasto.paisDestino || gasto.pais);
+    if (c) {
+      countryName = c.es;
+      countryCode = c.code;
+      flag = c.flag;
+    }
+  }
+  if (!cityName && (gasto.ciudadDestino || gasto.ciudad)) {
+    cityName = cleanCountryText(gasto.ciudadDestino || gasto.ciudad);
+  }
+
+  // 3. Detección en el concepto del gasto
+  if ((!countryName || !cityName) && gasto.concepto) {
+    if (!countryName) {
+      const c = detectCountry(gasto.concepto);
+      if (c) {
+        countryName = c.es;
+        countryCode = c.code;
+        flag = c.flag;
+      }
+    }
+
+    if (!cityName) {
+      const airportMatch = findAirport(gasto.concepto);
+      if (airportMatch) {
+        cityName = airportMatch.city;
+        if (!countryName && airportMatch.country) {
+          countryName = airportMatch.country;
+          countryCode = airportMatch.countryCode;
+          flag = getCountryFlag(countryCode);
+        }
+      } else if (viaje && Array.isArray(viaje.destinosMultidestino)) {
+        for (const d of viaje.destinosMultidestino) {
+          if (d.ciudad && gasto.concepto.toLowerCase().includes(d.ciudad.toLowerCase())) {
+            cityName = d.ciudad;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  // 4. Inferencia por fecha: si coincide con la fecha de un evento del itinerario
+  if ((!countryName || !cityName) && gasto.fechaGasto && Array.isArray(eventos) && eventos.length > 0) {
+    const gDateStr = gasto.fechaGasto.split('T')[0];
+    const sameDayEv = eventos.find(e => {
+      const eDate = (e.fechaInicio || e.fecha || '').split('T')[0];
+      return eDate === gDateStr;
+    });
+    if (sameDayEv) {
+      if (!countryName) {
+        const c = resolveEventCountry(sameDayEv, viaje);
+        countryName = c.countryName;
+        countryCode = c.countryCode;
+        flag = c.flag;
+      }
+      if (!cityName) {
+        cityName = resolveEventCity(sameDayEv, countryName, viaje);
+      }
+    }
+  }
+
+  // 5. Fallback al destino principal del viaje
+  if (!countryName && viaje?.destino) {
+    const c = detectCountry(viaje.destino);
+    if (c) {
+      countryName = c.es;
+      countryCode = c.code;
+      flag = c.flag;
+    } else {
+      countryName = cleanCountryText(viaje.destino);
+      flag = getCountryFlag(countryName);
+    }
+  }
+
+  return {
+    ...gasto,
+    countryName: countryName || 'Destino',
+    countryCode: countryCode || '',
+    flag: flag || (countryCode ? getCountryFlag(countryCode) : '🌍'),
+    cityName: cityName || ''
+  };
+}
+
 /**
  * Módulo Centralizado de Cálculos Financieros y Presupuesto (Single Source of Truth)
  * 

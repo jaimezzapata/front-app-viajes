@@ -20,7 +20,8 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronUp,
-  Share2
+  Share2,
+  Calendar
 } from 'lucide-react';
 import WatermarkIcon from '../../../components/WatermarkIcon';
 import WorldMapModal from '../../../components/WorldMapModal';
@@ -33,6 +34,7 @@ import {
   formatCurrencyDisplay,
   getOtherCurrenciesConversions
 } from '../../../utils/currencies';
+import { groupEventosByCountryCity, getGroupDateRange } from '../../../utils/itinerarioGrouping';
 
 const TYPE_ICONS = {
   vuelo: Plane,
@@ -84,6 +86,20 @@ export function ItinerarioView({
       : eventos.filter(e => (e.tipo || 'otro').toLowerCase() === activeFilter);
     return [...list].sort((a, b) => new Date(a.fechaInicio) - new Date(b.fechaInicio));
   }, [eventos, activeFilter]);
+
+  // Agrupamiento cronológico por país y ciudad para el carrete
+  const groupedSections = useMemo(() => {
+    return groupEventosByCountryCity(filteredEventos, activeViaje);
+  }, [filteredEventos, activeViaje]);
+
+  const [collapsedGroups, setCollapsedGroups] = useState({});
+
+  const toggleCollapseGroup = (groupKey) => {
+    setCollapsedGroups(prev => ({
+      ...prev,
+      [groupKey]: !prev[groupKey]
+    }));
+  };
 
   if (!activeViaje) {
     return (
@@ -337,8 +353,109 @@ export function ItinerarioView({
           <p className="text-xs text-[#8492A6] mt-1 m-0">Presiona "Vuelo / Actividad" para agendar nuevos trayectos o paseos.</p>
         </div>
       ) : (
-        <div className="relative pl-4 sm:pl-7 border-l-2 border-[#1C2436] ml-2 sm:ml-4 space-y-4 sm:space-y-5 z-10">
-          {filteredEventos.map((ev) => {
+        <div className="relative pl-4 sm:pl-7 border-l-2 border-[#1C2436] ml-2 sm:ml-4 space-y-6 sm:space-y-8 z-10">
+          {groupedSections.map((group) => {
+            const isCollapsed = Boolean(collapsedGroups[group.key]);
+            const dateRange = getGroupDateRange(group.eventos);
+
+            return (
+              <div key={group.key} className="space-y-4 sm:space-y-5">
+                {/* BANNER PRINCIPAL POR BLOQUE DE PAÍS CON LA BANDERA */}
+                <div className="relative group/banner pt-3 first:pt-0">
+                  {/* Nodo destacado en la línea de tiempo */}
+                  <div
+                    className="absolute -left-[26px] sm:-left-[38px] top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#080A0F] border-2 border-[#00E5FF] flex items-center justify-center shadow-[0_0_12px_rgba(0,229,255,0.4)] z-20"
+                    title={group.country}
+                  >
+                    <MapPin className="w-2.5 h-2.5 text-[#00E5FF]" />
+                  </div>
+
+                  {/* Tarjeta del Banner del País */}
+                  <div className="relative p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#111726] via-[#0E131F] to-[#0A0D14] border border-[#1C2436] hover:border-[#00E5FF]/40 shadow-lg shadow-black/40 transition-all overflow-hidden">
+                    <div className="absolute top-0 right-0 w-48 h-full bg-gradient-to-l from-[#00E5FF]/5 to-transparent pointer-events-none" />
+
+                    <div className="flex items-center justify-between gap-3 relative z-10 flex-wrap sm:flex-nowrap">
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        {/* MiniFlag Prominente */}
+                        <div className="relative shrink-0 flex items-center justify-center shadow-md rounded-md overflow-hidden">
+                          <MiniFlag
+                            country={group.country}
+                            code={group.countryCode}
+                            className="w-11 h-7 sm:w-14 sm:h-9 rounded-md object-cover border border-[#1C2436]"
+                          />
+                        </div>
+
+                        {/* Nombres de País y Resumen de Ciudades */}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm sm:text-base font-black uppercase tracking-wider text-[#F1F5F9]">
+                              {group.country}
+                            </span>
+                            {group.cities && group.cities.length > 0 && (
+                              <span className="text-xs sm:text-sm font-bold text-[#00E5FF] tracking-tight flex items-center gap-1 truncate">
+                                <span className="text-[#8492A6]/60">•</span>
+                                <MapPin className="w-3.5 h-3.5 text-[#00E5FF] shrink-0" />
+                                {group.cities.join(' • ')}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Metadatos: Total actividades y rango de fechas */}
+                          <div className="flex items-center gap-2 text-[11px] text-[#8492A6] mt-0.5 flex-wrap">
+                            <span className="font-semibold text-[#CBD5E1]">
+                              {group.eventos.length} {group.eventos.length === 1 ? 'actividad en total' : 'actividades en total'}
+                            </span>
+                            {dateRange && (
+                              <>
+                                <span className="text-[#1C2436]">•</span>
+                                <span className="flex items-center gap-1 text-[#00FF85] font-medium">
+                                  <Calendar className="w-3 h-3 text-[#00FF85]" />
+                                  {dateRange}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Botón de Colapsar / Expandir bloque del país */}
+                      <div className="flex items-center gap-2 ml-auto shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => toggleCollapseGroup(group.key)}
+                          className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-[#151B27] hover:bg-[#1E2738] border border-[#1C2436] text-[#8492A6] hover:text-[#00E5FF] text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                          title={isCollapsed ? 'Expandir actividades' : 'Colapsar actividades'}
+                        >
+                          <span className="hidden sm:inline text-[11px]">
+                            {isCollapsed ? 'Ver actividades' : 'Ocultar'}
+                          </span>
+                          {isCollapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* LISTA DE ACTIVIDADES EN ESTE PAÍS (ORGANIZADAS POR CIUDAD) */}
+                {!isCollapsed ? (
+                  group.citySections.map((citySec, cIdx) => (
+                    <div key={`city-${cIdx}-${citySec.cityName || 'gen'}`} className="space-y-4 sm:space-y-5">
+                      {/* Separador sutil de Ciudad dentro del País */}
+                      {citySec.cityName && (
+                        <div className="flex items-center gap-2 pt-2.5 pb-1 relative z-10">
+                          <span className="w-2 h-2 rounded-full bg-[#00E5FF] shrink-0 shadow-[0_0_8px_rgba(0,229,255,0.6)]" />
+                          <span className="text-xs sm:text-sm font-bold text-[#00E5FF] tracking-wide uppercase flex items-center gap-1.5">
+                            <MapPin className="w-3.5 h-3.5 text-[#00E5FF]" />
+                            {citySec.cityName}
+                          </span>
+                          <span className="text-[10px] text-[#8492A6] font-medium">
+                            ({citySec.eventos.length} {citySec.eventos.length === 1 ? 'actividad' : 'actividades'})
+                          </span>
+                          <div className="flex-1 h-px bg-gradient-to-r from-[#1C2436] to-transparent ml-2" />
+                        </div>
+                      )}
+
+                      {citySec.eventos.map((ev) => {
             const isVuelo = ev.tipo?.toLowerCase() === 'vuelo';
             const Icon = TYPE_ICONS[ev.tipo?.toLowerCase()] || MapPin;
             const parseDate = (d) => {
@@ -619,6 +736,16 @@ export function ItinerarioView({
                     </div>
                   </div>
                 </div>
+              </div>
+                      );
+                    })}
+                  </div>
+                ))
+              ) : (
+                <div className="p-3 rounded-xl bg-[#0E121B] border border-dashed border-[#1C2436] text-xs text-[#8492A6] italic text-center">
+                  Bloque de {group.country} colapsado ({group.eventos.length} {group.eventos.length === 1 ? 'actividad oculta' : 'actividades ocultas'}). Presiona "Ver actividades" para desplegar.
+                </div>
+              )}
               </div>
             );
           })}

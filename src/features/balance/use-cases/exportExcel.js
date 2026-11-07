@@ -1,11 +1,12 @@
 import ExcelJS from 'exceljs';
+import { enrichGastoWithLocation } from '../../../utils/balance';
 
 /**
  * exportTripExcel: Genera un libro de cálculo profesional (.xlsx)
  * con diseño Ejecutivo Moderno (fondos oscuros elegantes #0F172A,
  * tarjetas KPI estilo dashboard, fórmulas nativas de Excel y desglose contable exhaustivo).
  */
-export async function exportTripExcel({ viaje, balance, gastos = [], eventos = [] }) {
+export async function exportTripExcel({ viaje, balance, gastos = [], eventos = [], filterTitle = '' }) {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'Bitácora de Viajes App - Z-Suite';
   workbook.lastModifiedBy = 'Bitácora de Viajes App';
@@ -529,7 +530,7 @@ export async function exportTripExcel({ viaje, balance, gastos = [], eventos = [
   });
 
   // Título de la Hoja de Gastos
-  wsGastos.mergeCells('A1:K1');
+  wsGastos.mergeCells('A1:M1');
   const gTitle = wsGastos.getCell('A1');
   gTitle.value = `BITÁCORA CONTABLE - REGISTRO DETALLADO DE TRANSACCIONES (${safeGastos.length} REGISTROS)`;
   gTitle.font = FONTS.titleMain;
@@ -538,9 +539,11 @@ export async function exportTripExcel({ viaje, balance, gastos = [], eventos = [
   wsGastos.getRow(1).height = 32;
 
   // Subtítulo con instrucciones y filtros
-  wsGastos.mergeCells('A2:K2');
+  wsGastos.mergeCells('A2:M2');
   const gSub = wsGastos.getCell('A2');
-  gSub.value = '💡 Tip: Puedes utilizar las flechas de filtro de cada columna para segmentar por Categoría, Divisa o Modalidad de pago.';
+  gSub.value = filterTitle
+    ? `🎯 Filtros Aplicados: ${filterTitle} | 💡 Puedes usar las flechas de cada columna para segmentar.`
+    : '💡 Tip: Puedes utilizar las flechas de filtro de cada columna para segmentar por Categoría, Divisa o Modalidad de pago.';
   gSub.font = FONTS.titleSub;
   gSub.fill = PALETTE.slateCard;
   gSub.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -558,8 +561,13 @@ export async function exportTripExcel({ viaje, balance, gastos = [], eventos = [
     'EQUIVALENTE (COP)',
     'REF. USD',
     'MODALIDAD / TIPO',
-    'COMPUTABLE'
+    'COMPUTABLE',
+    'CIUDAD',
+    'PAÍS'
   ];
+
+  wsGastos.getColumn(12).width = 18;
+  wsGastos.getColumn(13).width = 18;
 
   const gHeadRow = wsGastos.addRow(gastosHeaders);
   gHeadRow.font = FONTS.tableHeader;
@@ -596,6 +604,8 @@ export async function exportTripExcel({ viaje, balance, gastos = [], eventos = [
       ? montoOrig
       : { formula: `E${rowIdx}*G${rowIdx}`, result: montoCOP };
 
+    const enrichedG = enrichGastoWithLocation(g, safeEventos, viaje);
+
     const row = wsGastos.addRow([
       idx + 1,
       g.fechaGasto ? new Date(g.fechaGasto).toLocaleDateString('es-CO') : '',
@@ -607,7 +617,9 @@ export async function exportTripExcel({ viaje, balance, gastos = [], eventos = [
       formulaCOP,
       montoUSD,
       tipoStr,
-      computableStr
+      computableStr,
+      enrichedG.cityName || '-',
+      enrichedG.countryName || '-'
     ]);
 
     row.height = 20;
@@ -647,14 +659,20 @@ export async function exportTripExcel({ viaje, balance, gastos = [], eventos = [
     row.getCell(11).alignment = { horizontal: 'center' };
     row.getCell(11).font = g.noComputar ? { name: 'Segoe UI', size: 9, bold: true, color: { argb: 'FFDC2626' } } : FONTS.regularText;
 
+    row.getCell(12).alignment = { horizontal: 'center' };
+    row.getCell(12).font = FONTS.regularText;
+
+    row.getCell(13).alignment = { horizontal: 'center' };
+    row.getCell(13).font = FONTS.regularText;
+
     // Alternancia de colores sutil (zebra)
     if (idx % 2 === 1) {
-      for (let c = 1; c <= 11; c++) {
+      for (let c = 1; c <= 13; c++) {
         row.getCell(c).fill = PALETTE.zebraLight;
       }
     }
 
-    for (let c = 1; c <= 11; c++) {
+    for (let c = 1; c <= 13; c++) {
       row.getCell(c).border = BORDERS.thinSlate;
     }
   });

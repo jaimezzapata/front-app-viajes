@@ -1,11 +1,12 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { enrichGastoWithLocation } from '../../../utils/balance';
 
 /**
  * exportTripPdf: Genera el reporte formal de gastos y bitácora del viaje
  * utilizando jsPDF y jspdf-autotable en el frontend (100% Offline).
  */
-export function exportTripPdf({ viaje, balance, gastos = [], eventos = [] }) {
+export function exportTripPdf({ viaje, balance, gastos = [], eventos = [], filterTitle = '' }) {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -20,19 +21,19 @@ export function exportTripPdf({ viaje, balance, gastos = [], eventos = [] }) {
   doc.setTextColor(0, 255, 133); // #00FF85 (Neón Verde)
   doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
-  doc.text('BITÁCORA DE VIAJE - REPORTE EJECUTIVO', 14, 16);
+  doc.text('BITÁCORA DE VIAJE - REPORTE FINANCIERO', 14, 15);
 
   // Subtítulo con destino y fechas
   doc.setTextColor(241, 245, 249);
-  doc.setFontSize(11);
+  doc.setFontSize(10.5);
   doc.setFont('helvetica', 'normal');
   const destinoText = `${viaje?.titulo || 'Mi Viaje'} (${viaje?.destino || 'Destino'})`;
-  doc.text(destinoText, 14, 25);
+  doc.text(destinoText, 14, 23);
 
-  const fechaText = `Generado: ${new Date().toLocaleDateString()} | Moneda Base: ${viaje?.monedaBase || 'COP'}`;
+  const fechaText = `Generado: ${new Date().toLocaleDateString()} | Moneda Base: ${viaje?.monedaBase || 'COP'}${filterTitle ? ` | Filtro: ${filterTitle}` : ''}`;
   doc.setTextColor(132, 146, 166);
-  doc.setFontSize(9);
-  doc.text(fechaText, 14, 30);
+  doc.setFontSize(8.5);
+  doc.text(fechaText, 14, 29);
 
   // Resumen Financiero (KPIs)
   doc.setTextColor(15, 23, 42);
@@ -85,11 +86,10 @@ export function exportTripPdf({ viaje, balance, gastos = [], eventos = [] }) {
   // Desglose de Gastos
   if (gastos.length > 0) {
     const nextY = doc.lastAutoTable.finalY + 10;
-    // Si no cabe en la página, saltar
     if (nextY > 230) doc.addPage();
 
     const startGastosY = nextY > 230 ? 20 : nextY;
-    doc.text('3. DESGLOSE DETALLADO DE GASTOS', 14, startGastosY);
+    doc.text(`3. DESGLOSE DETALLADO DE PAGOS (${gastos.length} REGISTROS)`, 14, startGastosY);
 
     const getTasaDisplay = (g) => {
       const curr = (g.monedaOriginal || 'COP').toUpperCase();
@@ -100,10 +100,13 @@ export function exportTripPdf({ viaje, balance, gastos = [], eventos = [] }) {
       return `1 ${curr} = $${Number(rate).toFixed(decimals)}`;
     };
 
-    const gastosRows = gastos.map(g => [
+    const enriched = gastos.map(g => enrichGastoWithLocation(g, eventos, viaje));
+
+    const gastosRows = enriched.map(g => [
       new Date(g.fechaGasto).toLocaleDateString(),
       g.concepto,
       g.categoria,
+      g.cityName ? `${g.cityName}${g.countryName ? `, ${g.countryName}` : ''}` : (g.countryName || '-'),
       `${g.montoOriginal} ${g.monedaOriginal}`,
       getTasaDisplay(g),
       `$ ${Number(g.montoCOP).toLocaleString()}`,
@@ -112,11 +115,11 @@ export function exportTripPdf({ viaje, balance, gastos = [], eventos = [] }) {
 
     autoTable(doc, {
       startY: startGastosY + 3,
-      head: [['Fecha', 'Concepto', 'Categoría', 'Monto Orig.', 'Tasa Aplicada', 'Equiv. COP', 'Tipo']],
+      head: [['Fecha', 'Concepto', 'Categoría', 'Ciudad / País', 'Monto Orig.', 'Tasa Aplicada', 'Equiv. COP', 'Modalidad']],
       body: gastosRows,
       theme: 'striped',
       headStyles: { fillColor: [15, 20, 28], textColor: [0, 255, 133] },
-      styles: { fontSize: 7.5, cellPadding: 2 }
+      styles: { fontSize: 7, cellPadding: 2 }
     });
   }
 
