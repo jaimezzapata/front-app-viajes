@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import * as am5 from '@amcharts/amcharts5';
 import * as am5map from '@amcharts/amcharts5/map';
-import am5geodata_worldLow from '@amcharts/amcharts5-geodata/worldLow';
+import am5geodata_worldHigh from '@amcharts/amcharts5-geodata/worldHigh';
 import am5themes_Animated from '@amcharts/amcharts5/themes/Animated';
 import am5themes_Dark from '@amcharts/amcharts5/themes/Dark';
 import { ROUTE_COLORS } from '../../utils/geoCoordinates';
@@ -70,10 +70,10 @@ export function useAmChartsMap({
       });
     }
 
-    // 4. Crear MapPolygonSeries para los países
+    // 4. Crear MapPolygonSeries para los países (usando worldHigh para incluir islas como Jeju, Okinawa, Baleares/Canarias, etc.)
     const polygonSeries = chart.series.push(
       am5map.MapPolygonSeries.new(root, {
-        geoJSON: am5geodata_worldLow,
+        geoJSON: am5geodata_worldHigh,
         exclude: ['AQ']
       })
     );
@@ -399,6 +399,7 @@ export function useAmChartsMap({
       });
 
       const animatedRoundTripGroups = new Set();
+      const renderedAirportLabels = new Set();
 
       flightRoutes.forEach((route, idx) => {
         if (!route.origin || !route.destination) return;
@@ -412,13 +413,17 @@ export function useAmChartsMap({
 
         const points = [];
 
+        const originLabelKey = `${route.origin.latitude.toFixed(2)},${route.origin.longitude.toFixed(2)}`;
+        const showOriginLabel = !renderedAirportLabels.has(originLabelKey);
+        renderedAirportLabels.add(originLabelKey);
+
         const originPoint = pointSeries.pushDataItem({
           latitude: route.origin.latitude,
           longitude: route.origin.longitude
         });
         originPoint.dataContext = {
           pointType: 'origin',
-          label: route.origin.airportName || route.origin.city,
+          label: showOriginLabel ? (route.origin.airportName || route.origin.city) : '',
           title: route.origin.displayTitle,
           subtitle: `${route.origin.city || ''} ${route.origin.country ? `(${route.origin.country})` : ''}`,
           flightTitle: route.titulo,
@@ -429,13 +434,17 @@ export function useAmChartsMap({
         points.push(originPoint);
 
         if (route.connection) {
+          const connLabelKey = `${route.connection.latitude.toFixed(2)},${route.connection.longitude.toFixed(2)}`;
+          const showConnLabel = !renderedAirportLabels.has(connLabelKey);
+          renderedAirportLabels.add(connLabelKey);
+
           const connPoint = pointSeries.pushDataItem({
             latitude: route.connection.latitude,
             longitude: route.connection.longitude
           });
           connPoint.dataContext = {
             pointType: 'connection',
-            label: route.connection.airportName || route.connection.city,
+            label: showConnLabel ? (route.connection.airportName || route.connection.city) : '',
             title: route.connection.displayTitle,
             subtitle: `${route.connection.city || ''} ${route.connection.country ? `(${route.connection.country})` : ''}`,
             flightTitle: route.titulo,
@@ -446,13 +455,17 @@ export function useAmChartsMap({
           points.push(connPoint);
         }
 
+        const destLabelKey = `${route.destination.latitude.toFixed(2)},${route.destination.longitude.toFixed(2)}`;
+        const showDestLabel = !renderedAirportLabels.has(destLabelKey);
+        renderedAirportLabels.add(destLabelKey);
+
         const destPoint = pointSeries.pushDataItem({
           latitude: route.destination.latitude,
           longitude: route.destination.longitude
         });
         destPoint.dataContext = {
           pointType: 'destination',
-          label: route.destination.airportName || route.destination.city,
+          label: showDestLabel ? (route.destination.airportName || route.destination.city) : '',
           title: route.destination.displayTitle,
           subtitle: `${route.destination.city || ''} ${route.destination.country ? `(${route.destination.country})` : ''}`,
           flightTitle: route.titulo,
@@ -505,36 +518,70 @@ export function useAmChartsMap({
             routeColorHex
           };
 
-          let isReturning = false;
-          let prevPosition = 0;
+          if (isRoundTrip) {
+            let isReturning = false;
+            let prevPosition = 0;
 
-          planeDataItem.on('positionOnLine', function (value) {
-            const targetPlane =
-              planeDataItem.planeGraphic ||
-              planeDataItem.bullets?.[0]?.get('sprite')?.children?.values?.[0];
+            planeDataItem.on('positionOnLine', function (value) {
+              const targetPlane =
+                planeDataItem.planeGraphic ||
+                planeDataItem.bullets?.[0]?.get('sprite')?.children?.values?.[0];
 
-            if (!targetPlane) return;
+              if (!targetPlane) return;
 
-            const step = value - prevPosition;
-            if (Math.abs(step) < 0.5) {
-              if (step < 0 && !isReturning) {
-                isReturning = true;
-                targetPlane.set('rotation', 180);
-              } else if (step > 0 && isReturning) {
-                isReturning = false;
-                targetPlane.set('rotation', 0);
+              const step = value - prevPosition;
+              if (Math.abs(step) < 0.5) {
+                if (step < 0 && !isReturning) {
+                  isReturning = true;
+                  targetPlane.set('rotation', 180);
+                } else if (step > 0 && isReturning) {
+                  isReturning = false;
+                  targetPlane.set('rotation', 0);
+                }
               }
-            }
-            prevPosition = value;
-          });
+              prevPosition = value;
+            });
 
-          planeDataItem.animate({
-            key: 'positionOnLine',
-            to: 1,
-            duration: 24000 + (idx % 3) * 3000,
-            loops: Infinity,
-            easing: am5.ease.yoyo(am5.ease.linear)
-          });
+            planeDataItem.animate({
+              key: 'positionOnLine',
+              from: 0,
+              to: 1,
+              duration: 24000 + (idx % 3) * 3000,
+              loops: Infinity,
+              easing: am5.ease.yoyo(am5.ease.linear)
+            });
+          } else {
+            // Trayecto One-Way: solo avanza en dirección Origen ➔ Destino,
+            // desaparece al llegar al destino y vuelve a salir desde el origen.
+            planeDataItem.on('positionOnLine', function (value) {
+              const targetPlane =
+                planeDataItem.planeGraphic ||
+                planeDataItem.bullets?.[0]?.get('sprite')?.children?.values?.[0];
+
+              if (!targetPlane) return;
+
+              targetPlane.set('rotation', 0);
+
+              if (value <= 0.02 || value >= 0.96) {
+                targetPlane.set('opacity', 0);
+              } else if (value < 0.08) {
+                targetPlane.set('opacity', (value - 0.02) / 0.06);
+              } else if (value > 0.88) {
+                targetPlane.set('opacity', (0.96 - value) / 0.08);
+              } else {
+                targetPlane.set('opacity', 1);
+              }
+            });
+
+            planeDataItem.animate({
+              key: 'positionOnLine',
+              from: 0,
+              to: 1,
+              duration: 12000 + (idx % 3) * 2000,
+              loops: Infinity,
+              easing: am5.ease.linear
+            });
+          }
         }
       });
     }

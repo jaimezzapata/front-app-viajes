@@ -14,7 +14,7 @@ export function getFlagEmoji(isoCode) {
 // Lista curada y exhaustiva de países con nombres en Español e Inglés y códigos ISO
 export const COUNTRIES = [
   { code: 'CO', es: 'Colombia', en: 'Colombia', aliases: ['col', 'colombiano'] },
-  { code: 'JP', es: 'Japón', en: 'Japan', aliases: ['japon', 'nippon', 'nihon', 'jpn'] },
+  { code: 'JP', es: 'Japón', en: 'Japan', aliases: ['japon', 'nippon', 'nihon', 'jpn', 'tokio', 'tokyo', 'osaka', 'kyoto', 'kioto', 'sapporo', 'fukuoka', 'fukuokka', 'narita', 'haneda', 'okinawa', 'nrt', 'hnd', 'kix', 'itm', 'cts', 'fuk'] },
   { code: 'US', es: 'Estados Unidos', en: 'United States', aliases: ['usa', 'eeuu', 'ee.uu.', 'ee uu', 'us', 'america', 'united states of america'] },
   { code: 'ES', es: 'España', en: 'Spain', aliases: ['espana', 'esp', 'madrid', 'barcelona', 'mad', 'bcn', 'valencia', 'sevilla'] },
   { code: 'FR', es: 'Francia', en: 'France', aliases: ['fra', 'paris', 'cdg', 'ory', 'marsella', 'lyon'] },
@@ -38,7 +38,7 @@ export const COUNTRIES = [
   { code: 'AE', es: 'Emiratos Árabes Unidos', en: 'United Arab Emirates', aliases: ['uae', 'emiratos arabes', 'emiratos arabes unidos', 'emiratos', 'dubai', 'dubái', 'abu dhabi', 'abu dabi', 'abudhabi', 'abudabi', 'auh', 'dxb', 'sharjah'] },
   { code: 'AU', es: 'Australia', en: 'Australia', aliases: ['aus'] },
   { code: 'NZ', es: 'Nueva Zelanda', en: 'New Zealand', aliases: ['nzl'] },
-  { code: 'KR', es: 'Corea del Sur', en: 'South Korea', aliases: ['korea', 'corea', 'kor'] },
+  { code: 'KR', es: 'Corea del Sur', en: 'South Korea', aliases: ['korea', 'corea', 'kor', 'seul', 'seoul', 'jeju', 'cheju', 'isla de jeju', 'jeju island', 'busan', 'pusan', 'incheon', 'gimpo', 'icn', 'gmp', 'cju', 'pus'] },
   { code: 'CN', es: 'China', en: 'China', aliases: ['chn'] },
   { code: 'TH', es: 'Tailandia', en: 'Thailand', aliases: ['tha'] },
   { code: 'VN', es: 'Vietnam', en: 'Vietnam', aliases: ['vnm'] },

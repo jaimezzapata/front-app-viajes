@@ -59,6 +59,9 @@ export function parseViajeMeta(viaje) {
     origen: viaje.origen || meta.origen || null,
     escalas: viaje.escalas || meta.escalas || null,
     tipoViaje: viaje.tipoViaje || meta.tipoViaje || 'unico',
-    destinosMultidestino: viaje.destinosMultidestino || meta.destinosMultidestino || []
+    destinosMultidestino: viaje.destinosMultidestino || meta.destinosMultidestino || [],
+    ...(viaje.categoriasPresupuesto || meta.categoriasPresupuesto
+      ? { categoriasPresupuesto: viaje.categoriasPresupuesto || meta.categoriasPresupuesto }
+      : {})
   };
 }

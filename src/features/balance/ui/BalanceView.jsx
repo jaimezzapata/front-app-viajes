@@ -1,5 +1,5 @@
-import React from 'react';
-import { PieChart, FileDown, FileSpreadsheet } from 'lucide-react';
+import React, { useState } from 'react';
+import { PieChart, FileDown, FileSpreadsheet, Settings2 } from 'lucide-react';
 import WatermarkIcon from '../../../components/WatermarkIcon';
 import { cleanCountryText } from '../../../utils/countries';
 import { useBalanceFilters } from './balance-view/useBalanceFilters';
@@ -8,8 +8,10 @@ import { BalanceKpiCards } from './balance-view/BalanceKpiCards';
 import { BalanceMultidivisaGrid } from './balance-view/BalanceMultidivisaGrid';
 import { BalanceSemaforoCard } from './balance-view/BalanceSemaforoCard';
 import { BalanceDesgloseTable } from './balance-view/BalanceDesgloseTable';
+import { ConfigurarPresupuestoModal } from './balance-view/ConfigurarPresupuestoModal';
 
-export function BalanceView({ viaje, onOpenNuevoViaje, balance, gastos = [], eventos = [] }) {
+export function BalanceView({ viaje, onOpenNuevoViaje, onUpdateViaje, balance, gastos = [], eventos = [] }) {
+  const [isConfigPresupuestoOpen, setIsConfigPresupuestoOpen] = useState(false);
   const {
     exportingExcel,
     showFiltersPanel,
@@ -101,6 +103,17 @@ export function BalanceView({ viaje, onOpenNuevoViaje, balance, gastos = [], eve
         </div>
 
         <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+          {onUpdateViaje && (
+            <button
+              type="button"
+              onClick={() => setIsConfigPresupuestoOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#151B27] border border-[#00E5FF]/40 hover:border-[#00E5FF] text-[#00E5FF] hover:bg-[#00E5FF]/10 font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-sm"
+              title="Modificar el presupuesto total, porcentajes y categorías"
+            >
+              <Settings2 className="w-4 h-4" strokeWidth={2.3} />
+              <span>Editar Presupuesto</span>
+            </button>
+          )}
           <button
             onClick={() => handleExport(true)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#FFE500] text-[#080A0F] font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
@@ -123,6 +136,7 @@ export function BalanceView({ viaje, onOpenNuevoViaje, balance, gastos = [], eve
 
       {/* PANEL DE FILTROS AVANZADOS */}
       <BalanceFiltrosPanel
+        viaje={viaje}
         showFiltersPanel={showFiltersPanel}
         setShowFiltersPanel={setShowFiltersPanel}
         searchText={searchText}
@@ -161,6 +175,7 @@ export function BalanceView({ viaje, onOpenNuevoViaje, balance, gastos = [], eve
         hasActiveFilters={hasActiveFilters}
         filteredTotals={filteredTotals}
         balance={balance}
+        onOpenConfigPresupuesto={onUpdateViaje ? () => setIsConfigPresupuestoOpen(true) : undefined}
       />
 
       {/* Multidivisa: Consumo en todas las monedas del viaje */}
@@ -176,6 +191,7 @@ export function BalanceView({ viaje, onOpenNuevoViaje, balance, gastos = [], eve
         displayBalance={displayBalance}
         hasActiveFilters={hasActiveFilters}
         gastos={hasActiveFilters ? filteredGastos : enrichedGastos}
+        onOpenConfigPresupuesto={onUpdateViaje ? () => setIsConfigPresupuestoOpen(true) : undefined}
       />
 
       {/* SECCIÓN DETALLADA: DESGLOSE Y AUDITORÍA DE PAGOS */}
@@ -184,6 +200,14 @@ export function BalanceView({ viaje, onOpenNuevoViaje, balance, gastos = [], eve
         filteredTotals={filteredTotals}
         hasActiveFilters={hasActiveFilters}
         clearAllFilters={clearAllFilters}
+      />
+
+      {/* Modal para Modificar Presupuesto Total, % y Categorías */}
+      <ConfigurarPresupuestoModal
+        isOpen={isConfigPresupuestoOpen}
+        onClose={() => setIsConfigPresupuestoOpen(false)}
+        viaje={viaje}
+        onUpdateViaje={onUpdateViaje}
       />
     </div>
   );

@@ -1,15 +1,29 @@
 import React from 'react';
-import { Banknote, TrendingDown, CreditCard, ShieldCheck } from 'lucide-react';
+import { Banknote, TrendingDown, CreditCard, ShieldCheck, Edit2 } from 'lucide-react';
 import WatermarkIcon from '../../../../components/WatermarkIcon';
 
-export function BalanceKpiCards({ viaje, hasActiveFilters, filteredTotals, balance }) {
+export function BalanceKpiCards({ viaje, hasActiveFilters, filteredTotals, balance, onOpenConfigPresupuesto }) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-6 relative z-10">
       {/* Presupuesto Total */}
-      <div className="relative p-4 rounded-xl bg-[#0E121B] border border-[#1C2436] overflow-hidden">
+      <div
+        onClick={onOpenConfigPresupuesto}
+        title={onOpenConfigPresupuesto ? 'Haz clic para editar el presupuesto total y los % por categoría' : undefined}
+        className={`relative p-4 rounded-xl bg-[#0E121B] border border-[#1C2436] overflow-hidden transition-all ${
+          onOpenConfigPresupuesto ? 'hover:border-[#00E5FF] cursor-pointer group' : ''
+        }`}
+      >
         <WatermarkIcon icon={Banknote} className="w-24 h-24 -bottom-4 -right-4" opacity="opacity-[0.03]" color="text-[#00E5FF]" />
-        <p className="text-[11px] font-semibold text-[#8492A6] uppercase tracking-wider m-0">Presupuesto Asignado</p>
-        <p className="text-xl font-bold text-[#F1F5F9] mt-1 m-0">
+        <div className="flex items-center justify-between gap-1">
+          <p className="text-[11px] font-semibold text-[#8492A6] uppercase tracking-wider m-0">Presupuesto Asignado</p>
+          {onOpenConfigPresupuesto && (
+            <span className="text-[10px] font-bold text-[#00E5FF] bg-[#00E5FF]/10 border border-[#00E5FF]/30 px-1.5 py-0.5 rounded flex items-center gap-1 group-hover:bg-[#00E5FF]/20 transition-colors">
+              <Edit2 className="w-2.5 h-2.5" />
+              <span>Editar</span>
+            </span>
+          )}
+        </div>
+        <p className="text-xl font-bold text-[#F1F5F9] mt-1 m-0 group-hover:text-[#00E5FF] transition-colors">
           $ {Math.round(viaje?.presupuestoTotal || 0).toLocaleString()}
         </p>
         <span className="text-[10px] text-[#00E5FF] font-medium">{viaje?.monedaBase || 'COP'}</span>

@@ -15,8 +15,10 @@ import {
 } from 'lucide-react';
 import { cleanCountryText } from '../../../../utils/countries';
 import { CURRENCY_MAP } from '../../../../utils/currencies';
+import { getViajeCategoriasConfig } from '../../../../utils/balance';
 
 export function BalanceFiltrosPanel({
+  viaje,
   showFiltersPanel,
   setShowFiltersPanel,
   searchText,
@@ -153,12 +155,21 @@ export function BalanceFiltrosPanel({
               className="w-full bg-[#151B27] border border-[#1C2436] focus:border-[#FFE500] rounded-lg px-2.5 py-1.5 text-xs text-[#F1F5F9] focus:outline-none cursor-pointer"
             >
               <option value="todos">Todos los Tipos</option>
-              <option value="transporte">🚗 Transporte / Vuelos</option>
-              <option value="alojamiento">🏨 Alojamiento / Hoteles</option>
-              <option value="comida">🍽️ Comida / Restaurantes</option>
-              <option value="actividades">🎟️ Actividades / Tours</option>
-              <option value="compras">🛍️ Compras / Souvenirs</option>
-              <option value="otros">📌 Otros Gastos</option>
+              {getViajeCategoriasConfig(viaje).map((c) => {
+                const presetLabels = {
+                  transporte: '🚗 Transporte / Vuelos',
+                  alojamiento: '🏨 Alojamiento / Hoteles',
+                  comida: '🍽️ Comida / Restaurantes',
+                  actividades: '🎟️ Actividades / Tours',
+                  compras: '🛍️ Compras / Souvenirs',
+                  otros: '📌 Otros Gastos'
+                };
+                return (
+                  <option key={c.categoria} value={c.categoria}>
+                    {presetLabels[c.categoria] || `🏷️ ${c.categoria.toUpperCase()}`}
+                  </option>
+                );
+              })}
             </select>
           </div>
 

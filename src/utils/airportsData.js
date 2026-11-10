@@ -23,9 +23,15 @@ export const AIRPORTS_AND_CITIES = [
   { code: 'ITM', city: 'Osaka', country: 'Japón', countryCode: 'JP', name: 'Itami', latitude: 34.7855, longitude: 135.4382 },
   { code: 'CTS', city: 'Sapporo', country: 'Japón', countryCode: 'JP', name: 'New Chitose', latitude: 42.7752, longitude: 141.6923 },
   { code: 'FUK', city: 'Fukuoka', country: 'Japón', countryCode: 'JP', name: 'Fukuoka', latitude: 33.5859, longitude: 130.4507 },
+  { code: 'OKA', city: 'Okinawa', country: 'Japón', countryCode: 'JP', name: 'Naha', latitude: 26.1958, longitude: 127.6458 },
+  { code: 'NGO', city: 'Nagoya', country: 'Japón', countryCode: 'JP', name: 'Chubu Centrair', latitude: 34.8584, longitude: 136.8054 },
+  { code: 'HIJ', city: 'Hiroshima', country: 'Japón', countryCode: 'JP', name: 'Hiroshima', latitude: 34.4361, longitude: 132.9194 },
   { code: 'ICN', city: 'Seúl', country: 'Corea del Sur', countryCode: 'KR', name: 'Incheon International', latitude: 37.4602, longitude: 126.4407 },
   { code: 'ICH', city: 'Seúl / Incheon', country: 'Corea del Sur', countryCode: 'KR', name: 'Incheon International', latitude: 37.4602, longitude: 126.4407 },
-  { code: 'GMP', city: 'Seúl', country: 'Corea del Sur', countryCode: 'KR', name: 'Gimpo', latitude: 37.5583, longitude: 126.7906 },
+  { code: 'GMP', city: 'Seúl', country: 'Corea del Sur', countryCode: 'KR', name: 'Gimpo International', latitude: 37.5583, longitude: 126.7906 },
+  { code: 'CJU', city: 'Jeju', country: 'Corea del Sur', countryCode: 'KR', name: 'Jeju International', latitude: 33.5113, longitude: 126.4930 },
+  { code: 'PUS', city: 'Busan', country: 'Corea del Sur', countryCode: 'KR', name: 'Gimhae International', latitude: 35.1796, longitude: 128.9382 },
+  { code: 'TAE', city: 'Daegu', country: 'Corea del Sur', countryCode: 'KR', name: 'Daegu International', latitude: 35.8941, longitude: 128.6589 },
   { code: 'PEK', city: 'Pekín', country: 'China', countryCode: 'CN', name: 'Beijing Capital', latitude: 40.0799, longitude: 116.6031 },
   { code: 'PVG', city: 'Shanghái', country: 'China', countryCode: 'CN', name: 'Pudong', latitude: 31.1443, longitude: 121.8083 },
   { code: 'HKG', city: 'Hong Kong', country: 'Hong Kong', countryCode: 'HK', name: 'Hong Kong International', latitude: 22.3080, longitude: 113.9185 },
@@ -166,6 +172,15 @@ export function findAirport(query) {
   }
   if (norm.includes('incheon') || norm === 'ich' || norm === 'icn') {
     return AIRPORTS_AND_CITIES.find(a => a.code === 'ICN') || null;
+  }
+  if (norm.includes('jeju') || norm.includes('cheju') || norm === 'cju') {
+    return AIRPORTS_AND_CITIES.find(a => a.code === 'CJU') || null;
+  }
+  if (norm.includes('busan') || norm.includes('pusan') || norm === 'pus') {
+    return AIRPORTS_AND_CITIES.find(a => a.code === 'PUS') || null;
+  }
+  if (norm.includes('gimpo') || norm === 'gmp') {
+    return AIRPORTS_AND_CITIES.find(a => a.code === 'GMP') || null;
   }
 
   // 4. Coincidencia por ciudad

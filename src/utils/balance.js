@@ -122,6 +122,67 @@ export function enrichGastoWithLocation(gasto, eventos = [], viaje = null) {
  * - Distribución y semáforos por categoría.
  */
 
+export const DEFAULT_CATEGORIAS_PRESUPUESTO = [
+  { categoria: 'transporte', porcentaje: 30 },
+  { categoria: 'alojamiento', porcentaje: 35 },
+  { categoria: 'comida', porcentaje: 15 },
+  { categoria: 'actividades', porcentaje: 10 },
+  { categoria: 'compras', porcentaje: 5 },
+  { categoria: 'otros', porcentaje: 5 }
+];
+
+/**
+ * Obtiene la configuración activa de categorías de presupuesto para un viaje.
+ * Respeta tanto `viaje.categoriasPresupuesto` como `viaje.presupuestos` (Prisma),
+ * o usa la distribución por defecto si no se ha personalizado aún.
+ */
+export function getViajeCategoriasConfig(viaje) {
+  const presupuestoTotalCOP = Number(viaje?.presupuestoTotal) || 0;
+
+  if (Array.isArray(viaje?.categoriasPresupuesto) && viaje.categoriasPresupuesto.length > 0) {
+    return viaje.categoriasPresupuesto.map((item) => {
+      const cat = (item.categoria || 'otros').trim().toLowerCase();
+      const pct =
+        item.porcentaje !== undefined && item.porcentaje !== null
+          ? Number(item.porcentaje)
+          : presupuestoTotalCOP > 0 && item.limite !== undefined
+          ? Number(((Number(item.limite) / presupuestoTotalCOP) * 100).toFixed(1))
+          : 0;
+      const limiteCOP =
+        presupuestoTotalCOP > 0
+          ? Math.round(presupuestoTotalCOP * (pct / 100))
+          : Number(item.limite) || 0;
+      return {
+        categoria: cat,
+        porcentaje: pct,
+        limiteCOP
+      };
+    });
+  }
+
+  if (Array.isArray(viaje?.presupuestos) && viaje.presupuestos.length > 0) {
+    return viaje.presupuestos.map((item) => {
+      const cat = (item.categoria || 'otros').trim().toLowerCase();
+      const limite = Number(item.limite) || 0;
+      const pct =
+        presupuestoTotalCOP > 0
+          ? Number(((limite / presupuestoTotalCOP) * 100).toFixed(1))
+          : 0;
+      return {
+        categoria: cat,
+        porcentaje: pct,
+        limiteCOP: limite
+      };
+    });
+  }
+
+  return DEFAULT_CATEGORIAS_PRESUPUESTO.map((item) => ({
+    categoria: item.categoria,
+    porcentaje: item.porcentaje,
+    limiteCOP: Math.round(presupuestoTotalCOP * (item.porcentaje / 100))
+  }));
+}
+
 export function calculateTripBalance(viaje, gastos = []) {
   if (!viaje) {
     return {
@@ -161,14 +222,16 @@ export function calculateTripBalance(viaje, gastos = []) {
   let totalFueraPresupuestoUSD = 0;
   let gastosComputablesCount = 0;
 
-  const categoriasMap = {
-    transporte: { gastoCOP: 0, gastoUSD: 0, limiteCOP: presupuestoTotalCOP * 0.3 },
-    alojamiento: { gastoCOP: 0, gastoUSD: 0, limiteCOP: presupuestoTotalCOP * 0.35 },
-    comida: { gastoCOP: 0, gastoUSD: 0, limiteCOP: presupuestoTotalCOP * 0.15 },
-    actividades: { gastoCOP: 0, gastoUSD: 0, limiteCOP: presupuestoTotalCOP * 0.1 },
-    compras: { gastoCOP: 0, gastoUSD: 0, limiteCOP: presupuestoTotalCOP * 0.05 },
-    otros: { gastoCOP: 0, gastoUSD: 0, limiteCOP: presupuestoTotalCOP * 0.05 }
-  };
+  const categoriasConfig = getViajeCategoriasConfig(viaje);
+  const categoriasMap = {};
+  for (const cfg of categoriasConfig) {
+    categoriasMap[cfg.categoria] = {
+      gastoCOP: 0,
+      gastoUSD: 0,
+      porcentajeAsignado: cfg.porcentaje,
+      limiteCOP: cfg.limiteCOP
+    };
+  }
 
   const safeGastos = Array.isArray(gastos) ? gastos : [];
 
@@ -206,11 +269,17 @@ export function calculateTripBalance(viaje, gastos = []) {
       enRutaCOP += cop;
     }
 
-    const cat = (g.categoria || 'otros').toLowerCase();
-    if (categoriasMap[cat]) {
-      categoriasMap[cat].gastoCOP += cop;
-      categoriasMap[cat].gastoUSD += usd;
+    const cat = (g.categoria || 'otros').trim().toLowerCase();
+    if (!categoriasMap[cat]) {
+      categoriasMap[cat] = {
+        gastoCOP: 0,
+        gastoUSD: 0,
+        porcentajeAsignado: 0,
+        limiteCOP: 0
+      };
     }
+    categoriasMap[cat].gastoCOP += cop;
+    categoriasMap[cat].gastoUSD += usd;
   }
 
   const gastoBase = monedaBase === 'USD' ? totalGastadoUSD : totalGastadoCOP;
@@ -230,6 +299,7 @@ export function calculateTripBalance(viaje, gastos = []) {
 
     return {
       categoria: key,
+      porcentajeAsignado: Number((val.porcentajeAsignado || 0).toFixed(1)),
       limiteCOP: val.limiteCOP,
       consumidoCOP: val.gastoCOP,
       consumidoUSD: val.gastoUSD,

@@ -9,7 +9,8 @@ import {
   Tag,
   CreditCard,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  Settings2
 } from 'lucide-react';
 import Modal from '../../../../components/Modal';
 import MiniFlag from '../../../../components/MiniFlag';
@@ -31,7 +32,8 @@ const CATEGORIA_ICONS = {
 export function BalanceSemaforoCard({
   displayBalance,
   hasActiveFilters,
-  gastos = []
+  gastos = [],
+  onOpenConfigPresupuesto
 }) {
   const [modalCategoria, setModalCategoria] = useState(null);
 
@@ -84,9 +86,22 @@ export function BalanceSemaforoCard({
             )}
           </div>
 
-          <span className="text-xs text-[#8492A6]">
-            Consumido: <strong className="text-[#F1F5F9]">{displayBalance?.porcentajeConsumido || 0}%</strong>
-          </span>
+          <div className="flex items-center gap-3 flex-wrap">
+            {onOpenConfigPresupuesto && (
+              <button
+                type="button"
+                onClick={onOpenConfigPresupuesto}
+                className="text-[11px] font-bold text-[#00FF85] bg-[#00FF85]/10 hover:bg-[#00FF85]/20 border border-[#00FF85]/30 px-2.5 py-1 rounded-lg transition-colors cursor-pointer flex items-center gap-1 uppercase tracking-wider"
+                title="Modificar presupuesto total, porcentajes por categoría o agregar categorías"
+              >
+                <Settings2 className="w-3.5 h-3.5" />
+                <span>Configurar % y Categorías</span>
+              </button>
+            )}
+            <span className="text-xs text-[#8492A6]">
+              Consumido: <strong className="text-[#F1F5F9]">{displayBalance?.porcentajeConsumido || 0}%</strong>
+            </span>
+          </div>
         </div>
 
         {categoriasList.length > 0 ? (
@@ -109,11 +124,16 @@ export function BalanceSemaforoCard({
                   className="w-full text-left p-2.5 rounded-xl border bg-[#111622]/60 border-[#1C2436]/70 hover:bg-[#151B27] hover:border-[#00E5FF]/60 transition-all cursor-pointer space-y-1.5 block group"
                 >
                   <div className="flex items-center justify-between text-xs gap-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <Icon className="w-3.5 h-3.5 text-[#00E5FF] group-hover:scale-110 transition-transform" />
                       <span className="font-bold uppercase tracking-wider text-[#F1F5F9] group-hover:text-[#00E5FF] transition-colors">
                         {cat.categoria}
                       </span>
+                      {cat.porcentajeAsignado !== undefined && (
+                        <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-[#151B27] border border-[#1C2436] text-[#8492A6]">
+                          {cat.porcentajeAsignado}% del ppto
+                        </span>
+                      )}
                       <span className="text-[10px] text-[#8492A6] group-hover:text-[#00E5FF] transition-colors hidden sm:inline">
                         • Ver detalle
                       </span>

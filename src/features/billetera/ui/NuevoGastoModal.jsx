@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Modal from '../../../components/Modal';
 import { CurrencySelector, LiveCurrencyConversions } from '../../../components/CurrencySelector';
 import { getExactExchangeRate, convertCurrency, formatCurrencyDisplay } from '../../../utils/currencies';
+import { getViajeCategoriasConfig } from '../../../utils/balance';
 import { TrendingUp, ShieldCheck, CreditCard } from 'lucide-react';
 
 export function NuevoGastoModal({
@@ -25,6 +26,24 @@ export function NuevoGastoModal({
   const [esIngreso, setEsIngreso] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  const availableCategorias = useMemo(() => {
+    const cfg = getViajeCategoriasConfig(activeViaje);
+    const baseLabels = {
+      comida: 'Comida / Bebida',
+      transporte: 'Transporte',
+      alojamiento: 'Alojamiento',
+      actividades: 'Actividades / Tours',
+      compras: 'Compras',
+      otros: 'Otros'
+    };
+    return cfg.map((c) => ({
+      value: c.categoria,
+      label:
+        baseLabels[c.categoria] ||
+        c.categoria.charAt(0).toUpperCase() + c.categoria.slice(1)
+    }));
+  }, [activeViaje]);
 
   // Sincronizar moneda inicial según la moneda local del viaje
   useEffect(() => {
@@ -135,12 +154,11 @@ export function NuevoGastoModal({
               onChange={(e) => setCategoria(e.target.value)}
               className="w-full bg-[#151B27] border border-[#1C2436] focus:border-[#00FF85] rounded-lg px-3 py-2 text-sm text-[#F1F5F9] focus:outline-none cursor-pointer"
             >
-              <option value="comida">Comida / Bebida</option>
-              <option value="transporte">Transporte</option>
-              <option value="alojamiento">Alojamiento</option>
-              <option value="actividades">Actividades / Tours</option>
-              <option value="compras">Compras</option>
-              <option value="otros">Otros</option>
+              {availableCategorias.map((cat) => (
+                <option key={cat.value} value={cat.value}>
+                  {cat.label}
+                </option>
+              ))}
             </select>
           </div>
 

@@ -270,6 +270,7 @@ export function App() {
                 setViajeAEditar(null);
                 setIsNuevoViajeOpen(true);
               }}
+              onUpdateViaje={handleUpdateViaje}
               balance={balance}
               gastos={gastos}
               eventos={eventos}
