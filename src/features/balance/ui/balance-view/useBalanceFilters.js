@@ -329,6 +329,7 @@ export function useBalanceFilters({ viaje, gastos = [], eventos = [], balance = 
     availableCities,
     availableCurrencies,
     availableTCs,
+    enrichedGastos,
     filteredGastos,
     filteredTotals,
     dynamicBalance,

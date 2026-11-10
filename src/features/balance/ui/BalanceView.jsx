@@ -38,6 +38,7 @@ export function BalanceView({ viaje, onOpenNuevoViaje, balance, gastos = [], eve
     availableCities,
     availableCurrencies,
     availableTCs,
+    enrichedGastos,
     filteredGastos,
     filteredTotals,
     displayBalance,
@@ -172,13 +173,9 @@ export function BalanceView({ viaje, onOpenNuevoViaje, balance, gastos = [], eve
 
       {/* Semáforo de Presupuesto por Categoría */}
       <BalanceSemaforoCard
-        balance={balance}
         displayBalance={displayBalance}
         hasActiveFilters={hasActiveFilters}
-        selectedCategoria={selectedCategoria}
-        onSelectCategoria={(cat) =>
-          setSelectedCategoria((prev) => (prev === cat ? 'todos' : cat))
-        }
+        gastos={hasActiveFilters ? filteredGastos : enrichedGastos}
       />
 
       {/* SECCIÓN DETALLADA: DESGLOSE Y AUDITORÍA DE PAGOS */}
