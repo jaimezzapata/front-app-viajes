@@ -25,6 +25,96 @@ export function getUserStorageKey(user) {
   return identifier ? `app_viajes_lista_${identifier}` : null;
 }
 
+export function reconcileGastosWithEventos(rawGastos = [], rawEventos = [], viajeId = null) {
+  const safeGastos = Array.isArray(rawGastos) ? [...rawGastos] : [];
+  const safeEventos = Array.isArray(rawEventos) ? rawEventos : [];
+  const eventoMap = new Map();
+
+  for (const rawEv of safeEventos) {
+    const ev = parseEventoMeta(rawEv);
+    if (ev && ev.id) {
+      eventoMap.set(ev.id, ev);
+    }
+  }
+
+  // 1. Enriquecer gastos existentes con metadatos de su evento vinculado (ej. tarjetaCredito)
+  const reconciled = safeGastos.map((g) => {
+    const linkedEv = g.eventoId ? eventoMap.get(g.eventoId) : null;
+    const num = Number(g.montoOriginal) || 0;
+    let orig = (g.monedaOriginal || 'COP').toUpperCase();
+    if (num >= 50000 && orig === 'USD') {
+      orig = 'COP';
+    }
+    const montoCOP = Number(g.montoCOP) > 0 ? Number(g.montoCOP) : convertCurrency(num, orig, 'COP');
+    const montoUSD = Number(g.montoUSD) > 0 ? Number(g.montoUSD) : convertCurrency(num, orig, 'USD');
+
+    if (!linkedEv) {
+      return {
+        ...g,
+        monedaOriginal: orig,
+        montoCOP,
+        montoUSD
+      };
+    }
+
+    const tc = g.tarjetaCredito || linkedEv.tarjetaCredito || undefined;
+    return {
+      ...g,
+      monedaOriginal: orig,
+      montoCOP,
+      montoUSD,
+      ...(tc ? { tarjetaCredito: tc } : {})
+    };
+  });
+
+  // 2. Garantizar que todo evento del itinerario con costo > 0 tenga su gasto reflejado
+  const existingEventoIds = new Set(reconciled.map(g => g.eventoId).filter(Boolean));
+
+  for (const ev of eventoMap.values()) {
+    const costoNum = Number(ev.costo) || 0;
+    if (costoNum > 0 && !existingEventoIds.has(ev.id)) {
+      let orig = (ev.moneda || 'COP').toUpperCase();
+      if (costoNum >= 50000 && orig === 'USD') {
+        orig = 'COP';
+      }
+      const montoCOP = convertCurrency(costoNum, orig, 'COP');
+      const montoUSD = convertCurrency(costoNum, orig, 'USD');
+      const tipoLower = (ev.tipo || 'otro').toLowerCase();
+      const categoria = tipoLower === 'hotel'
+        ? 'alojamiento'
+        : (tipoLower === 'vuelo' || tipoLower === 'transporte'
+          ? 'transporte'
+          : (tipoLower === 'comida' ? 'comida' : 'actividades'));
+
+      const isDescontar = ev.descontarPresupuesto !== undefined
+        ? Boolean(ev.descontarPresupuesto)
+        : (ev.gastoAsociado?.noComputar !== undefined ? !ev.gastoAsociado.noComputar : true);
+      const isAdelantado = ev.pagadoAdelantado !== undefined
+        ? Boolean(ev.pagadoAdelantado)
+        : (ev.gastoAsociado?.pagadoAdelantado !== undefined ? Boolean(ev.gastoAsociado.pagadoAdelantado) : (tipoLower === 'vuelo'));
+
+      reconciled.push({
+        id: ev.gastoAsociado?.id || `g-ev-${ev.id}`,
+        viajeId: ev.viajeId || viajeId,
+        eventoId: ev.id,
+        concepto: `${tipoLower ? tipoLower.toUpperCase() + ': ' : ''}${ev.titulo || 'Evento'}`,
+        categoria,
+        montoOriginal: costoNum,
+        monedaOriginal: orig,
+        montoCOP,
+        montoUSD,
+        fechaGasto: ev.fechaInicio || new Date().toISOString(),
+        pagadoAdelantado: isAdelantado,
+        noComputar: !isDescontar,
+        esIngreso: false,
+        tarjetaCredito: ev.tarjetaCredito || ev.gastoAsociado?.tarjetaCredito || undefined
+      });
+    }
+  }
+
+  return reconciled;
+}
+
 export function useAppViajes(usuario) {
   // Inicializar exclusivamente con datos reales guardados localmente para este usuario
   const [viajes, setViajes] = useState(() => {
@@ -102,16 +192,6 @@ export function useAppViajes(usuario) {
     }
   });
 
-  const [documentos, setDocumentos] = useState(() => {
-    try {
-      if (!activeViajeId || activeViajeId === 'viaje-demo-tokyo') return [];
-      const saved = localStorage.getItem(`app_viajes_docs_${activeViajeId}`);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
   const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
 
   // Limpieza inicial forzada de residuos mock/demo de localStorage
@@ -130,7 +210,6 @@ export function useAppViajes(usuario) {
       setActiveViajeId(null);
       setEventos([]);
       setGastos([]);
-      setDocumentos([]);
       return;
     }
 
@@ -200,7 +279,6 @@ export function useAppViajes(usuario) {
     if (!activeViajeId || activeViajeId === 'viaje-demo-tokyo') {
       setEventos([]);
       setGastos([]);
-      setDocumentos([]);
       return;
     }
     try {
@@ -237,9 +315,6 @@ export function useAppViajes(usuario) {
         });
       }
       setGastos(gs);
-
-      const savedDocs = localStorage.getItem(`app_viajes_docs_${activeViajeId}`);
-      setDocumentos(savedDocs ? JSON.parse(savedDocs) : []);
     } catch {}
   }, [activeViajeId]);
 
@@ -248,9 +323,8 @@ export function useAppViajes(usuario) {
     if (activeViajeId && activeViajeId !== 'viaje-demo-tokyo') {
       localStorage.setItem(`app_viajes_eventos_${activeViajeId}`, JSON.stringify(eventos));
       localStorage.setItem(`app_viajes_gastos_${activeViajeId}`, JSON.stringify(gastos));
-      localStorage.setItem(`app_viajes_docs_${activeViajeId}`, JSON.stringify(documentos));
     }
-  }, [activeViajeId, eventos, gastos, documentos]);
+  }, [activeViajeId, eventos, gastos]);
 
   // Cargar datos reales desde la API (Base de Datos Real)
   const fetchViajeData = useCallback(async (opts = {}) => {
@@ -357,18 +431,18 @@ export function useAppViajes(usuario) {
           setActiveViajeId(null);
           setEventos([]);
           setGastos([]);
-          setDocumentos([]);
         }
 
         if (targetId && targetId !== 'viaje-demo-tokyo') {
-          const [evs, gs, docs] = await Promise.all([
+          const [evs, gs] = await Promise.all([
             apiRequest(`/viajes/${targetId}/itinerario`).catch(() => null),
-            apiRequest(`/viajes/${targetId}/gastos`).catch(() => null),
-            apiRequest(`/viajes/${targetId}/boveda`).catch(() => null)
+            apiRequest(`/viajes/${targetId}/gastos`).catch(() => null)
           ]);
-          if (Array.isArray(evs)) setEventos(evs);
-          if (Array.isArray(gs)) setGastos(gs);
-          if (Array.isArray(docs)) setDocumentos(docs);
+          const parsedEvs = Array.isArray(evs) ? evs.map(parseEventoMeta) : null;
+          if (parsedEvs) setEventos(parsedEvs);
+          if (Array.isArray(gs)) {
+            setGastos(reconcileGastosWithEventos(gs, parsedEvs || eventos, targetId));
+          }
         }
       }
 
@@ -410,10 +484,15 @@ export function useAppViajes(usuario) {
     return fetchViajeData({ isManual: true });
   }, [fetchViajeData]);
 
+  // Lista de gastos reconciliada en tiempo real con los eventos del itinerario
+  const reconciledGastos = useMemo(() => {
+    return reconcileGastosWithEventos(gastos, eventos, activeViajeId);
+  }, [gastos, eventos, activeViajeId]);
+
   // Cálculo del Balance en tiempo real usando la función centralizada
   const balance = useMemo(() => {
-    return calculateTripBalance(activeViaje, gastos);
-  }, [activeViaje, gastos]);
+    return calculateTripBalance(activeViaje, reconciledGastos);
+  }, [activeViaje, reconciledGastos]);
 
   const calculateBalance = useCallback(() => balance, [balance]);
 
@@ -513,7 +592,6 @@ export function useAppViajes(usuario) {
         if (!nextActive) {
           setEventos([]);
           setGastos([]);
-          setDocumentos([]);
         }
       }
       return filtered;
@@ -813,34 +891,6 @@ export function useAppViajes(usuario) {
     return localGasto;
   };
 
-  const handleSaveDocumento = async (docData) => {
-    if (!activeViajeId) {
-      toast.error('Debes seleccionar o crear un viaje en la base de datos primero.');
-      return null;
-    }
-    try {
-      if (navigator.onLine) {
-        const res = await apiRequest(`/viajes/${activeViajeId}/boveda`, {
-          method: 'POST',
-          body: JSON.stringify(docData)
-        });
-        setDocumentos(prev => [res, ...prev]);
-        toast.success('Documento guardado en bóveda.');
-        return res;
-      }
-    } catch {}
-
-    const localDoc = {
-      ...docData,
-      id: 'doc-local-' + Date.now(),
-      viajeId: activeViajeId,
-      createdAt: new Date().toISOString()
-    };
-    setDocumentos(prev => [localDoc, ...prev]);
-    toast.info('Documento guardado localmente.');
-    return localDoc;
-  };
-
   const handleSyncAndClearLocal = async () => {
     if (!navigator.onLine) {
       toast.error('Se requiere conexión a internet para sincronizar con la base de datos.');
@@ -890,16 +940,6 @@ export function useAppViajes(usuario) {
             body: JSON.stringify(gPayload)
           }).catch(() => null);
         }
-
-        // Subir documentos locales
-        const localDocs = JSON.parse(localStorage.getItem(`app_viajes_docs_${oldId}`) || '[]');
-        for (const doc of localDocs) {
-          const { id: _, ...docPayload } = doc;
-          await apiRequest(`/viajes/${createdViaje.id}/boveda`, {
-            method: 'POST',
-            body: JSON.stringify(docPayload)
-          }).catch(() => null);
-        }
       }
 
       // 2. Limpiar llaves de datos locales de viajes en localStorage (preservando sesión de usuario)
@@ -937,8 +977,7 @@ export function useAppViajes(usuario) {
     activeViajeId,
     setActiveViajeId,
     eventos,
-    gastos,
-    documentos,
+    gastos: reconciledGastos,
     balance,
     isOnline,
     handleSaveViaje,
@@ -948,7 +987,6 @@ export function useAppViajes(usuario) {
     handleUpdateEvento,
     handleDeleteEvento,
     handleSaveGasto,
-    handleSaveDocumento,
     handleSyncAndClearLocal,
     handleSyncNow
   };

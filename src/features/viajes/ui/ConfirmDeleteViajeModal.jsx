@@ -40,7 +40,7 @@ export function ConfirmDeleteViajeModal({ isOpen, onClose, viaje, onConfirmDelet
               ¿Estás seguro de eliminar este viaje?
             </h4>
             <p className="text-[11px] text-[#CBD5E1] mt-1 m-0 leading-relaxed">
-              Esta acción eliminará de forma irreversible la bitácora y todos sus vuelos, itinerarios, gastos y documentos asociados.
+              Esta acción eliminará de forma irreversible la bitácora y todos sus vuelos, itinerarios y gastos asociados.
             </p>
           </div>
         </div>

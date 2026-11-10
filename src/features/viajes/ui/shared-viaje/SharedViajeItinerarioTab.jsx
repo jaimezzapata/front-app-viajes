@@ -57,7 +57,7 @@ export function SharedViajeItinerarioTab({
                 <MapPin className="w-2.5 h-2.5 text-[#00E5FF]" />
               </div>
 
-              <div className="relative p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#111726] via-[#0E131F] to-[#0A0D14] border border-[#1C2436] shadow-lg shadow-black/40 overflow-hidden">
+              <div className="relative p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-white via-[#F8FAFC] to-[#EFF6FF] dark:from-[#111726] dark:via-[#0E131F] dark:to-[#0A0D14] border border-[#1C2436] shadow-sm shadow-slate-200/80 dark:shadow-lg dark:shadow-black/40 overflow-hidden">
                 <div className="flex items-center gap-3.5 relative z-10 flex-wrap sm:flex-nowrap">
                   <div className="relative shrink-0 flex items-center justify-center shadow-md rounded-md overflow-hidden">
                     <MiniFlag
@@ -113,7 +113,7 @@ export function SharedViajeItinerarioTab({
                     <span className="text-[10px] text-[#8492A6] font-medium">
                       ({citySec.eventos.length} {citySec.eventos.length === 1 ? 'actividad' : 'actividades'})
                     </span>
-                    <div className="flex-1 h-px bg-gradient-to-r from-[#1C2436] to-transparent ml-2" />
+                    <div className="flex-1 h-px bg-gradient-to-r from-[#CBD5E1] dark:from-[#1C2436] to-transparent ml-2" />
                   </div>
                 )}
 
@@ -121,6 +121,11 @@ export function SharedViajeItinerarioTab({
                   const isVuelo = ev.tipo?.toLowerCase() === 'vuelo';
                   const Icon = EVENT_TYPE_ICONS[ev.tipo?.toLowerCase()] || MapPin;
                   const startDate = new Date(ev.fechaInicio || ev.fecha || Date.now());
+                  const endDate = new Date(ev.fechaFin || ev.fechaInicio || ev.fecha || Date.now());
+                  const formatSharedDate = (d) =>
+                    d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+                  const formatSharedTime = (d) =>
+                    d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
                   return (
                     <div key={ev.id || Math.random()} className="relative">
@@ -167,10 +172,19 @@ export function SharedViajeItinerarioTab({
                                 )}
                               </div>
 
-                              <p className="text-xs text-[#8492A6] m-0 mt-0.5 flex items-center gap-1.5">
-                                <Calendar className="w-3 h-3 text-[#8492A6]" />
-                                <span>{startDate.toLocaleDateString()} {startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                              </p>
+                              <div className="text-xs text-[#8492A6] m-0 mt-1 flex items-center gap-2 flex-wrap">
+                                <span className="inline-flex items-center gap-1 text-[#CBD5E1]">
+                                  <Calendar className="w-3 h-3 text-[#00FF85]" />
+                                  <strong className="text-[#00FF85] text-[10px] uppercase">Inicio:</strong>
+                                  <span>{formatSharedDate(startDate)} • {formatSharedTime(startDate)}</span>
+                                </span>
+                                <span className="text-[#8492A6]">➔</span>
+                                <span className="inline-flex items-center gap-1 text-[#CBD5E1]">
+                                  <Calendar className="w-3 h-3 text-[#00E5FF]" />
+                                  <strong className="text-[#00E5FF] text-[10px] uppercase">Fin:</strong>
+                                  <span>{formatSharedDate(endDate)} • {formatSharedTime(endDate)}</span>
+                                </span>
+                              </div>
                             </div>
                           </div>
 

@@ -8,7 +8,6 @@ export function ViajesView({
   activeViajeId = null,
   eventos = [],
   gastos = [],
-  documentos = [],
   balance = null,
   onSelectTab,
   onSelectViaje,
@@ -19,7 +18,6 @@ export function ViajesView({
   onCompartirViaje,
   onAddEvento,
   onAddGasto,
-  onAddDoc,
   onSyncFromCloud
 }) {
   const [selectedCountryCode, setSelectedCountryCode] = useState(null);
@@ -40,7 +38,6 @@ export function ViajesView({
     tripFlights,
     tripVisitedCountries,
     tripGastos,
-    tripDocs,
     tripMetrics,
     getViajeStatus,
     filteredViajes,
@@ -51,7 +48,6 @@ export function ViajesView({
     activeViajeId,
     eventos,
     gastos,
-    documentos,
     balance,
     onSelectViaje
   });
@@ -74,7 +70,6 @@ export function ViajesView({
         tripFlights={tripFlights}
         tripVisitedCountries={tripVisitedCountries}
         tripGastos={tripGastos}
-        tripDocs={tripDocs}
         tripMetrics={tripMetrics}
         isTripMapModalOpen={isTripMapModalOpen}
         setIsTripMapModalOpen={setIsTripMapModalOpen}
@@ -86,7 +81,6 @@ export function ViajesView({
         onDeleteViaje={onDeleteViaje}
         onAddEvento={onAddEvento}
         onAddGasto={onAddGasto}
-        onAddDoc={onAddDoc}
       />
     );
   }

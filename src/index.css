@@ -76,7 +76,11 @@ html:not(.dark) [class*="bg-[#0A0D14]"] {
 
 /* Tarjetas y paneles */
 html:not(.dark) .bg-\[\#0E121B\],
-html:not(.dark) [class*="bg-[#0E121B]"] {
+html:not(.dark) [class*="bg-[#0E121B]"],
+html:not(.dark) .bg-\[\#0B0F17\],
+html:not(.dark) [class*="bg-[#0B0F17]"],
+html:not(.dark) .bg-\[\#0D111A\],
+html:not(.dark) [class*="bg-[#0D111A]"] {
   background-color: #FFFFFF !important;
   box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
 }
@@ -85,6 +89,14 @@ html:not(.dark) [class*="bg-[#0E121B]"] {
 html:not(.dark) .bg-\[\#151B27\],
 html:not(.dark) [class*="bg-[#151B27]"] {
   background-color: #F1F5F9 !important;
+}
+
+html:not(.dark) [class*="hover:bg-[#1E2738]"]:hover {
+  background-color: #E2E8F0 !important;
+}
+
+html:not(.dark) [class*="hover:bg-[#111622]"]:hover {
+  background-color: #F8FAFC !important;
 }
 
 html:not(.dark) .bg-\[\#121622\],

@@ -1,12 +1,11 @@
 import React from 'react';
-import { Globe2, MapPin, Wallet, PieChart, ShieldCheck } from 'lucide-react';
+import { Globe2, MapPin, Wallet, PieChart } from 'lucide-react';
 
 export const TABS = [
   { id: 'viajes', label: 'Mis Viajes', icon: Globe2, neonColor: 'text-[#00FF85]', activeBorder: 'border-[#00FF85]', indicatorBg: 'bg-[#00FF85]' },
   { id: 'itinerario', label: 'Itinerario', icon: MapPin, neonColor: 'text-[#00E5FF]', activeBorder: 'border-[#00E5FF]', indicatorBg: 'bg-[#00E5FF]' },
   { id: 'billetera', label: 'Billetera', icon: Wallet, neonColor: 'text-[#00FF85]', activeBorder: 'border-[#00FF85]', indicatorBg: 'bg-[#00FF85]' },
-  { id: 'balance', label: 'Balance', icon: PieChart, neonColor: 'text-[#FFE500]', activeBorder: 'border-[#FFE500]', indicatorBg: 'bg-[#FFE500]' },
-  { id: 'boveda', label: 'Bóveda', icon: ShieldCheck, neonColor: 'text-[#B55FE6]', activeBorder: 'border-[#B55FE6]', indicatorBg: 'bg-[#B55FE6]' }
+  { id: 'balance', label: 'Balance', icon: PieChart, neonColor: 'text-[#FFE500]', activeBorder: 'border-[#FFE500]', indicatorBg: 'bg-[#FFE500]' }
 ];
 
 export function BottomNav({ activeTab, onSelectTab }) {

@@ -28,7 +28,6 @@ export function ViajeDetalleDashboard({
   tripFlights = [],
   tripVisitedCountries,
   tripGastos = [],
-  tripDocs = [],
   tripMetrics,
   isTripMapModalOpen,
   setIsTripMapModalOpen,
@@ -39,8 +38,7 @@ export function ViajeDetalleDashboard({
   onEditViaje,
   onDeleteViaje,
   onAddEvento,
-  onAddGasto,
-  onAddDoc
+  onAddGasto
 }) {
   return (
     <div className="space-y-5 relative pb-16">
@@ -167,7 +165,7 @@ export function ViajeDetalleDashboard({
           </div>
 
           {/* Botones de acción rápida inmediata */}
-          <div className="grid grid-cols-3 sm:flex sm:items-center gap-2 w-full lg:w-auto shrink-0 border-t lg:border-t-0 pt-3 lg:pt-0 border-[#1C2436]">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full lg:w-auto shrink-0 border-t lg:border-t-0 pt-3 lg:pt-0 border-[#1C2436]">
             {onAddEvento && (
               <button
                 type="button"
@@ -191,18 +189,6 @@ export function ViajeDetalleDashboard({
                 <span>Gasto</span>
               </button>
             )}
-
-            {onAddDoc && (
-              <button
-                type="button"
-                onClick={() => onAddDoc()}
-                className="h-9 px-3 bg-[#B55FE6] hover:opacity-90 text-[#080A0F] font-bold text-xs uppercase tracking-wider rounded-xl transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-sm whitespace-nowrap select-none"
-                title="Subir documento digital a la bóveda"
-              >
-                <Plus className="w-3.5 h-3.5 shrink-0" strokeWidth={2.5} />
-                <span>Doc</span>
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -212,13 +198,11 @@ export function ViajeDetalleDashboard({
         currentViaje={currentViaje}
         tripEvents={tripEvents}
         tripGastos={tripGastos}
-        tripDocs={tripDocs}
         tripMetrics={tripMetrics}
         onOpenBitacora={onOpenBitacora}
         onSelectTab={onSelectTab}
         onAddEvento={onAddEvento}
         onAddGasto={onAddGasto}
-        onAddDoc={onAddDoc}
       />
 
       {/* Métricas Financieras del Viaje */}

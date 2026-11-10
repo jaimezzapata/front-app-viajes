@@ -8,7 +8,6 @@ export function useViajesData({
   activeViajeId = null,
   eventos = [],
   gastos = [],
-  documentos = [],
   balance = null,
   onSelectViaje
 }) {
@@ -105,19 +104,6 @@ export function useViajesData({
     }
   }, [selectedViajeId, activeViajeId, gastos]);
 
-  const tripDocs = useMemo(() => {
-    if (!selectedViajeId) return [];
-    if (selectedViajeId === activeViajeId && Array.isArray(documentos) && documentos.length > 0) {
-      return documentos;
-    }
-    try {
-      const raw = localStorage.getItem(`app_viajes_docs_${selectedViajeId}`);
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  }, [selectedViajeId, activeViajeId, documentos]);
-
   const tripMetrics = useMemo(() => {
     if (selectedViajeId === activeViajeId && balance) {
       return balance;
@@ -185,7 +171,6 @@ export function useViajesData({
     tripFlights,
     tripVisitedCountries,
     tripGastos,
-    tripDocs,
     tripMetrics,
     getViajeStatus,
     filteredViajes,

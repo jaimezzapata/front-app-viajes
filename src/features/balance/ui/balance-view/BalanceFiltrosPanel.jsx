@@ -269,49 +269,49 @@ export function BalanceFiltrosPanel({
             {selectedCountry !== 'todos' && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#151B27] border border-[#1C2436] text-[#FFE500] font-semibold text-[11px]">
                 País: {cleanCountryText(selectedCountry)}
-                <button type="button" onClick={() => setSelectedCountry('todos')} className="hover:text-white">×</button>
+                <button type="button" onClick={() => setSelectedCountry('todos')} className="hover:text-[#F1F5F9] cursor-pointer">×</button>
               </span>
             )}
             {selectedCity !== 'todas' && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#151B27] border border-[#1C2436] text-[#00E5FF] font-semibold text-[11px]">
                 Ciudad: {selectedCity}
-                <button type="button" onClick={() => setSelectedCity('todas')} className="hover:text-white">×</button>
+                <button type="button" onClick={() => setSelectedCity('todas')} className="hover:text-[#F1F5F9] cursor-pointer">×</button>
               </span>
             )}
             {selectedCategoria !== 'todos' && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#151B27] border border-[#1C2436] text-[#F1F5F9] font-semibold text-[11px]">
                 Tipo: {selectedCategoria}
-                <button type="button" onClick={() => setSelectedCategoria('todos')} className="hover:text-white">×</button>
+                <button type="button" onClick={() => setSelectedCategoria('todos')} className="hover:text-[#F1F5F9] cursor-pointer">×</button>
               </span>
             )}
             {selectedModalidad !== 'todos' && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#151B27] border border-[#1C2436] text-[#B55FE6] font-semibold text-[11px]">
                 {selectedModalidad === 'adelantados' ? 'Pre-viaje' : 'En ruta'}
-                <button type="button" onClick={() => setSelectedModalidad('todos')} className="hover:text-white">×</button>
+                <button type="button" onClick={() => setSelectedModalidad('todos')} className="hover:text-[#F1F5F9] cursor-pointer">×</button>
               </span>
             )}
             {selectedPresupuesto !== 'todos' && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#151B27] border border-[#1C2436] text-[#00FF85] font-semibold text-[11px]">
                 {selectedPresupuesto === 'en_presupuesto' ? 'En presupuesto' : 'Fuera presupuesto'}
-                <button type="button" onClick={() => setSelectedPresupuesto('todos')} className="hover:text-white">×</button>
+                <button type="button" onClick={() => setSelectedPresupuesto('todos')} className="hover:text-[#F1F5F9] cursor-pointer">×</button>
               </span>
             )}
             {selectedTC !== 'todas' && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#151B27] border border-[#1C2436] text-[#00E5FF] font-semibold text-[11px]">
                 TC: {selectedTC === '__sin_tc__' ? 'Efectivo / Sin TC' : selectedTC}
-                <button type="button" onClick={() => setSelectedTC('todas')} className="hover:text-white">×</button>
+                <button type="button" onClick={() => setSelectedTC('todas')} className="hover:text-[#F1F5F9] cursor-pointer">×</button>
               </span>
             )}
             {(fechaDesde || fechaHasta) && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#151B27] border border-[#1C2436] text-[#00FF85] font-semibold text-[11px]">
                 Fechas: {fechaDesde || 'Inicio'} a {fechaHasta || 'Fin'}
-                <button type="button" onClick={() => { setFechaDesde(''); setFechaHasta(''); }} className="hover:text-white">×</button>
+                <button type="button" onClick={() => { setFechaDesde(''); setFechaHasta(''); }} className="hover:text-[#F1F5F9] cursor-pointer">×</button>
               </span>
             )}
             {selectedMoneda !== 'todas' && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#151B27] border border-[#1C2436] text-[#00E5FF] font-semibold text-[11px]">
                 Moneda: {selectedMoneda}
-                <button type="button" onClick={() => setSelectedMoneda('todas')} className="hover:text-white">×</button>
+                <button type="button" onClick={() => setSelectedMoneda('todas')} className="hover:text-[#F1F5F9] cursor-pointer">×</button>
               </span>
             )}
           </div>

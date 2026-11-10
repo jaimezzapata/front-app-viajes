@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plane, Calendar, Globe2, ArrowLeft, Wallet, ShieldCheck } from 'lucide-react';
+import { Plane, Calendar, Globe2, ArrowLeft, Wallet } from 'lucide-react';
 import WorldMapModal from '../../../components/WorldMapModal';
 import CompartirViajeModal from './CompartirViajeModal';
 import { fixAccents } from '../../../utils/countries';
@@ -9,7 +9,6 @@ import { SharedViajeHero } from './shared-viaje/SharedViajeHero';
 import { SharedViajeMetricas } from './shared-viaje/SharedViajeMetricas';
 import { SharedViajeItinerarioTab } from './shared-viaje/SharedViajeItinerarioTab';
 import { SharedViajeGastosTab } from './shared-viaje/SharedViajeGastosTab';
-import { SharedViajeDocsTab } from './shared-viaje/SharedViajeDocsTab';
 
 export function SharedViajeView({ shareId, shareDataRaw, onExit, onGoToApp }) {
   const {
@@ -18,7 +17,6 @@ export function SharedViajeView({ shareId, shareDataRaw, onExit, onGoToApp }) {
     viaje,
     eventos,
     gastos,
-    documentos,
     activeTab,
     setActiveTab,
     isShareModalOpen,
@@ -109,7 +107,7 @@ export function SharedViajeView({ shareId, shareDataRaw, onExit, onGoToApp }) {
           multiColor={false}
         />
 
-        {/* NAVEGACIÓN POR PESTAÑAS (ITINERARIO / GASTOS / DOCUMENTOS) */}
+        {/* NAVEGACIÓN POR PESTAÑAS (ITINERARIO / GASTOS) */}
         <div className="space-y-4 pt-2">
           <div className="flex items-center gap-2 border-b border-[#1C2436] pb-2 overflow-x-auto no-scrollbar">
             <button
@@ -135,20 +133,6 @@ export function SharedViajeView({ shareId, shareDataRaw, onExit, onGoToApp }) {
               <Wallet className="w-4 h-4" />
               <span>Gastos & Monedas ({gastos.length})</span>
             </button>
-
-            {documentos.length > 0 && (
-              <button
-                onClick={() => setActiveTab('documentos')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
-                  activeTab === 'documentos'
-                    ? 'bg-[#B55FE6]/15 text-[#B55FE6] border border-[#B55FE6]/40 shadow-sm'
-                    : 'text-[#8492A6] hover:bg-[#151B27] hover:text-[#F1F5F9]'
-                }`}
-              >
-                <ShieldCheck className="w-4 h-4" />
-                <span>Documentos & Reservas ({documentos.length})</span>
-              </button>
-            )}
           </div>
 
           {activeTab === 'itinerario' && (
@@ -160,10 +144,6 @@ export function SharedViajeView({ shareId, shareDataRaw, onExit, onGoToApp }) {
 
           {activeTab === 'gastos' && (
             <SharedViajeGastosTab gastos={gastos} />
-          )}
-
-          {activeTab === 'documentos' && (
-            <SharedViajeDocsTab documentos={documentos} />
           )}
         </div>
       </main>

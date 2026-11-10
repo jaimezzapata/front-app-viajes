@@ -84,7 +84,7 @@ export function BalanceView({ viaje, onOpenNuevoViaje, balance, gastos = [], eve
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6 relative z-10">
         <div>
           <div className="flex items-center gap-2 flex-wrap mb-1">
-            <span className="w-2-h-2 rounded-full bg-[#FFE500] shrink-0" />
+            <span className="w-2 h-2 rounded-full bg-[#FFE500] shrink-0" />
             <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-[#F1F5F9] m-0">
               Balance & Finanzas
             </h2>
@@ -172,8 +172,13 @@ export function BalanceView({ viaje, onOpenNuevoViaje, balance, gastos = [], eve
 
       {/* Semáforo de Presupuesto por Categoría */}
       <BalanceSemaforoCard
+        balance={balance}
         displayBalance={displayBalance}
         hasActiveFilters={hasActiveFilters}
+        selectedCategoria={selectedCategoria}
+        onSelectCategoria={(cat) =>
+          setSelectedCategoria((prev) => (prev === cat ? 'todos' : cat))
+        }
       />
 
       {/* SECCIÓN DETALLADA: DESGLOSE Y AUDITORÍA DE PAGOS */}

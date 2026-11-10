@@ -6,7 +6,7 @@ import ThemeToggle from './ThemeToggle';
 
 export function SidebarNav({ activeTab, onSelectTab, usuario, onOpenAuth, onLogout, onOpenSyncClean }) {
   return (
-    <aside className="hidden md:flex flex-col w-64 bg-[#0E121B] border-r border-[#1C2436] min-h-screen p-5 select-none relative overflow-hidden shrink-0">
+    <aside className="hidden md:flex flex-col w-64 bg-[#0E121B] border-r border-[#1C2436] h-screen fixed top-0 left-0 bottom-0 z-40 p-5 select-none overflow-hidden shrink-0">
       {/* Marca de agua sólida en el sidebar */}
       <WatermarkIcon icon={Globe2} className="w-56 h-56 -bottom-10 -right-12" opacity="opacity-[0.03]" color="text-[#00E5FF]" />
 
@@ -22,7 +22,7 @@ export function SidebarNav({ activeTab, onSelectTab, usuario, onOpenAuth, onLogo
       </div>
 
       {/* Tabs list */}
-      <nav className="flex flex-col gap-1.5 z-10 flex-1">
+      <nav className="flex flex-col gap-1.5 z-10 flex-1 overflow-y-auto">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;

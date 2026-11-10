@@ -254,6 +254,11 @@ export function ItinerarioView({
                 const tramoLabel = isRoundTrip
                   ? (route.tramo === 'regreso' ? 'Vuelta' : 'Ida')
                   : 'Ida';
+                const routeStart = targetEv?.fechaInicio ? new Date(targetEv.fechaInicio) : null;
+                const routeEnd = targetEv?.fechaFin ? new Date(targetEv.fechaFin) : routeStart;
+                const fmtShort = (d) => d && !isNaN(d.getTime())
+                  ? d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+                  : null;
 
                 return (
                   <div
@@ -261,7 +266,7 @@ export function ItinerarioView({
                     style={{ borderColor: `${colorHex}40` }}
                     className="p-2 sm:px-3 sm:py-1.5 rounded-lg bg-[#151B27] border flex items-center justify-between sm:justify-start gap-2 text-xs shadow-xs"
                   >
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0 flex-wrap">
                       <span
                         className="w-2 h-2 rounded-full shrink-0"
                         style={{ backgroundColor: colorHex }}
@@ -284,6 +289,12 @@ export function ItinerarioView({
                       <span className="font-bold truncate" style={{ color: colorHex }}>
                         {route.destination.displayTitle}
                       </span>
+                      {routeStart && (
+                        <span className="text-[10px] text-[#8492A6] font-medium flex items-center gap-1 ml-1">
+                          <Calendar className="w-3 h-3 text-[#00FF85]" />
+                          <span>{fmtShort(routeStart)}{routeEnd && fmtShort(routeEnd) !== fmtShort(routeStart) ? ` ➔ ${fmtShort(routeEnd)}` : ''}</span>
+                        </span>
+                      )}
                     </div>
 
                     {targetEv && onEditEvento && onDeleteEvento && (
@@ -374,8 +385,8 @@ export function ItinerarioView({
                   </div>
 
                   {/* Tarjeta del Banner del País */}
-                  <div className="relative p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#111726] via-[#0E131F] to-[#0A0D14] border border-[#1C2436] hover:border-[#00E5FF]/40 shadow-lg shadow-black/40 transition-all overflow-hidden">
-                    <div className="absolute top-0 right-0 w-48 h-full bg-gradient-to-l from-[#00E5FF]/5 to-transparent pointer-events-none" />
+                  <div className="relative p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-white via-[#F8FAFC] to-[#EFF6FF] dark:from-[#111726] dark:via-[#0E131F] dark:to-[#0A0D14] border border-[#1C2436] hover:border-[#00E5FF]/50 shadow-sm shadow-slate-200/80 dark:shadow-lg dark:shadow-black/40 transition-all overflow-hidden">
+                    <div className="absolute top-0 right-0 w-48 h-full bg-gradient-to-l from-[#00E5FF]/10 dark:from-[#00E5FF]/5 to-transparent pointer-events-none" />
 
                     <div className="flex items-center justify-between gap-3 relative z-10 flex-wrap sm:flex-nowrap">
                       <div className="flex items-center gap-3.5 min-w-0">
@@ -454,7 +465,7 @@ export function ItinerarioView({
                           <span className="text-[10px] text-[#8492A6] font-medium">
                             ({citySec.eventos.length} {citySec.eventos.length === 1 ? 'actividad' : 'actividades'})
                           </span>
-                          <div className="flex-1 h-px bg-gradient-to-r from-[#1C2436] to-transparent ml-2" />
+                          <div className="flex-1 h-px bg-gradient-to-r from-[#CBD5E1] dark:from-[#1C2436] to-transparent ml-2" />
                         </div>
                       )}
 
@@ -468,6 +479,10 @@ export function ItinerarioView({
             };
             const startDate = parseDate(ev.fechaInicio) || parseDate(ev.fecha) || new Date();
             const endDate = parseDate(ev.fechaFin) || startDate;
+            const formatCardDate = (d) =>
+              d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+            const formatCardTime = (d) =>
+              d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
             const hasFlightLogistics = isVuelo && Boolean(ev.ciudadOrigen || ev.aeropuertoOrigen || ev.tieneConexion || ev.ciudadDestino);
 
@@ -637,6 +652,27 @@ export function ItinerarioView({
                     {ev.titulo}
                   </h3>
 
+                  {/* Fechas Inicial y Final visibles en vuelos */}
+                  {isVuelo && (
+                    <div className="flex flex-wrap items-center gap-2 text-[11px] mb-2.5 relative z-10">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#151B27] border border-[#1C2436] text-[#CBD5E1]">
+                        <Calendar className="w-3.5 h-3.5 text-[#00FF85] shrink-0" />
+                        <span className="font-bold text-[#00FF85] uppercase text-[10px]">Inicio:</span>
+                        <span className="font-semibold text-[#F1F5F9]">{formatCardDate(startDate)}</span>
+                        <span className="text-[#8492A6]">• {formatCardTime(startDate)}</span>
+                      </span>
+
+                      <ArrowRight className="w-3.5 h-3.5 text-[#8492A6] hidden sm:inline shrink-0" />
+
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#151B27] border border-[#1C2436] text-[#CBD5E1]">
+                        <Calendar className="w-3.5 h-3.5 text-[#00E5FF] shrink-0" />
+                        <span className="font-bold text-[#00E5FF] uppercase text-[10px]">Fin:</span>
+                        <span className="font-semibold text-[#F1F5F9]">{formatCardDate(endDate)}</span>
+                        <span className="text-[#8492A6]">• {formatCardTime(endDate)}</span>
+                      </span>
+                    </div>
+                  )}
+
                   {/* TRAYECTO DE VUELO - Componente Unificado Horizontal */}
                   {hasFlightLogistics ? (
                     <div
@@ -656,8 +692,8 @@ export function ItinerarioView({
                             <MiniFlag country={ev.paisOrigen} className="w-3 h-2" />
                             <span>{ev.ciudadOrigen || cleanCountryText(ev.paisOrigen) || 'Origen'}</span>
                           </p>
-                          <p className="text-[10px] text-[#00E5FF] m-0 font-medium mt-0.5">
-                            {startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {startDate.toLocaleDateString([], { day: 'numeric', month: 'short' })}
+                          <p className="text-[11px] text-[#00E5FF] m-0 font-semibold mt-1">
+                            {formatCardDate(startDate)} • {formatCardTime(startDate)}
                           </p>
                         </div>
 
@@ -686,8 +722,8 @@ export function ItinerarioView({
                             <span>{ev.ciudadDestino || cleanCountryText(ev.paisDestino) || 'Destino'}</span>
                             <MiniFlag country={ev.paisDestino} className="w-3 h-2" />
                           </p>
-                          <p className="text-[10px] text-[#FFE500] m-0 font-medium mt-0.5">
-                            {endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {endDate.toLocaleDateString([], { day: 'numeric', month: 'short' })}
+                          <p className="text-[11px] text-[#FFE500] m-0 font-semibold mt-1">
+                            {formatCardDate(endDate)} • {formatCardTime(endDate)}
                           </p>
                         </div>
                       </div>
@@ -695,10 +731,12 @@ export function ItinerarioView({
                   ) : (
                     /* Horario estándar para eventos regulares (hoteles, tours) */
                     <div className="flex flex-wrap items-center gap-y-1 gap-x-3 text-xs text-[#8492A6] relative z-10 mb-2">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-[#00E5FF]" />
-                        {startDate.toLocaleDateString([], { day: 'numeric', month: 'short' })} • {startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+                      {!isVuelo && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5 text-[#00E5FF]" />
+                          {formatCardDate(startDate)} ({formatCardTime(startDate)}) ➔ {formatCardDate(endDate)} ({formatCardTime(endDate)})
+                        </span>
+                      )}
                       {ev.ubicacion && (
                         <span className="flex items-center gap-1 truncate max-w-xs">
                           <MapPin className="w-3.5 h-3.5 text-[#8492A6]" />

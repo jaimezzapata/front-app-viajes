@@ -12,7 +12,6 @@ export function useSharedViajeData({ shareId, shareDataRaw }) {
   const [viaje, setViaje] = useState(null);
   const [eventos, setEventos] = useState([]);
   const [gastos, setGastos] = useState([]);
-  const [documentos, setDocumentos] = useState([]);
   const [activeTab, setActiveTab] = useState('itinerario');
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
@@ -34,7 +33,6 @@ export function useSharedViajeData({ shareId, shareDataRaw }) {
               setViaje(parseViajeMeta(parsed.viaje));
               setEventos((parsed.eventos || parsed.itinerario || []).map(parseEventoMeta));
               setGastos(parsed.gastos || []);
-              setDocumentos(parsed.documentos || []);
               setLoading(false);
               return;
             }
@@ -53,7 +51,6 @@ export function useSharedViajeData({ shareId, shareDataRaw }) {
             setViaje(parseViajeMeta(data));
             setEventos((data.itinerarios || data.eventos || []).map(parseEventoMeta));
             setGastos(data.gastos || []);
-            setDocumentos(data.documentos || []);
             setLoading(false);
             return;
           }
@@ -69,7 +66,6 @@ export function useSharedViajeData({ shareId, shareDataRaw }) {
               setViaje(parseViajeMeta(parsed.viaje));
               setEventos((parsed.eventos || parsed.itinerario || []).map(parseEventoMeta));
               setGastos(parsed.gastos || []);
-              setDocumentos(parsed.documentos || []);
               setLoading(false);
               return;
             }
@@ -87,9 +83,6 @@ export function useSharedViajeData({ shareId, shareDataRaw }) {
 
               const savedGastos = localStorage.getItem(`app_viajes_gastos_${shareId}`);
               if (savedGastos) setGastos(JSON.parse(savedGastos) || []);
-
-              const savedDocs = localStorage.getItem(`app_viajes_docs_${shareId}`);
-              if (savedDocs) setDocumentos(JSON.parse(savedDocs) || []);
 
               setLoading(false);
               return;
@@ -159,7 +152,6 @@ export function useSharedViajeData({ shareId, shareDataRaw }) {
     viaje,
     eventos,
     gastos,
-    documentos,
     activeTab,
     setActiveTab,
     isShareModalOpen,

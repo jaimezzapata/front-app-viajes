@@ -60,7 +60,7 @@ export function AuthScreen({ onLoginOrRegister }) {
             Bitácora de Viajes
           </h1>
           <p className="text-xs text-[#8492A6] mt-1 m-0">
-            Control de itinerarios, finanzas multi-divisa y bóveda offline.
+            Control de itinerarios y finanzas multi-divisa offline.
           </p>
         </div>
 

@@ -6,7 +6,7 @@ import { enrichGastoWithLocation, calculateTripBalance } from '../../../../utils
 
 export function useBalanceFilters({ viaje, gastos = [], eventos = [], balance = null }) {
   const [exportingExcel, setExportingExcel] = useState(false);
-  const [showFiltersPanel, setShowFiltersPanel] = useState(true);
+  const [showFiltersPanel, setShowFiltersPanel] = useState(false);
 
   // Estados de filtros
   const [searchText, setSearchText] = useState('');

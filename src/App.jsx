@@ -6,12 +6,11 @@ import SidebarNav from './components/SidebarNav';
 import BottomNav from './components/BottomNav';
 import Header from './components/Header';
 
-// Vistas de los 5 módulos
+// Vistas de los 4 módulos
 import ViajesView from './features/viajes/ui/ViajesView';
 import ItinerarioView from './features/itinerario/ui/ItinerarioView';
 import BilleteraView from './features/billetera/ui/BilleteraView';
 import BalanceView from './features/balance/ui/BalanceView';
-import BovedaView from './features/boveda/ui/BovedaView';
 
 // Pantallas
 import AuthScreen from './features/auth/ui/AuthScreen';
@@ -25,7 +24,6 @@ import ConfirmDeleteViajeModal from './features/viajes/ui/ConfirmDeleteViajeModa
 import NuevoEventoModal from './features/itinerario/ui/NuevoEventoModal';
 import ConfirmDeleteEventoModal from './features/itinerario/ui/ConfirmDeleteEventoModal';
 import NuevoGastoModal from './features/billetera/ui/NuevoGastoModal';
-import NuevoDocModal from './features/boveda/ui/NuevoDocModal';
 import SyncCleanModal from './features/viajes/ui/SyncCleanModal';
 
 // Custom Hooks
@@ -60,7 +58,6 @@ export function App() {
   const [eventoAEditar, setEventoAEditar] = useState(null);
   const [eventoAEliminar, setEventoAEliminar] = useState(null);
   const [isNuevoGastoOpen, setIsNuevoGastoOpen] = useState(false);
-  const [isNuevoDocOpen, setIsNuevoDocOpen] = useState(false);
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
   // Hook de autenticación simple (nombre y correo)
@@ -74,7 +71,6 @@ export function App() {
     setActiveViajeId,
     eventos,
     gastos,
-    documentos,
     balance,
     isOnline,
     handleSaveViaje,
@@ -84,7 +80,6 @@ export function App() {
     handleUpdateEvento,
     handleDeleteEvento,
     handleSaveGasto,
-    handleSaveDocumento,
     handleSyncAndClearLocal,
     handleSyncNow
   } = useAppViajes(usuario);
@@ -167,7 +162,7 @@ export function App() {
       />
 
       {/* Contenedor Principal */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen w-full max-w-full overflow-x-clip">
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen w-full md:w-[calc(100%-16rem)] md:ml-64 max-w-full overflow-x-clip">
         {/* Cabecera común */}
         <Header
           activeViaje={activeViaje}
@@ -201,7 +196,6 @@ export function App() {
               activeViajeId={activeViajeId}
               eventos={eventos}
               gastos={gastos}
-              documentos={documentos}
               balance={balance}
               onSyncFromCloud={handleSyncNow}
               onSelectTab={setActiveTab}
@@ -230,7 +224,6 @@ export function App() {
                 setIsNuevoEventoOpen(true);
               }}
               onAddGasto={() => setIsNuevoGastoOpen(true)}
-              onAddDoc={() => setIsNuevoDocOpen(true)}
             />
           )}
 
@@ -280,18 +273,6 @@ export function App() {
               balance={balance}
               gastos={gastos}
               eventos={eventos}
-            />
-          )}
-
-          {activeTab === 'boveda' && (
-            <BovedaView
-              activeViaje={activeViaje}
-              documentos={documentos}
-              onOpenNuevoViaje={() => {
-                setViajeAEditar(null);
-                setIsNuevoViajeOpen(true);
-              }}
-              onAddDocumento={() => setIsNuevoDocOpen(true)}
             />
           )}
         </main>
@@ -373,12 +354,6 @@ export function App() {
         onSaveGasto={handleSaveGasto}
         monedaDefault={activeViaje?.monedaLocal || activeViaje?.monedaBase || 'COP'}
         activeViaje={activeViaje}
-      />
-
-      <NuevoDocModal
-        isOpen={isNuevoDocOpen}
-        onClose={() => setIsNuevoDocOpen(false)}
-        onSaveDocumento={handleSaveDocumento}
       />
 
       {/* Modal de Sincronización y Limpieza de Caché Local */}
