@@ -10,12 +10,14 @@ import {
   CreditCard,
   Calendar,
   AlertCircle,
-  Settings2
+  Settings2,
+  Users
 } from 'lucide-react';
 import Modal from '../../../../components/Modal';
 import MiniFlag from '../../../../components/MiniFlag';
 import { cleanCountryText } from '../../../../utils/countries';
 import { formatCurrencyDisplay } from '../../../../utils/currencies';
+import { getGastoAmounts } from '../../../../utils/balance';
 
 const CATEGORIA_ICONS = {
   transporte: Plane,
@@ -60,11 +62,16 @@ export function BalanceSemaforoCard({
   const categoryTotals = useMemo(() => {
     let cop = 0;
     let usd = 0;
+    let totalDesembolsadoCOP = 0;
+    let porPersonaCOP = 0;
     categoryGastos.forEach((g) => {
-      cop += Number(g.montoCOP) || 0;
-      usd += Number(g.montoUSD) || 0;
+      const amounts = getGastoAmounts(g);
+      cop += amounts.montoComputableCOP || 0;
+      usd += amounts.montoComputableUSD || 0;
+      totalDesembolsadoCOP += amounts.montoTotalCOP || 0;
+      porPersonaCOP += amounts.montoPorPersonaCOP || 0;
     });
-    return { cop, usd };
+    return { cop, usd, totalDesembolsadoCOP, porPersonaCOP };
   }, [categoryGastos]);
 
   return (
@@ -224,7 +231,13 @@ export function BalanceSemaforoCard({
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
+                {Math.round(categoryTotals.totalDesembolsadoCOP) > Math.round(categoryTotals.cop) && (
+                  <span className="text-xs font-bold text-[#FFE500] bg-[#FFE500]/10 border border-[#FFE500]/30 px-2.5 py-1 rounded-lg font-mono">
+                    Total TC: $ {Math.round(categoryTotals.totalDesembolsadoCOP).toLocaleString()} COP
+                  </span>
+                )}
                 <span className="text-xs font-bold text-[#00FF85] bg-[#00FF85]/10 border border-[#00FF85]/30 px-2.5 py-1 rounded-lg font-mono">
+                  {Math.round(categoryTotals.totalDesembolsadoCOP) > Math.round(categoryTotals.cop) ? 'Por Persona: ' : ''}
                   $ {Math.round(categoryTotals.cop).toLocaleString()} COP
                 </span>
                 <span className="text-xs font-bold text-[#8492A6] bg-[#0E121B] border border-[#1C2436] px-2.5 py-1 rounded-lg font-mono">
@@ -253,11 +266,12 @@ export function BalanceSemaforoCard({
                   <tr className="border-b border-[#1C2436] text-[11px] font-bold uppercase tracking-wider text-[#8492A6] bg-[#151B27]/60">
                     <th className="py-2.5 px-3">Fecha</th>
                     <th className="py-2.5 px-3">Concepto / Comercio</th>
+                    <th className="py-2.5 px-3">Personas</th>
                     <th className="py-2.5 px-3">TC / Medio</th>
                     <th className="py-2.5 px-3">Destino</th>
                     <th className="py-2.5 px-3">Modalidad</th>
-                    <th className="py-2.5 px-3 text-right">Monto Original</th>
-                    <th className="py-2.5 px-3 text-right">Subtotal COP</th>
+                    <th className="py-2.5 px-3 text-right">Total Gastado (TC)</th>
+                    <th className="py-2.5 px-3 text-right">Por Persona (COP)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#1C2436]/60">
@@ -270,6 +284,7 @@ export function BalanceSemaforoCard({
                           year: 'numeric'
                         })
                       : '-';
+                    const amounts = getGastoAmounts(g);
 
                     return (
                       <tr key={g.id} className="hover:bg-[#151B27]/50 transition-colors">
@@ -278,6 +293,18 @@ export function BalanceSemaforoCard({
                         </td>
                         <td className="py-2.5 px-3 font-semibold text-[#F1F5F9] max-w-xs truncate" title={g.concepto}>
                           {g.concepto || 'Sin concepto'}
+                        </td>
+                        <td className="py-2.5 px-3 whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                              amounts.isMultiPerson
+                                ? 'bg-[#FFE500]/15 border border-[#FFE500]/40 text-[#FFE500]'
+                                : 'bg-[#151B27] border border-[#1C2436] text-[#8492A6]'
+                            }`}
+                          >
+                            <Users className="w-3 h-3" />
+                            {amounts.cantidadPersonas === 1 ? '1p' : `${amounts.cantidadPersonas}p`}
+                          </span>
                         </td>
                         <td className="py-2.5 px-3 whitespace-nowrap">
                           {g.tarjetaCredito ? (
@@ -317,11 +344,27 @@ export function BalanceSemaforoCard({
                             )}
                           </div>
                         </td>
-                        <td className="py-2.5 px-3 text-right whitespace-nowrap font-mono text-xs text-[#8492A6]">
-                          {formatCurrencyDisplay(g.montoOriginal, origCurr, false)}
+                        <td className="py-2.5 px-3 text-right whitespace-nowrap font-mono text-xs">
+                          <div className="flex flex-col items-end">
+                            <span className={amounts.isMultiPerson ? 'font-bold text-[#FFE500]' : 'text-[#CBD5E1]'}>
+                              $ {Math.round(amounts.montoTotalCOP || 0).toLocaleString()} COP
+                            </span>
+                            {origCurr !== 'COP' && (
+                              <span className="text-[10px] text-[#8492A6]">
+                                {formatCurrencyDisplay(amounts.montoTotalOrig, origCurr, false)}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="py-2.5 px-3 text-right whitespace-nowrap font-bold text-[#00FF85] font-mono text-xs">
-                          $ {Math.round(g.montoCOP || 0).toLocaleString()}
+                          <div className="flex flex-col items-end">
+                            <span>$ {Math.round(amounts.montoPorPersonaCOP || 0).toLocaleString()}</span>
+                            {amounts.isMultiPerson && (
+                              <span className="text-[9px] text-[#00E5FF] font-normal">
+                                c/u ({amounts.cantidadPersonas}p)
+                              </span>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );

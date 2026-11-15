@@ -139,7 +139,7 @@ export function NuevoEventoModal(props) {
           />
         )}
 
-        {/* 5. Finanzas, Moneda, Costo y Tarjeta de Crédito */}
+        {/* 5. Finanzas, Moneda, Costo, Cantidad de Personas y Tarjeta de Crédito */}
         <EventoFinanzasSection
           moneda={formData.moneda}
           setMoneda={setters.setMoneda}
@@ -150,6 +150,12 @@ export function NuevoEventoModal(props) {
           tipoTrayecto={formData.tipoTrayecto}
           tarjetaCredito={formData.tarjetaCredito}
           setTarjetaCredito={setters.setTarjetaCredito}
+          cantidadPersonas={formData.cantidadPersonas}
+          setCantidadPersonas={setters.setCantidadPersonas}
+          modoCostoPersonas={formData.modoCostoPersonas}
+          setModoCostoPersonas={setters.setModoCostoPersonas}
+          computarSoloMiParte={formData.computarSoloMiParte}
+          setComputarSoloMiParte={setters.setComputarSoloMiParte}
           descontarPresupuesto={formData.descontarPresupuesto}
           setDescontarPresupuesto={setters.setDescontarPresupuesto}
           pagadoAdelantado={formData.pagadoAdelantado}

@@ -3,7 +3,7 @@ import Modal from '../../../components/Modal';
 import { CurrencySelector, LiveCurrencyConversions } from '../../../components/CurrencySelector';
 import { getExactExchangeRate, convertCurrency, formatCurrencyDisplay } from '../../../utils/currencies';
 import { getViajeCategoriasConfig } from '../../../utils/balance';
-import { TrendingUp, ShieldCheck, CreditCard } from 'lucide-react';
+import { TrendingUp, ShieldCheck, CreditCard, Users, User } from 'lucide-react';
 
 export function NuevoGastoModal({
   isOpen,
@@ -24,6 +24,9 @@ export function NuevoGastoModal({
   const [pagadoAdelantado, setPagadoAdelantado] = useState(false);
   const [noComputar, setNoComputar] = useState(false);
   const [esIngreso, setEsIngreso] = useState(false);
+  const [cantidadPersonas, setCantidadPersonas] = useState(1);
+  const [modoCostoPersonas, setModoCostoPersonas] = useState('total');
+  const [computarSoloMiParte, setComputarSoloMiParte] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -53,6 +56,9 @@ export function NuevoGastoModal({
       setConcepto('');
       setTarjetaCredito('');
       setMontoOriginal('');
+      setCantidadPersonas(1);
+      setModoCostoPersonas('total');
+      setComputarSoloMiParte(true);
       setErrorMsg('');
       setFechaGasto(new Date().toISOString().split('T')[0]);
       setUsarTasaManual(false);
@@ -76,11 +82,23 @@ export function NuevoGastoModal({
     ? Number(tasaManual)
     : exactRateToCOP;
 
-  const previewMontoCOP = currentCode === 'COP'
-    ? numMonto
-    : Math.round(numMonto * appliedRate);
+  const paxCount = Math.max(1, Math.round(Number(cantidadPersonas) || 1));
+  const calculatedTotalOrig = paxCount > 1 && modoCostoPersonas === 'por_persona'
+    ? Number((numMonto * paxCount).toFixed(2))
+    : numMonto;
+  const calculatedPerPersonOrig = paxCount > 1
+    ? (modoCostoPersonas === 'por_persona' ? numMonto : Number((numMonto / paxCount).toFixed(2)))
+    : numMonto;
 
-  const previewMontoUSD = convertCurrency(numMonto, currentCode, 'USD');
+  const previewMontoCOP = currentCode === 'COP'
+    ? calculatedTotalOrig
+    : Math.round(calculatedTotalOrig * appliedRate);
+
+  const previewPorPersonaCOP = paxCount > 1
+    ? Math.round(previewMontoCOP / paxCount)
+    : previewMontoCOP;
+
+  const previewMontoUSD = convertCurrency(calculatedTotalOrig, currentCode, 'USD');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -103,11 +121,16 @@ export function NuevoGastoModal({
         concepto: concepto.trim(),
         categoria,
         tarjetaCredito: tarjetaCredito.trim() || undefined,
-        montoOriginal: numMonto,
+        montoOriginal: calculatedTotalOrig,
         monedaOriginal: currentCode,
         tasaCambioFecha: appliedRate, // Congelar tasa exacta (1 unidad extranjera = X COP)
         montoCOP: finalMontoCOP, // Valor calculado en COP al instante
         montoUSD: finalMontoUSD,
+        cantidadPersonas: paxCount,
+        modoCostoPersonas,
+        costoTotal: calculatedTotalOrig,
+        costoPorPersona: calculatedPerPersonOrig,
+        computarSoloMiParte,
         pagadoAdelantado,
         noComputar,
         esIngreso,
@@ -229,6 +252,64 @@ export function NuevoGastoModal({
           </div>
         </div>
 
+        {/* Selector de Cantidad de Personas (1, 2, 3 personas) */}
+        <div className="p-2.5 rounded-lg bg-[#151B27] border border-[#1C2436] space-y-2">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <label className="text-[11px] font-bold text-[#00E5FF] uppercase tracking-wider flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-[#00E5FF]" />
+              {categoria === 'transporte'
+                ? '¿Para cuántas personas es el vuelo / transporte?'
+                : '¿Para cuántas personas es este gasto?'}
+            </label>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#00E5FF]/10 border border-[#00E5FF]/30 text-[#00E5FF]">
+              {paxCount === 1 ? 'Individual (1 persona)' : `Para ${paxCount} personas`}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
+            {[
+              { count: 1, label: '1 Persona', sub: 'Solo yo' },
+              { count: 2, label: '2 Personas', sub: 'Pareja / Dúo' },
+              { count: 3, label: '3 Personas', sub: 'Grupo x3' }
+            ].map((opt) => {
+              const active = paxCount === opt.count;
+              return (
+                <button
+                  key={opt.count}
+                  type="button"
+                  onClick={() => setCantidadPersonas(opt.count)}
+                  className={`p-2 rounded-lg border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                    active
+                      ? 'bg-[#00E5FF]/15 border-[#00E5FF] text-[#F1F5F9]'
+                      : 'bg-[#0E121B] border-[#1C2436] text-[#8492A6] hover:text-[#F1F5F9]'
+                  }`}
+                >
+                  <span className="text-xs font-bold flex items-center gap-1">
+                    {opt.count === 1 ? (
+                      <User className={`w-3.5 h-3.5 ${active ? 'text-[#00E5FF]' : 'text-[#8492A6]'}`} />
+                    ) : (
+                      <Users className={`w-3.5 h-3.5 ${active ? 'text-[#00E5FF]' : 'text-[#8492A6]'}`} />
+                    )}
+                    <span className={active ? 'text-[#00E5FF]' : ''}>{opt.label}</span>
+                  </span>
+                  <span className="text-[10px] text-[#8492A6] mt-0.5">{opt.sub}</span>
+                </button>
+              );
+            })}
+            <div className="p-1.5 rounded-lg bg-[#0E121B] border border-[#1C2436] flex flex-col justify-center">
+              <span className="text-[9px] font-semibold text-[#8492A6] uppercase px-1">Otra cant.</span>
+              <input
+                type="number"
+                min="1"
+                max="30"
+                value={paxCount}
+                onChange={(e) => setCantidadPersonas(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                className="w-full bg-transparent text-xs font-bold text-[#F1F5F9] px-1 py-0.5 focus:outline-none"
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Selector Dinámico de Moneda de la Ruta */}
         <CurrencySelector
           value={monedaOriginal}
@@ -238,9 +319,42 @@ export function NuevoGastoModal({
         />
 
         <div>
-          <label className="block text-xs font-semibold text-[#8492A6] mb-1 uppercase tracking-wider">
-            Monto en {monedaOriginal} *
-          </label>
+          <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+            <label className="block text-xs font-semibold text-[#8492A6] uppercase tracking-wider">
+              {paxCount > 1
+                ? (modoCostoPersonas === 'por_persona'
+                    ? `Valor por Persona en ${monedaOriginal} *`
+                    : `Monto Total Pagado (${paxCount} personas) en ${monedaOriginal} *`)
+                : `Monto en ${monedaOriginal} *`}
+            </label>
+
+            {paxCount > 1 && (
+              <div className="inline-flex rounded-lg bg-[#0E121B] p-0.5 border border-[#1C2436]">
+                <button
+                  type="button"
+                  onClick={() => setModoCostoPersonas('total')}
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-colors cursor-pointer ${
+                    modoCostoPersonas === 'total'
+                      ? 'bg-[#00E5FF] text-[#080A0F]'
+                      : 'text-[#8492A6] hover:text-[#F1F5F9]'
+                  }`}
+                >
+                  Ingresé Total ({paxCount} pers.)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModoCostoPersonas('por_persona')}
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-colors cursor-pointer ${
+                    modoCostoPersonas === 'por_persona'
+                      ? 'bg-[#00FF85] text-[#080A0F]'
+                      : 'text-[#8492A6] hover:text-[#F1F5F9]'
+                  }`}
+                >
+                  Ingresé Valor x Persona
+                </button>
+              </div>
+            )}
+          </div>
           <input
             type="number"
             step="any"
@@ -250,6 +364,36 @@ export function NuevoGastoModal({
             onChange={(e) => setMontoOriginal(e.target.value)}
             className="w-full bg-[#151B27] border border-[#1C2436] focus:border-[#00FF85] rounded-lg px-3 py-2.5 text-base font-bold text-[#F1F5F9] focus:outline-none"
           />
+
+          {paxCount > 1 && numMonto > 0 && (
+            <div className="mt-2.5 p-3 rounded-xl bg-[#0E121B] border border-[#00E5FF]/40 space-y-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="p-2 rounded-lg bg-[#151B27] border border-[#1C2436]">
+                  <span className="text-[10px] font-semibold text-[#8492A6] uppercase block">
+                    💳 Todo lo Gastado / TC ({paxCount} pers.)
+                  </span>
+                  <span className="text-sm font-black text-[#FFE500] block mt-0.5">
+                    {formatCurrencyDisplay(calculatedTotalOrig, currentCode, true)}
+                  </span>
+                  <span className="text-[10px] text-[#8492A6] font-mono">
+                    ≈ $ {previewMontoCOP.toLocaleString('es-CO')} COP
+                  </span>
+                </div>
+
+                <div className="p-2 rounded-lg bg-[#151B27] border border-[#00FF85]/30">
+                  <span className="text-[10px] font-semibold text-[#00FF85] uppercase block">
+                    👤 Valor por Persona (1 cupo)
+                  </span>
+                  <span className="text-sm font-black text-[#00FF85] block mt-0.5">
+                    {formatCurrencyDisplay(calculatedPerPersonOrig, currentCode, true)}
+                  </span>
+                  <span className="text-[10px] text-[#8492A6] font-mono">
+                    ≈ $ {previewPorPersonaCOP.toLocaleString('es-CO')} COP c/u
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Panel de Conversión Instantánea con Tasa Congelada */}

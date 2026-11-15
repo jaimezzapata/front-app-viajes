@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { exportTripPdf } from '../../use-cases/exportPdf';
 import { exportTripExcel } from '../../use-cases/exportExcel';
 import { detectCountry } from '../../../../utils/countries';
-import { enrichGastoWithLocation, calculateTripBalance } from '../../../../utils/balance';
+import { enrichGastoWithLocation, calculateTripBalance, getGastoAmounts } from '../../../../utils/balance';
 
 export function useBalanceFilters({ viaje, gastos = [], eventos = [], balance = null }) {
   const [exportingExcel, setExportingExcel] = useState(false);
@@ -193,26 +193,75 @@ export function useBalanceFilters({ viaje, gastos = [], eventos = [], balance = 
     searchText
   ]);
 
-  // Totales de la selección filtrada
+  // Totales de la selección filtrada (diferenciando Todo lo Gastado vs Por Persona)
   const filteredTotals = useMemo(() => {
     let cop = 0;
     let usd = 0;
+    let totalDesembolsadoCOP = 0;
+    let totalDesembolsadoUSD = 0;
+    let porPersonaCOP = 0;
+    let porPersonaUSD = 0;
+    let acompanantesCOP = 0;
     let adelCOP = 0;
+    let adelTotalCOP = 0;
     let enRutaCOP = 0;
 
     filteredGastos.forEach(g => {
-      const gCop = Number(g.montoCOP) || 0;
-      const gUsd = Number(g.montoUSD) || 0;
-      cop += gCop;
-      usd += gUsd;
+      const amounts = getGastoAmounts(g);
+      const {
+        montoTotalCOP,
+        montoTotalUSD,
+        montoPorPersonaCOP,
+        montoPorPersonaUSD,
+        montoComputableCOP,
+        montoComputableUSD,
+        montoAcompanantesCOP
+      } = amounts;
+
+      if (g.esIngreso) {
+        cop -= montoComputableCOP;
+        usd -= montoComputableUSD;
+        totalDesembolsadoCOP -= montoTotalCOP;
+        totalDesembolsadoUSD -= montoTotalUSD;
+        porPersonaCOP -= montoPorPersonaCOP;
+        porPersonaUSD -= montoPorPersonaUSD;
+        return;
+      }
+
+      totalDesembolsadoCOP += montoTotalCOP;
+      totalDesembolsadoUSD += montoTotalUSD;
+      porPersonaCOP += montoPorPersonaCOP;
+      porPersonaUSD += montoPorPersonaUSD;
+      acompanantesCOP += montoAcompanantesCOP;
+
+      if (!g.noComputar) {
+        cop += montoComputableCOP;
+        usd += montoComputableUSD;
+      } else {
+        cop += montoTotalCOP;
+        usd += montoTotalUSD;
+      }
+
       if (g.pagadoAdelantado) {
-        adelCOP += gCop;
+        adelCOP += g.noComputar ? montoTotalCOP : montoComputableCOP;
+        adelTotalCOP += montoTotalCOP;
       } else if (!g.noComputar) {
-        enRutaCOP += gCop;
+        enRutaCOP += montoComputableCOP;
       }
     });
 
-    return { cop, usd, adelCOP, enRutaCOP };
+    return {
+      cop,
+      usd,
+      totalDesembolsadoCOP,
+      totalDesembolsadoUSD,
+      porPersonaCOP,
+      porPersonaUSD,
+      acompanantesCOP,
+      adelCOP,
+      adelTotalCOP,
+      enRutaCOP
+    };
   }, [filteredGastos]);
 
   // Balance dinámico para la selección

@@ -9,11 +9,13 @@ import {
   Camera,
   ShoppingBag,
   Tag,
-  Calendar
+  Calendar,
+  Users
 } from 'lucide-react';
 import MiniFlag from '../../../../components/MiniFlag';
 import { cleanCountryText } from '../../../../utils/countries';
 import { formatCurrencyDisplay } from '../../../../utils/currencies';
+import { getGastoAmounts } from '../../../../utils/balance';
 
 const CATEGORIA_ICONS = {
   transporte: Plane,
@@ -33,6 +35,9 @@ export function BalanceDesgloseTable({
   hasActiveFilters,
   clearAllFilters
 }) {
+  const showTotalDesembolsado =
+    Math.round(filteredTotals?.totalDesembolsadoCOP || 0) > Math.round(filteredTotals?.cop || 0);
+
   return (
     <div className="p-4 sm:p-5 rounded-xl bg-[#0E121B] border border-[#1C2436] relative z-10 shadow-sm">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 border-b border-[#1C2436] pb-3">
@@ -48,16 +53,21 @@ export function BalanceDesgloseTable({
               </span>
             </h3>
             <p className="text-xs text-[#8492A6] m-0 mt-0.5">
-              {hasActiveFilters ? 'Transacciones según los filtros aplicados' : 'Registro de todos los pagos y costos del viaje'}
+              {hasActiveFilters ? 'Transacciones según los filtros aplicados' : 'Registro de todo lo gastado (TC) y valor por persona'}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-bold text-[#00FF85] bg-[#00FF85]/10 border border-[#00FF85]/30 px-2.5 py-1 rounded-lg">
-            $ {Math.round(filteredTotals.cop).toLocaleString()} COP
+          {showTotalDesembolsado && (
+            <span className="text-xs font-bold text-[#FFE500] bg-[#FFE500]/10 border border-[#FFE500]/30 px-2.5 py-1 rounded-lg font-mono">
+              Total TC: $ {Math.round(filteredTotals.totalDesembolsadoCOP).toLocaleString()} COP
+            </span>
+          )}
+          <span className="text-xs font-bold text-[#00FF85] bg-[#00FF85]/10 border border-[#00FF85]/30 px-2.5 py-1 rounded-lg font-mono">
+            {showTotalDesembolsado ? 'Por Persona: ' : ''}$ {Math.round(filteredTotals.cop).toLocaleString()} COP
           </span>
-          <span className="text-xs font-bold text-[#8492A6] bg-[#151B27] border border-[#1C2436] px-2 py-1 rounded-lg">
+          <span className="text-xs font-bold text-[#8492A6] bg-[#151B27] border border-[#1C2436] px-2 py-1 rounded-lg font-mono">
             ~${filteredTotals.usd.toFixed(2)} USD
           </span>
         </div>
@@ -89,11 +99,12 @@ export function BalanceDesgloseTable({
                 <th className="py-2.5 px-3">Fecha</th>
                 <th className="py-2.5 px-3">Concepto / Comercio</th>
                 <th className="py-2.5 px-3">Categoría</th>
+                <th className="py-2.5 px-3">Personas</th>
                 <th className="py-2.5 px-3">TC / Medio</th>
                 <th className="py-2.5 px-3">Destino (País / Ciudad)</th>
                 <th className="py-2.5 px-3">Modalidad</th>
-                <th className="py-2.5 px-3 text-right">Monto Original</th>
-                <th className="py-2.5 px-3 text-right">Subtotal COP</th>
+                <th className="py-2.5 px-3 text-right">Total Gastado (TC)</th>
+                <th className="py-2.5 px-3 text-right">Por Persona (COP)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1C2436]/60">
@@ -101,6 +112,7 @@ export function BalanceDesgloseTable({
                 const Icon = CATEGORIA_ICONS[g.categoria?.toLowerCase()] || Tag;
                 const origCurr = (g.monedaOriginal || 'COP').toUpperCase();
                 const dateStr = g.fechaGasto ? new Date(g.fechaGasto).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+                const amounts = getGastoAmounts(g);
 
                 return (
                   <tr key={g.id} className="hover:bg-[#151B27]/50 transition-colors">
@@ -114,6 +126,18 @@ export function BalanceDesgloseTable({
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[#151B27] border border-[#1C2436] text-[#CBD5E1]">
                         <Icon className="w-3 h-3 text-[#00E5FF]" />
                         {g.categoria || 'otros'}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3 whitespace-nowrap">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                          amounts.isMultiPerson
+                            ? 'bg-[#FFE500]/15 border border-[#FFE500]/40 text-[#FFE500]'
+                            : 'bg-[#151B27] border border-[#1C2436] text-[#8492A6]'
+                        }`}
+                      >
+                        <Users className="w-3 h-3" />
+                        {amounts.cantidadPersonas === 1 ? '1 Persona' : `${amounts.cantidadPersonas} Personas`}
                       </span>
                     </td>
                     <td className="py-2.5 px-3 whitespace-nowrap">
@@ -152,11 +176,27 @@ export function BalanceDesgloseTable({
                         )}
                       </div>
                     </td>
-                    <td className="py-2.5 px-3 text-right whitespace-nowrap font-mono text-xs text-[#8492A6]">
-                      {formatCurrencyDisplay(g.montoOriginal, origCurr, false)}
+                    <td className="py-2.5 px-3 text-right whitespace-nowrap font-mono text-xs">
+                      <div className="flex flex-col items-end">
+                        <span className={amounts.isMultiPerson ? 'font-bold text-[#FFE500]' : 'text-[#CBD5E1]'}>
+                          $ {Math.round(amounts.montoTotalCOP || 0).toLocaleString()} COP
+                        </span>
+                        {origCurr !== 'COP' && (
+                          <span className="text-[10px] text-[#8492A6]">
+                            {formatCurrencyDisplay(amounts.montoTotalOrig, origCurr, false)}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-2.5 px-3 text-right whitespace-nowrap font-bold text-[#00FF85] font-mono text-xs">
-                      $ {Math.round(g.montoCOP || 0).toLocaleString()}
+                      <div className="flex flex-col items-end">
+                        <span>$ {Math.round(amounts.montoPorPersonaCOP || 0).toLocaleString()}</span>
+                        {amounts.isMultiPerson && (
+                          <span className="text-[9px] text-[#00E5FF] font-normal">
+                            c/u ({amounts.cantidadPersonas}p)
+                          </span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -170,6 +210,7 @@ export function BalanceDesgloseTable({
               const Icon = CATEGORIA_ICONS[g.categoria?.toLowerCase()] || Tag;
               const origCurr = (g.monedaOriginal || 'COP').toUpperCase();
               const dateStr = g.fechaGasto ? new Date(g.fechaGasto).toLocaleDateString([], { day: 'numeric', month: 'short' }) : '-';
+              const amounts = getGastoAmounts(g);
 
               return (
                 <div key={g.id} className="p-3 rounded-xl bg-[#151B27] border border-[#1C2436] space-y-2">
@@ -186,11 +227,17 @@ export function BalanceDesgloseTable({
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-xs font-bold text-[#00FF85] m-0 font-mono">
-                        $ {Math.round(g.montoCOP || 0).toLocaleString()}
+                        $ {Math.round(amounts.montoPorPersonaCOP || 0).toLocaleString()}
+                        {amounts.isMultiPerson ? ' /pers.' : ''}
                       </p>
+                      {amounts.isMultiPerson && (
+                        <span className="text-[10px] text-[#FFE500] font-bold block font-mono">
+                          Total ({amounts.cantidadPersonas}p): $ {Math.round(amounts.montoTotalCOP || 0).toLocaleString()}
+                        </span>
+                      )}
                       {origCurr !== 'COP' && (
                         <span className="text-[10px] text-[#8492A6] block font-mono">
-                          {formatCurrencyDisplay(g.montoOriginal, origCurr, false)}
+                          {formatCurrencyDisplay(amounts.montoTotalOrig, origCurr, false)}
                         </span>
                       )}
                     </div>
@@ -201,6 +248,16 @@ export function BalanceDesgloseTable({
                       <span className="inline-flex items-center gap-1 font-bold uppercase text-[#8492A6]">
                         <Icon className="w-3 h-3 text-[#00E5FF]" />
                         {g.categoria || 'otros'}
+                      </span>
+                      <span
+                        className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded font-bold uppercase text-[9px] ${
+                          amounts.isMultiPerson
+                            ? 'bg-[#FFE500]/15 text-[#FFE500] border border-[#FFE500]/30'
+                            : 'bg-[#0E121B] text-[#8492A6] border border-[#1C2436]'
+                        }`}
+                      >
+                        <Users className="w-2.5 h-2.5" />
+                        {amounts.cantidadPersonas === 1 ? '1p' : `${amounts.cantidadPersonas}p`}
                       </span>
                       {g.tarjetaCredito && (
                         <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#00E5FF] bg-[#00E5FF]/10 px-1.5 py-0.2 rounded border border-[#00E5FF]/20">

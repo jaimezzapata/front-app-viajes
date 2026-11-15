@@ -4,7 +4,7 @@ import { apiRequest } from '../services/api';
 import { convertCurrency, getExactExchangeRate } from '../utils/currencies';
 import { fixAccents, cleanCountryText } from '../utils/countries';
 import { calculateTripBalance } from '../utils/balance';
-import { parseEventoMeta, parseViajeMeta } from '../utils/meta';
+import { parseEventoMeta, parseViajeMeta, parseGastoMeta } from '../utils/meta';
 
 export function repairViaje(v) {
   if (!v) return v;
@@ -37,32 +37,74 @@ export function reconcileGastosWithEventos(rawGastos = [], rawEventos = [], viaj
     }
   }
 
-  // 1. Enriquecer gastos existentes con metadatos de su evento vinculado (ej. tarjetaCredito)
-  const reconciled = safeGastos.map((g) => {
+  // 1. Enriquecer gastos existentes con metadatos de su evento vinculado (ej. tarjetaCredito, cantidadPersonas, costos total y por persona)
+  const reconciled = safeGastos.map((rawG) => {
+    const g = parseGastoMeta(rawG);
     const linkedEv = g.eventoId ? eventoMap.get(g.eventoId) : null;
     const num = Number(g.montoOriginal) || 0;
     let orig = (g.monedaOriginal || 'COP').toUpperCase();
     if (num >= 50000 && orig === 'USD') {
       orig = 'COP';
     }
-    const montoCOP = Number(g.montoCOP) > 0 ? Number(g.montoCOP) : convertCurrency(num, orig, 'COP');
-    const montoUSD = Number(g.montoUSD) > 0 ? Number(g.montoUSD) : convertCurrency(num, orig, 'USD');
 
-    if (!linkedEv) {
-      return {
-        ...g,
-        monedaOriginal: orig,
-        montoCOP,
-        montoUSD
-      };
-    }
+    const paxCount = Math.max(
+      1,
+      Math.round(Number(linkedEv?.cantidadPersonas || g.cantidadPersonas) || 1)
+    );
+    const modoCostoPersonas = linkedEv?.modoCostoPersonas || g.modoCostoPersonas || 'total';
+    const computarSoloMiParte =
+      linkedEv?.computarSoloMiParte !== undefined
+        ? Boolean(linkedEv.computarSoloMiParte)
+        : g.computarSoloMiParte !== undefined
+        ? Boolean(g.computarSoloMiParte)
+        : true;
 
-    const tc = g.tarjetaCredito || linkedEv.tarjetaCredito || undefined;
+    const costoTotal =
+      linkedEv?.costoTotal > 0
+        ? Number(linkedEv.costoTotal)
+        : g.costoTotal > 0
+        ? Number(g.costoTotal)
+        : num;
+    const costoPorPersona =
+      linkedEv?.costoPorPersona > 0
+        ? Number(linkedEv.costoPorPersona)
+        : g.costoPorPersona > 0
+        ? Number(g.costoPorPersona)
+        : paxCount > 1
+        ? Number((costoTotal / paxCount).toFixed(2))
+        : costoTotal;
+
+    const montoCOP =
+      Number(g.montoCOP) > 0 && costoTotal === num
+        ? Number(g.montoCOP)
+        : convertCurrency(costoTotal, orig, 'COP');
+    const montoUSD =
+      Number(g.montoUSD) > 0 && costoTotal === num
+        ? Number(g.montoUSD)
+        : convertCurrency(costoTotal, orig, 'USD');
+
+    const montoTotalCOP = montoCOP;
+    const montoPorPersonaCOP = paxCount > 1 ? Math.round(montoTotalCOP / paxCount) : montoTotalCOP;
+    const montoTotalUSD = montoUSD;
+    const montoPorPersonaUSD = paxCount > 1 ? Number((montoTotalUSD / paxCount).toFixed(2)) : montoTotalUSD;
+
+    const tc = g.tarjetaCredito || linkedEv?.tarjetaCredito || undefined;
+
     return {
       ...g,
+      montoOriginal: costoTotal,
       monedaOriginal: orig,
-      montoCOP,
-      montoUSD,
+      montoCOP: montoTotalCOP,
+      montoUSD: montoTotalUSD,
+      cantidadPersonas: paxCount,
+      modoCostoPersonas,
+      computarSoloMiParte,
+      costoTotal,
+      costoPorPersona,
+      montoTotalCOP,
+      montoPorPersonaCOP,
+      montoTotalUSD,
+      montoPorPersonaUSD,
       ...(tc ? { tarjetaCredito: tc } : {})
     };
   });
@@ -71,14 +113,25 @@ export function reconcileGastosWithEventos(rawGastos = [], rawEventos = [], viaj
   const existingEventoIds = new Set(reconciled.map(g => g.eventoId).filter(Boolean));
 
   for (const ev of eventoMap.values()) {
-    const costoNum = Number(ev.costo) || 0;
+    const costoNum = Number(ev.costoTotal || ev.costo) || 0;
     if (costoNum > 0 && !existingEventoIds.has(ev.id)) {
       let orig = (ev.moneda || 'COP').toUpperCase();
       if (costoNum >= 50000 && orig === 'USD') {
         orig = 'COP';
       }
-      const montoCOP = convertCurrency(costoNum, orig, 'COP');
-      const montoUSD = convertCurrency(costoNum, orig, 'USD');
+      const paxCount = Math.max(1, Math.round(Number(ev.cantidadPersonas) || 1));
+      const costoTotal = costoNum;
+      const costoPorPersona =
+        ev.costoPorPersona > 0
+          ? Number(ev.costoPorPersona)
+          : paxCount > 1
+          ? Number((costoTotal / paxCount).toFixed(2))
+          : costoTotal;
+      const montoTotalCOP = convertCurrency(costoTotal, orig, 'COP');
+      const montoTotalUSD = convertCurrency(costoTotal, orig, 'USD');
+      const montoPorPersonaCOP = paxCount > 1 ? Math.round(montoTotalCOP / paxCount) : montoTotalCOP;
+      const montoPorPersonaUSD = paxCount > 1 ? Number((montoTotalUSD / paxCount).toFixed(2)) : montoTotalUSD;
+
       const tipoLower = (ev.tipo || 'otro').toLowerCase();
       const categoria = tipoLower === 'hotel'
         ? 'alojamiento'
@@ -99,10 +152,19 @@ export function reconcileGastosWithEventos(rawGastos = [], rawEventos = [], viaj
         eventoId: ev.id,
         concepto: `${tipoLower ? tipoLower.toUpperCase() + ': ' : ''}${ev.titulo || 'Evento'}`,
         categoria,
-        montoOriginal: costoNum,
+        montoOriginal: costoTotal,
         monedaOriginal: orig,
-        montoCOP,
-        montoUSD,
+        montoCOP: montoTotalCOP,
+        montoUSD: montoTotalUSD,
+        cantidadPersonas: paxCount,
+        modoCostoPersonas: ev.modoCostoPersonas || 'total',
+        computarSoloMiParte: ev.computarSoloMiParte !== undefined ? Boolean(ev.computarSoloMiParte) : true,
+        costoTotal,
+        costoPorPersona,
+        montoTotalCOP,
+        montoPorPersonaCOP,
+        montoTotalUSD,
+        montoPorPersonaUSD,
         fechaGasto: ev.fechaInicio || new Date().toISOString(),
         pagadoAdelantado: isAdelantado,
         noComputar: !isDescontar,

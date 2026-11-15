@@ -13,7 +13,9 @@ import {
   ChevronUp,
   Coins,
   RefreshCw,
-  CreditCard
+  CreditCard,
+  Users,
+  User
 } from 'lucide-react';
 import { toast } from 'sonner';
 import WatermarkIcon from '../../../components/WatermarkIcon';
@@ -212,6 +214,12 @@ export function BilleteraView({
 
                       {/* Chips de reglas de negocio especiales (RF 3.2) */}
                       <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                        {Number(g.cantidadPersonas) > 1 && (
+                          <span className="text-[10px] font-bold text-[#00E5FF] bg-[#00E5FF]/15 border border-[#00E5FF]/40 px-1.5 py-0.2 rounded inline-flex items-center gap-1">
+                            <Users className="w-2.5 h-2.5 text-[#00E5FF]" />
+                            <span>Para {g.cantidadPersonas} Personas</span>
+                          </span>
+                        )}
                         {g.tarjetaCredito && (
                           <span className="text-[10px] font-bold text-[#00E5FF] bg-[#00E5FF]/10 border border-[#00E5FF]/30 px-1.5 py-0.2 rounded inline-flex items-center gap-1">
                             <CreditCard className="w-2.5 h-2.5 text-[#00E5FF]" />
@@ -242,12 +250,25 @@ export function BilleteraView({
                     <div>
                       {/* Moneda Original Registrada */}
                       <p className="text-base font-extrabold text-[#F1F5F9] m-0 text-left sm:text-right">
-                        {isIngreso ? '+' : ''}{formatCurrencyDisplay(g.montoOriginal, g.monedaOriginal, true)}
+                        {isIngreso ? '+' : ''}{formatCurrencyDisplay(g.costoTotal || g.montoOriginal, g.monedaOriginal, true)}
+                        {Number(g.cantidadPersonas) > 1 && (
+                          <span className="ml-1.5 text-[10px] font-bold text-[#FFE500] bg-[#FFE500]/10 border border-[#FFE500]/30 px-1.5 py-0.5 rounded align-middle">
+                            Total {g.cantidadPersonas}p
+                          </span>
+                        )}
                       </p>
                       {/* Equivalencia en Pesos Colombianos */}
                       <p className="text-xs font-semibold text-[#00FF85] m-0 mt-0.5 text-left sm:text-right">
-                        ≈ $ {Math.round(g.montoCOP || 0).toLocaleString()} COP
+                        ≈ $ {Math.round(g.montoTotalCOP || g.montoCOP || 0).toLocaleString()} COP
                       </p>
+                      {Number(g.cantidadPersonas) > 1 && (
+                        <p className="text-[11px] font-bold text-[#00E5FF] m-0 mt-0.5 text-left sm:text-right flex items-center sm:justify-end gap-1">
+                          <User className="w-3 h-3 text-[#00E5FF]" />
+                          <span>
+                            Por persona: $ {Math.round(g.montoPorPersonaCOP || ((g.montoCOP || 0) / Number(g.cantidadPersonas))).toLocaleString()} COP c/u
+                          </span>
+                        </p>
+                      )}
                       {/* Tasa exacta congelada en el momento de la compra */}
                       {g.tasaCambioFecha && (g.monedaOriginal || '').toUpperCase() !== 'COP' && (
                         <p className="text-[10px] text-[#8492A6] m-0 text-left sm:text-right" title="Tasa de cambio capturada en el momento de la compra">

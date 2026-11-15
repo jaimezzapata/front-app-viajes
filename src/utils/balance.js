@@ -183,6 +183,86 @@ export function getViajeCategoriasConfig(viaje) {
   }));
 }
 
+/**
+ * Obtiene el desglose exacto de montos para un gasto (soporta compras para 1, 2, 3 o más personas).
+ * - montoTotalCOP / montoTotalOrig: Todo lo gastado/descontado de la TC (todas las personas).
+ * - montoPorPersonaCOP / montoPorPersonaOrig: Cuánto corresponde por 1 persona.
+ * - montoComputableCOP: Valor que se descuenta del presupuesto personal (por defecto 1 persona cuando es grupal, o el total si computarSoloMiParte === false).
+ * - montoAcompanantesCOP: Parte correspondiente a las demás personas compradas en la misma transacción.
+ */
+export function getGastoAmounts(g) {
+  if (!g) {
+    return {
+      cantidadPersonas: 1,
+      isMultiPerson: false,
+      computarSoloMiParte: true,
+      montoTotalOrig: 0,
+      montoPorPersonaOrig: 0,
+      montoTotalCOP: 0,
+      montoPorPersonaCOP: 0,
+      montoComputableCOP: 0,
+      montoAcompanantesCOP: 0,
+      montoTotalUSD: 0,
+      montoPorPersonaUSD: 0,
+      montoComputableUSD: 0,
+      montoAcompanantesUSD: 0
+    };
+  }
+
+  const pax = Math.max(1, Math.round(Number(g.cantidadPersonas) || 1));
+  const isMultiPerson = pax > 1;
+  const computarSoloMiParte = g.computarSoloMiParte !== undefined ? Boolean(g.computarSoloMiParte) : true;
+
+  const rawOrig = Number(g.costoTotal || g.montoOriginal) || 0;
+  const montoTotalOrig = rawOrig;
+  const montoPorPersonaOrig =
+    g.costoPorPersona && Number(g.costoPorPersona) > 0
+      ? Number(g.costoPorPersona)
+      : isMultiPerson
+      ? Number((montoTotalOrig / pax).toFixed(2))
+      : montoTotalOrig;
+
+  const rawCOP = Number(g.montoTotalCOP || g.montoCOP) || 0;
+  const montoTotalCOP = rawCOP;
+  const montoPorPersonaCOP =
+    g.montoPorPersonaCOP && Number(g.montoPorPersonaCOP) > 0
+      ? Number(g.montoPorPersonaCOP)
+      : isMultiPerson
+      ? Math.round(montoTotalCOP / pax)
+      : montoTotalCOP;
+
+  const rawUSD = Number(g.montoTotalUSD || g.montoUSD) || 0;
+  const montoTotalUSD = rawUSD;
+  const montoPorPersonaUSD =
+    g.montoPorPersonaUSD && Number(g.montoPorPersonaUSD) > 0
+      ? Number(g.montoPorPersonaUSD)
+      : isMultiPerson
+      ? Number((montoTotalUSD / pax).toFixed(2))
+      : montoTotalUSD;
+
+  const montoComputableCOP = isMultiPerson && computarSoloMiParte ? montoPorPersonaCOP : montoTotalCOP;
+  const montoAcompanantesCOP = isMultiPerson ? Math.max(0, montoTotalCOP - montoPorPersonaCOP) : 0;
+
+  const montoComputableUSD = isMultiPerson && computarSoloMiParte ? montoPorPersonaUSD : montoTotalUSD;
+  const montoAcompanantesUSD = isMultiPerson ? Math.max(0, Number((montoTotalUSD - montoPorPersonaUSD).toFixed(2))) : 0;
+
+  return {
+    cantidadPersonas: pax,
+    isMultiPerson,
+    computarSoloMiParte,
+    montoTotalOrig,
+    montoPorPersonaOrig,
+    montoTotalCOP,
+    montoPorPersonaCOP,
+    montoComputableCOP,
+    montoAcompanantesCOP,
+    montoTotalUSD,
+    montoPorPersonaUSD,
+    montoComputableUSD,
+    montoAcompanantesUSD
+  };
+}
+
 export function calculateTripBalance(viaje, gastos = []) {
   if (!viaje) {
     return {
@@ -190,8 +270,16 @@ export function calculateTripBalance(viaje, gastos = []) {
       presupuesto: 0,
       totalGastadoCOP: 0,
       totalGastadoUSD: 0,
+      totalDesembolsadoCOP: 0,
+      totalDesembolsadoUSD: 0,
+      totalPorPersonaCOP: 0,
+      totalPorPersonaUSD: 0,
+      gastoAcompanantesCOP: 0,
+      gastoAcompanantesUSD: 0,
+      multiPersonGastosCount: 0,
       gastoBase: 0,
       pagadoAdelantadoCOP: 0,
+      pagadoAdelantadoTotalCOP: 0,
       dineroRequeridoEnRutaCOP: 0,
       comprasTercerosCOP: 0,
       ingresosReembolsosCOP: 0,
@@ -214,7 +302,15 @@ export function calculateTripBalance(viaje, gastos = []) {
 
   let totalGastadoCOP = 0;
   let totalGastadoUSD = 0;
+  let totalDesembolsadoCOP = 0;
+  let totalDesembolsadoUSD = 0;
+  let totalPorPersonaCOP = 0;
+  let totalPorPersonaUSD = 0;
+  let gastoAcompanantesCOP = 0;
+  let gastoAcompanantesUSD = 0;
+  let multiPersonGastosCount = 0;
   let pagadoAdelantadoCOP = 0;
+  let pagadoAdelantadoTotalCOP = 0;
   let enRutaCOP = 0;
   let comprasTercerosCOP = 0;
   let ingresosCOP = 0;
@@ -228,6 +324,7 @@ export function calculateTripBalance(viaje, gastos = []) {
     categoriasMap[cfg.categoria] = {
       gastoCOP: 0,
       gastoUSD: 0,
+      gastoTotalDesembolsadoCOP: 0,
       porcentajeAsignado: cfg.porcentaje,
       limiteCOP: cfg.limiteCOP
     };
@@ -236,37 +333,74 @@ export function calculateTripBalance(viaje, gastos = []) {
   const safeGastos = Array.isArray(gastos) ? gastos : [];
 
   for (const g of safeGastos) {
-    const cop = Number(g.montoCOP) || 0;
-    const usd = Number(g.montoUSD) || 0;
+    const amounts = getGastoAmounts(g);
+    const {
+      isMultiPerson,
+      computarSoloMiParte,
+      montoTotalCOP,
+      montoTotalUSD,
+      montoPorPersonaCOP,
+      montoPorPersonaUSD,
+      montoComputableCOP,
+      montoComputableUSD,
+      montoAcompanantesCOP,
+      montoAcompanantesUSD
+    } = amounts;
 
-    // Contabilizar siempre gastos pagados antes del viaje como costo hundido
-    if (g.pagadoAdelantado) {
-      pagadoAdelantadoCOP += cop;
-    }
-
-    // Regla 1: Exclusión de presupuesto (noComputar)
-    if (g.noComputar) {
-      comprasTercerosCOP += cop;
-      totalFueraPresupuestoCOP += cop;
-      totalFueraPresupuestoUSD += usd;
-      continue;
+    if (isMultiPerson) {
+      multiPersonGastosCount++;
     }
 
     // Regla 2: Reembolsos / Tax-Free (esIngreso)
     if (g.esIngreso) {
-      ingresosCOP += cop;
-      totalGastadoCOP -= cop;
-      totalGastadoUSD -= usd;
+      ingresosCOP += montoTotalCOP;
+      totalGastadoCOP -= montoComputableCOP;
+      totalGastadoUSD -= montoComputableUSD;
+      totalDesembolsadoCOP -= montoTotalCOP;
+      totalDesembolsadoUSD -= montoTotalUSD;
+      totalPorPersonaCOP -= montoPorPersonaCOP;
+      totalPorPersonaUSD -= montoPorPersonaUSD;
       continue;
     }
 
+    // Todo lo desembolsado / cargado a TC o efectivo (incluyendo 2 o 3 personas)
+    totalDesembolsadoCOP += montoTotalCOP;
+    totalDesembolsadoUSD += montoTotalUSD;
+
+    // Contabilizar gastos pagados antes del viaje como costo hundido
+    if (g.pagadoAdelantado) {
+      pagadoAdelantadoTotalCOP += montoTotalCOP;
+      pagadoAdelantadoCOP += g.noComputar ? montoTotalCOP : montoComputableCOP;
+    }
+
+    // Regla 1: Exclusión total de presupuesto (noComputar)
+    if (g.noComputar) {
+      comprasTercerosCOP += montoTotalCOP;
+      totalFueraPresupuestoCOP += montoTotalCOP;
+      totalFueraPresupuestoUSD += montoTotalUSD;
+      continue;
+    }
+
+    // Si es para 2 o 3 personas y computa solo mi parte, la parte de acompañantes se registra en terceros/acompañantes
+    if (isMultiPerson) {
+      gastoAcompanantesCOP += montoAcompanantesCOP;
+      gastoAcompanantesUSD += montoAcompanantesUSD;
+      if (computarSoloMiParte) {
+        comprasTercerosCOP += montoAcompanantesCOP;
+        totalFueraPresupuestoCOP += montoAcompanantesCOP;
+        totalFueraPresupuestoUSD += montoAcompanantesUSD;
+      }
+    }
+
     // Regla 3: Gastos computables en el presupuesto del viaje
-    totalGastadoCOP += cop;
-    totalGastadoUSD += usd;
+    totalGastadoCOP += montoComputableCOP;
+    totalGastadoUSD += montoComputableUSD;
+    totalPorPersonaCOP += montoPorPersonaCOP;
+    totalPorPersonaUSD += montoPorPersonaUSD;
     gastosComputablesCount++;
 
     if (!g.pagadoAdelantado) {
-      enRutaCOP += cop;
+      enRutaCOP += montoComputableCOP;
     }
 
     const cat = (g.categoria || 'otros').trim().toLowerCase();
@@ -274,12 +408,14 @@ export function calculateTripBalance(viaje, gastos = []) {
       categoriasMap[cat] = {
         gastoCOP: 0,
         gastoUSD: 0,
+        gastoTotalDesembolsadoCOP: 0,
         porcentajeAsignado: 0,
         limiteCOP: 0
       };
     }
-    categoriasMap[cat].gastoCOP += cop;
-    categoriasMap[cat].gastoUSD += usd;
+    categoriasMap[cat].gastoCOP += montoComputableCOP;
+    categoriasMap[cat].gastoUSD += montoComputableUSD;
+    categoriasMap[cat].gastoTotalDesembolsadoCOP += montoTotalCOP;
   }
 
   const gastoBase = monedaBase === 'USD' ? totalGastadoUSD : totalGastadoCOP;
@@ -303,6 +439,7 @@ export function calculateTripBalance(viaje, gastos = []) {
       limiteCOP: val.limiteCOP,
       consumidoCOP: val.gastoCOP,
       consumidoUSD: val.gastoUSD,
+      consumidoTotalDesembolsadoCOP: val.gastoTotalDesembolsadoCOP,
       porcentaje: Number(porcentaje.toFixed(1)),
       color
     };
@@ -313,8 +450,16 @@ export function calculateTripBalance(viaje, gastos = []) {
     presupuesto: presupuestoTotalCOP,
     totalGastadoCOP,
     totalGastadoUSD,
+    totalDesembolsadoCOP,
+    totalDesembolsadoUSD,
+    totalPorPersonaCOP,
+    totalPorPersonaUSD,
+    gastoAcompanantesCOP,
+    gastoAcompanantesUSD,
+    multiPersonGastosCount,
     gastoBase,
     pagadoAdelantadoCOP,
+    pagadoAdelantadoTotalCOP,
     dineroRequeridoEnRutaCOP: enRutaCOP,
     comprasTercerosCOP,
     ingresosReembolsosCOP: ingresosCOP,

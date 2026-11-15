@@ -17,7 +17,9 @@ import {
   Trash2,
   CheckCircle2,
   AlertCircle,
-  FileText
+  FileText,
+  Users,
+  User
 } from 'lucide-react';
 import Modal from '../../../components/Modal';
 import MiniFlag from '../../../components/MiniFlag';
@@ -203,6 +205,24 @@ export function DetalleEventoModal({
                     Escala {evento.escalaMayor24h ? '(Stopover >24h)' : ''}
                   </span>
                 )}
+
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase flex items-center gap-1 ${
+                    Number(evento.cantidadPersonas) > 1
+                      ? 'text-[#00E5FF] bg-[#00E5FF]/15 border-[#00E5FF]/40'
+                      : 'text-[#8492A6] bg-[#151B27] border-[#1C2436]'
+                  }`}
+                >
+                  {Number(evento.cantidadPersonas) > 1 ? (
+                    <Users className="w-3 h-3 text-[#00E5FF]" />
+                  ) : (
+                    <User className="w-3 h-3 text-[#8492A6]" />
+                  )}
+                  <span>
+                    {Math.max(1, Number(evento.cantidadPersonas) || 1)}{' '}
+                    {Math.max(1, Number(evento.cantidadPersonas) || 1) === 1 ? 'Persona' : 'Personas'}
+                  </span>
+                </span>
               </div>
 
               <h2 className="text-lg sm:text-xl font-black text-[#F1F5F9] m-0 tracking-tight leading-snug">
@@ -339,14 +359,33 @@ export function DetalleEventoModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <div className="p-3 rounded-lg bg-[#0E121B] border border-[#1C2436]">
               <span className="text-[10px] font-bold text-[#8492A6] uppercase tracking-wider block mb-1">
-                Costo Registrado
+                {Number(evento.cantidadPersonas) > 1
+                  ? `Todo lo Gastado / Cobrado (${evento.cantidadPersonas} Personas)`
+                  : 'Costo Registrado'}
               </span>
               {evento.costo && Number(evento.costo) > 0 ? (
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-base sm:text-lg font-black text-[#00FF85]">
-                    {CURRENCY_MAP[(evento.moneda || 'COP').toUpperCase()]?.flag || '💱'}{' '}
-                    {formatCurrencyDisplay(evento.costo, evento.moneda || 'COP', true)}
-                  </span>
+                <div className="space-y-1">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className={`text-base sm:text-lg font-black ${Number(evento.cantidadPersonas) > 1 ? 'text-[#FFE500]' : 'text-[#00FF85]'}`}>
+                      {CURRENCY_MAP[(evento.moneda || 'COP').toUpperCase()]?.flag || '💱'}{' '}
+                      {formatCurrencyDisplay(evento.costoTotal || evento.costo, evento.moneda || 'COP', true)}
+                    </span>
+                  </div>
+                  {Number(evento.cantidadPersonas) > 1 && (
+                    <div className="pt-1 border-t border-[#1C2436] flex items-center justify-between text-xs">
+                      <span className="text-[#8492A6] flex items-center gap-1 font-semibold">
+                        <User className="w-3 h-3 text-[#00FF85]" />
+                        Valor por Persona:
+                      </span>
+                      <span className="font-black text-[#00FF85]">
+                        {formatCurrencyDisplay(
+                          evento.costoPorPersona || (Number(evento.costoTotal || evento.costo) / Number(evento.cantidadPersonas)),
+                          evento.moneda || 'COP',
+                          true
+                        )}
+                      </span>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <span className="text-xs font-bold text-[#8492A6]">

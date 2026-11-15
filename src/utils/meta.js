@@ -23,6 +23,29 @@ export function parseEventoMeta(evento) {
 
   const cleanNotas = cleanMetaText(notas);
 
+  const rawPax = evento.cantidadPersonas !== undefined
+    ? Number(evento.cantidadPersonas)
+    : (meta.cantidadPersonas !== undefined ? Number(meta.cantidadPersonas) : 1);
+  const cantidadPersonas = !isNaN(rawPax) && rawPax >= 1 ? Math.round(rawPax) : 1;
+
+  const modoCostoPersonas = evento.modoCostoPersonas || meta.modoCostoPersonas || 'total';
+  const computarSoloMiParte = evento.computarSoloMiParte !== undefined
+    ? Boolean(evento.computarSoloMiParte)
+    : (meta.computarSoloMiParte !== undefined ? Boolean(meta.computarSoloMiParte) : true);
+
+  const rawCosto = Number(evento.costo) || 0;
+  const costoTotal = evento.costoTotal !== undefined && Number(evento.costoTotal) > 0
+    ? Number(evento.costoTotal)
+    : (meta.costoTotal !== undefined && Number(meta.costoTotal) > 0
+      ? Number(meta.costoTotal)
+      : rawCosto);
+
+  const costoPorPersona = evento.costoPorPersona !== undefined && Number(evento.costoPorPersona) > 0
+    ? Number(evento.costoPorPersona)
+    : (meta.costoPorPersona !== undefined && Number(meta.costoPorPersona) > 0
+      ? Number(meta.costoPorPersona)
+      : (cantidadPersonas > 1 ? Number((costoTotal / cantidadPersonas).toFixed(2)) : costoTotal));
+
   return {
     ...evento,
     titulo: cleanMetaText(evento.titulo),
@@ -34,7 +57,62 @@ export function parseEventoMeta(evento) {
     roundTripGroupId: evento.roundTripGroupId || meta.roundTripGroupId || null,
     descontarPresupuesto: evento.descontarPresupuesto !== undefined ? Boolean(evento.descontarPresupuesto) : (meta.descontarPresupuesto !== undefined ? Boolean(meta.descontarPresupuesto) : true),
     pagadoAdelantado: evento.pagadoAdelantado !== undefined ? Boolean(evento.pagadoAdelantado) : (meta.pagadoAdelantado !== undefined ? Boolean(meta.pagadoAdelantado) : false),
-    tarjetaCredito: evento.tarjetaCredito !== undefined ? evento.tarjetaCredito : (meta.tarjetaCredito || null)
+    tarjetaCredito: evento.tarjetaCredito !== undefined ? evento.tarjetaCredito : (meta.tarjetaCredito || null),
+    cantidadPersonas,
+    modoCostoPersonas,
+    computarSoloMiParte,
+    costoTotal,
+    costoPorPersona
+  };
+}
+
+export function parseGastoMeta(gasto) {
+  if (!gasto) return gasto;
+  let concepto = gasto.concepto || '';
+  let meta = {};
+
+  if (typeof concepto === 'string' && concepto.includes('<!--META:')) {
+    const match = concepto.match(/<!--META:(.*?):META-->/);
+    if (match) {
+      try {
+        meta = JSON.parse(match[1]);
+      } catch {}
+    }
+  }
+
+  const cleanConcepto = cleanMetaText(concepto);
+  const rawPax = gasto.cantidadPersonas !== undefined
+    ? Number(gasto.cantidadPersonas)
+    : (meta.cantidadPersonas !== undefined ? Number(meta.cantidadPersonas) : 1);
+  const cantidadPersonas = !isNaN(rawPax) && rawPax >= 1 ? Math.round(rawPax) : 1;
+
+  const modoCostoPersonas = gasto.modoCostoPersonas || meta.modoCostoPersonas || 'total';
+  const computarSoloMiParte = gasto.computarSoloMiParte !== undefined
+    ? Boolean(gasto.computarSoloMiParte)
+    : (meta.computarSoloMiParte !== undefined ? Boolean(meta.computarSoloMiParte) : true);
+
+  const rawMontoOrig = Number(gasto.montoOriginal) || 0;
+  const costoTotal = gasto.costoTotal !== undefined && Number(gasto.costoTotal) > 0
+    ? Number(gasto.costoTotal)
+    : (meta.costoTotal !== undefined && Number(meta.costoTotal) > 0
+      ? Number(meta.costoTotal)
+      : rawMontoOrig);
+
+  const costoPorPersona = gasto.costoPorPersona !== undefined && Number(gasto.costoPorPersona) > 0
+    ? Number(gasto.costoPorPersona)
+    : (meta.costoPorPersona !== undefined && Number(meta.costoPorPersona) > 0
+      ? Number(meta.costoPorPersona)
+      : (cantidadPersonas > 1 ? Number((costoTotal / cantidadPersonas).toFixed(2)) : costoTotal));
+
+  return {
+    ...gasto,
+    concepto: cleanConcepto,
+    tarjetaCredito: gasto.tarjetaCredito !== undefined ? gasto.tarjetaCredito : (meta.tarjetaCredito || null),
+    cantidadPersonas,
+    modoCostoPersonas,
+    computarSoloMiParte,
+    costoTotal,
+    costoPorPersona
   };
 }
 

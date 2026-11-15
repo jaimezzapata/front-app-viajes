@@ -34,6 +34,9 @@ export function useEventoForm({
   const [costo, setCosto] = useState('');
   const [moneda, setMoneda] = useState(monedaDefault || 'COP');
   const [tarjetaCredito, setTarjetaCredito] = useState('');
+  const [cantidadPersonas, setCantidadPersonas] = useState(1);
+  const [modoCostoPersonas, setModoCostoPersonas] = useState('total'); // 'total' | 'por_persona'
+  const [computarSoloMiParte, setComputarSoloMiParte] = useState(true);
   const [descontarPresupuesto, setDescontarPresupuesto] = useState(true);
   const [pagadoAdelantado, setPagadoAdelantado] = useState(true);
   const [notas, setNotas] = useState('');
@@ -84,7 +87,21 @@ export function useEventoForm({
       setFechaInicio(toLocalDatetimeInput(eventoAEditar.fechaInicio));
       setFechaFin(toLocalDatetimeInput(eventoAEditar.fechaFin));
       setUbicacion(eventoAEditar.ubicacion || '');
-      setCosto(eventoAEditar.costo !== undefined && eventoAEditar.costo !== null ? String(eventoAEditar.costo) : '');
+      const initPax = Math.max(1, Math.round(Number(eventoAEditar.cantidadPersonas) || 1));
+      const initModo = eventoAEditar.modoCostoPersonas || 'total';
+      const initSoloMiParte = eventoAEditar.computarSoloMiParte !== undefined
+        ? Boolean(eventoAEditar.computarSoloMiParte)
+        : true;
+      setCantidadPersonas(initPax);
+      setModoCostoPersonas(initModo);
+      setComputarSoloMiParte(initSoloMiParte);
+
+      if (initPax > 1 && initModo === 'por_persona' && eventoAEditar.costoPorPersona) {
+        setCosto(String(eventoAEditar.costoPorPersona));
+      } else {
+        const displayCosto = eventoAEditar.costoTotal ?? eventoAEditar.costo;
+        setCosto(displayCosto !== undefined && displayCosto !== null ? String(displayCosto) : '');
+      }
       setMoneda(eventoAEditar.moneda || monedaDefault || 'COP');
       setTarjetaCredito(eventoAEditar.tarjetaCredito || eventoAEditar.gastoAsociado?.tarjetaCredito || '');
       setNotas((eventoAEditar.notas || '').replace(/\n?<!--META:.*?:META-->/g, '').trim());
@@ -143,6 +160,9 @@ export function useEventoForm({
       setCosto('');
       setMoneda(monedaDefault || 'COP');
       setTarjetaCredito('');
+      setCantidadPersonas(1);
+      setModoCostoPersonas('total');
+      setComputarSoloMiParte(true);
       setDescontarPresupuesto(true);
       setPagadoAdelantado(true);
       setNotas('');
@@ -289,6 +309,15 @@ export function useEventoForm({
         ? titulo.trim()
         : (tipo === 'vuelo' ? `${originTitle} ➔ ${destTitle}` : titulo.trim() || 'Evento');
 
+      const paxCount = Math.max(1, Math.round(Number(cantidadPersonas) || 1));
+      const rawCostoNum = costo ? Number(costo) : 0;
+      const finalCostoTotal = paxCount > 1 && modoCostoPersonas === 'por_persona'
+        ? Number((rawCostoNum * paxCount).toFixed(2))
+        : rawCostoNum;
+      const finalCostoPorPersona = paxCount > 1
+        ? (modoCostoPersonas === 'por_persona' ? rawCostoNum : Number((rawCostoNum / paxCount).toFixed(2)))
+        : rawCostoNum;
+
       // CASO 1: Creación de Vuelo Round-Trip (Genera automáticamente los dos tramos organizados)
       if (tipo === 'vuelo' && tipoTrayecto === 'round-trip' && !isEditing) {
         const roundTripGroupId = `rt-${Date.now()}`;
@@ -313,9 +342,14 @@ export function useEventoForm({
           fechaInicio: new Date(fechaInicio).toISOString(),
           fechaFin: fechaFin ? new Date(fechaFin).toISOString() : undefined,
           ubicacion: ciudadDestino ? `${ciudadDestino}, ${paisDestino || ''}` : undefined,
-          costo: costo ? Number(costo) : undefined,
+          costo: finalCostoTotal > 0 ? finalCostoTotal : undefined,
           moneda: moneda.toUpperCase(),
           tarjetaCredito: tarjetaCredito.trim() || undefined,
+          cantidadPersonas: paxCount,
+          modoCostoPersonas,
+          costoTotal: finalCostoTotal > 0 ? finalCostoTotal : undefined,
+          costoPorPersona: finalCostoPorPersona > 0 ? finalCostoPorPersona : undefined,
+          computarSoloMiParte,
           descontarPresupuesto,
           pagadoAdelantado,
           notas: notas.trim() ? `${notas.trim()} (Tiquete Round-Trip • Tramo de Ida)` : 'Tiquete Round-Trip • Tramo de Ida',
@@ -348,6 +382,7 @@ export function useEventoForm({
           ubicacion: returnDestCity ? `${returnDestCity}, ${returnDestCountry || ''}` : undefined,
           costo: 0,
           moneda: moneda.toUpperCase(),
+          cantidadPersonas: paxCount,
           descontarPresupuesto,
           pagadoAdelantado,
           notas: `Tiquete Round-Trip • Tramo de Regreso (${originTitle} ➔ ${destTitle}). Costo computado en el tramo de ida.`,
@@ -381,9 +416,14 @@ export function useEventoForm({
         fechaInicio: new Date(fechaInicio).toISOString(),
         fechaFin: fechaFin ? new Date(fechaFin).toISOString() : undefined,
         ubicacion: ubicacion.trim() || (ciudadDestino ? `${ciudadDestino}, ${paisDestino || ''}` : undefined),
-        costo: costo ? Number(costo) : undefined,
+        costo: finalCostoTotal > 0 ? finalCostoTotal : undefined,
         moneda: moneda.toUpperCase(),
         tarjetaCredito: tarjetaCredito.trim() || undefined,
+        cantidadPersonas: paxCount,
+        modoCostoPersonas,
+        costoTotal: finalCostoTotal > 0 ? finalCostoTotal : undefined,
+        costoPorPersona: finalCostoPorPersona > 0 ? finalCostoPorPersona : undefined,
+        computarSoloMiParte,
         descontarPresupuesto,
         pagadoAdelantado,
         notas: notas.trim() || undefined,
@@ -432,6 +472,9 @@ export function useEventoForm({
       costo,
       moneda,
       tarjetaCredito,
+      cantidadPersonas,
+      modoCostoPersonas,
+      computarSoloMiParte,
       descontarPresupuesto,
       pagadoAdelantado,
       notas,
@@ -473,6 +516,9 @@ export function useEventoForm({
       setCosto,
       setMoneda,
       setTarjetaCredito,
+      setCantidadPersonas,
+      setModoCostoPersonas,
+      setComputarSoloMiParte,
       setDescontarPresupuesto,
       setPagadoAdelantado,
       setNotas,

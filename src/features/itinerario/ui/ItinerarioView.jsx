@@ -22,7 +22,9 @@ import {
   ChevronUp,
   Share2,
   Calendar,
-  Eye
+  Eye,
+  Users,
+  User
 } from 'lucide-react';
 import WatermarkIcon from '../../../components/WatermarkIcon';
 import WorldMapModal from '../../../components/WorldMapModal';
@@ -563,15 +565,61 @@ export function ItinerarioView({
                           Con Escala
                         </span>
                       )}
+
+                      {(isVuelo || ev.tipo === 'transporte' || Number(ev.cantidadPersonas) > 1) && (
+                        <span
+                          className={`text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase flex items-center gap-1 ${
+                            Number(ev.cantidadPersonas) > 1
+                              ? 'text-[#00E5FF] bg-[#00E5FF]/15 border-[#00E5FF]/40'
+                              : 'text-[#8492A6] bg-[#151B27] border-[#1C2436]'
+                          }`}
+                          title={`Registrado para ${Math.max(1, Number(ev.cantidadPersonas) || 1)} ${Math.max(1, Number(ev.cantidadPersonas) || 1) === 1 ? 'persona' : 'personas'}`}
+                        >
+                          {Number(ev.cantidadPersonas) > 1 ? (
+                            <Users className="w-2.5 h-2.5 text-[#00E5FF]" />
+                          ) : (
+                            <User className="w-2.5 h-2.5 text-[#8492A6]" />
+                          )}
+                          <span>
+                            {Math.max(1, Number(ev.cantidadPersonas) || 1)}{' '}
+                            {Math.max(1, Number(ev.cantidadPersonas) || 1) === 1 ? 'Persona' : 'Personas'}
+                          </span>
+                        </span>
+                      )}
                     </div>
 
                     {ev.costo && Number(ev.costo) > 0 ? (
                       <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 shrink-0 ml-auto items-end">
-                        <div className="flex items-center gap-1">
-                          <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold text-[#00FF85] bg-[#00FF85]/10 px-2 py-0.5 rounded border border-[#00FF85]/20">
-                            <span>{CURRENCY_MAP[(ev.moneda || 'COP').toUpperCase()]?.flag || '💱'}</span>
-                            {formatCurrencyDisplay(ev.costo, ev.moneda || 'COP', true)}
-                          </span>
+                        <div className="flex items-center gap-1 flex-wrap justify-end">
+                          {Number(ev.cantidadPersonas) > 1 ? (
+                            <>
+                              <span
+                                className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold text-[#FFE500] bg-[#FFE500]/10 px-2 py-0.5 rounded border border-[#FFE500]/30"
+                                title={`Total gastado / cobrado por ${ev.cantidadPersonas} personas`}
+                              >
+                                <span>{CURRENCY_MAP[(ev.moneda || 'COP').toUpperCase()]?.flag || '💱'}</span>
+                                <span>Total ({ev.cantidadPersonas}p): {formatCurrencyDisplay(ev.costoTotal || ev.costo, ev.moneda || 'COP', true)}</span>
+                              </span>
+                              <span
+                                className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold text-[#00FF85] bg-[#00FF85]/10 px-2 py-0.5 rounded border border-[#00FF85]/30"
+                                title="Valor individual por persona"
+                              >
+                                <User className="w-3 h-3 text-[#00FF85]" />
+                                <span>
+                                  {formatCurrencyDisplay(
+                                    ev.costoPorPersona || (Number(ev.costoTotal || ev.costo) / Number(ev.cantidadPersonas)),
+                                    ev.moneda || 'COP',
+                                    true
+                                  )} / pers.
+                                </span>
+                              </span>
+                            </>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold text-[#00FF85] bg-[#00FF85]/10 px-2 py-0.5 rounded border border-[#00FF85]/20">
+                              <span>{CURRENCY_MAP[(ev.moneda || 'COP').toUpperCase()]?.flag || '💱'}</span>
+                              {formatCurrencyDisplay(ev.costo, ev.moneda || 'COP', true)}
+                            </span>
+                          )}
                           <button
                             type="button"
                             onClick={(e) => {
