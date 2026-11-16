@@ -123,13 +123,24 @@ export function enrichGastoWithLocation(gasto, eventos = [], viaje = null) {
  */
 
 export const DEFAULT_CATEGORIAS_PRESUPUESTO = [
-  { categoria: 'transporte', porcentaje: 30 },
-  { categoria: 'alojamiento', porcentaje: 35 },
+  { categoria: 'transporte', porcentaje: 28 },
+  { categoria: 'alojamiento', porcentaje: 32 },
   { categoria: 'comida', porcentaje: 15 },
   { categoria: 'actividades', porcentaje: 10 },
   { categoria: 'compras', porcentaje: 5 },
+  { categoria: 'impuestos', porcentaje: 5 },
   { categoria: 'otros', porcentaje: 5 }
 ];
+
+export const CATEGORIA_LABELS = {
+  transporte: 'Transporte / Vuelos',
+  alojamiento: 'Alojamiento / Hoteles',
+  comida: 'Comida / Bebida',
+  actividades: 'Actividades / Tours',
+  compras: 'Compras',
+  impuestos: 'Impuestos / Permisos (K-ETA, ETIAS, Visas)',
+  otros: 'Otros'
+};
 
 /**
  * Obtiene la configuración activa de categorías de presupuesto para un viaje.
@@ -139,8 +150,28 @@ export const DEFAULT_CATEGORIAS_PRESUPUESTO = [
 export function getViajeCategoriasConfig(viaje) {
   const presupuestoTotalCOP = Number(viaje?.presupuestoTotal) || 0;
 
+  const ensureImpuestosPresent = (list) => {
+    const hasImpuestos = list.some(
+      (i) => (i.categoria || '').toLowerCase() === 'impuestos'
+    );
+    if (hasImpuestos) return list;
+    // Insertar 'impuestos' justo antes de 'otros' si existe, o al final
+    const otrosIdx = list.findIndex((i) => (i.categoria || '').toLowerCase() === 'otros');
+    const newItem = {
+      categoria: 'impuestos',
+      porcentaje: 0,
+      limiteCOP: 0
+    };
+    if (otrosIdx >= 0) {
+      const copy = [...list];
+      copy.splice(otrosIdx, 0, newItem);
+      return copy;
+    }
+    return [...list, newItem];
+  };
+
   if (Array.isArray(viaje?.categoriasPresupuesto) && viaje.categoriasPresupuesto.length > 0) {
-    return viaje.categoriasPresupuesto.map((item) => {
+    const mapped = viaje.categoriasPresupuesto.map((item) => {
       const cat = (item.categoria || 'otros').trim().toLowerCase();
       const pct =
         item.porcentaje !== undefined && item.porcentaje !== null
@@ -158,10 +189,11 @@ export function getViajeCategoriasConfig(viaje) {
         limiteCOP
       };
     });
+    return ensureImpuestosPresent(mapped);
   }
 
   if (Array.isArray(viaje?.presupuestos) && viaje.presupuestos.length > 0) {
-    return viaje.presupuestos.map((item) => {
+    const mapped = viaje.presupuestos.map((item) => {
       const cat = (item.categoria || 'otros').trim().toLowerCase();
       const limite = Number(item.limite) || 0;
       const pct =
@@ -174,6 +206,7 @@ export function getViajeCategoriasConfig(viaje) {
         limiteCOP: limite
       };
     });
+    return ensureImpuestosPresent(mapped);
   }
 
   return DEFAULT_CATEGORIAS_PRESUPUESTO.map((item) => ({

@@ -6,9 +6,10 @@ import SidebarNav from './components/SidebarNav';
 import BottomNav from './components/BottomNav';
 import Header from './components/Header';
 
-// Vistas de los 4 módulos
+// Vistas de los 5 módulos
 import ViajesView from './features/viajes/ui/ViajesView';
 import ItinerarioView from './features/itinerario/ui/ItinerarioView';
+import ChecklistView from './features/checklist/ui/ChecklistView';
 import BilleteraView from './features/billetera/ui/BilleteraView';
 import BalanceView from './features/balance/ui/BalanceView';
 
@@ -58,6 +59,7 @@ export function App() {
   const [eventoAEditar, setEventoAEditar] = useState(null);
   const [eventoAEliminar, setEventoAEliminar] = useState(null);
   const [isNuevoGastoOpen, setIsNuevoGastoOpen] = useState(false);
+  const [gastoAEditar, setGastoAEditar] = useState(null);
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
   // Hook de autenticación simple (nombre y correo)
@@ -80,6 +82,8 @@ export function App() {
     handleUpdateEvento,
     handleDeleteEvento,
     handleSaveGasto,
+    handleUpdateGasto,
+    handleDeleteGasto,
     handleSyncAndClearLocal,
     handleSyncNow
   } = useAppViajes(usuario);
@@ -223,7 +227,10 @@ export function App() {
                 setEventoAEditar(null);
                 setIsNuevoEventoOpen(true);
               }}
-              onAddGasto={() => setIsNuevoGastoOpen(true)}
+              onAddGasto={() => {
+                setGastoAEditar(null);
+                setIsNuevoGastoOpen(true);
+              }}
             />
           )}
 
@@ -250,6 +257,17 @@ export function App() {
             />
           )}
 
+          {activeTab === 'checklist' && (
+            <ChecklistView
+              activeViaje={activeViaje}
+              onUpdateViaje={handleUpdateViaje}
+              onOpenNuevoViaje={() => {
+                setViajeAEditar(null);
+                setIsNuevoViajeOpen(true);
+              }}
+            />
+          )}
+
           {activeTab === 'billetera' && (
             <BilleteraView
               activeViaje={activeViaje}
@@ -258,7 +276,15 @@ export function App() {
                 setViajeAEditar(null);
                 setIsNuevoViajeOpen(true);
               }}
-              onAddGasto={() => setIsNuevoGastoOpen(true)}
+              onAddGasto={() => {
+                setGastoAEditar(null);
+                setIsNuevoGastoOpen(true);
+              }}
+              onEditGasto={(gasto) => {
+                setGastoAEditar(gasto);
+                setIsNuevoGastoOpen(true);
+              }}
+              onDeleteGasto={handleDeleteGasto}
               monedaBase={activeViaje?.monedaBase}
             />
           )}
@@ -271,6 +297,10 @@ export function App() {
                 setIsNuevoViajeOpen(true);
               }}
               onUpdateViaje={handleUpdateViaje}
+              onEditGasto={(gasto) => {
+                setGastoAEditar(gasto);
+                setIsNuevoGastoOpen(true);
+              }}
               balance={balance}
               gastos={gastos}
               eventos={eventos}
@@ -351,8 +381,13 @@ export function App() {
 
       <NuevoGastoModal
         isOpen={isNuevoGastoOpen}
-        onClose={() => setIsNuevoGastoOpen(false)}
+        onClose={() => {
+          setIsNuevoGastoOpen(false);
+          setGastoAEditar(null);
+        }}
+        gastoAEditar={gastoAEditar}
         onSaveGasto={handleSaveGasto}
+        onUpdateGasto={handleUpdateGasto}
         monedaDefault={activeViaje?.monedaLocal || activeViaje?.monedaBase || 'COP'}
         activeViaje={activeViaje}
       />

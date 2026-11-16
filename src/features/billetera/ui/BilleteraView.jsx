@@ -15,7 +15,9 @@ import {
   RefreshCw,
   CreditCard,
   Users,
-  User
+  User,
+  Edit2,
+  Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import WatermarkIcon from '../../../components/WatermarkIcon';
@@ -33,6 +35,8 @@ export function BilleteraView({
   activeViaje,
   gastos = [],
   onAddGasto,
+  onEditGasto,
+  onDeleteGasto,
   onOpenNuevoViaje,
   monedaBase = 'COP'
 }) {
@@ -198,8 +202,16 @@ export function BilleteraView({
                     <div className="min-w-0">
                       <h4 className="text-sm font-bold text-[#F1F5F9] m-0 truncate">{g.concepto}</h4>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-[#8492A6] bg-[#151B27] px-1.5 py-0.5 rounded border border-[#1C2436]">
-                          {g.categoria}
+                        <span
+                          className={`text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded border ${
+                            (g.categoria || '').toLowerCase() === 'impuestos'
+                              ? 'text-[#FFE500] bg-[#FFE500]/10 border-[#FFE500]/30'
+                              : 'text-[#8492A6] bg-[#151B27] border-[#1C2436]'
+                          }`}
+                        >
+                          {(g.categoria || '').toLowerCase() === 'impuestos'
+                            ? '🪪 Impuestos / Permisos (K-ETA, ETIAS)'
+                            : g.categoria}
                         </span>
                         <span className="text-[11px] text-[#8492A6] flex items-center gap-1">
                           <Calendar className="w-3 h-3 text-[#8492A6]" />
@@ -277,15 +289,38 @@ export function BilleteraView({
                       )}
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setExpandedGastoId(expandedGastoId === g.id ? null : g.id)}
-                      className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-[#00E5FF] hover:underline cursor-pointer bg-[#151B27] px-2 py-1 rounded border border-[#1C2436]"
-                    >
-                      <ArrowRightLeft className="w-3 h-3" />
-                      <span>{isExpanded ? 'Ocultar divisas' : 'Ver otras monedas'}</span>
-                      {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                    </button>
+                    <div className="mt-1.5 flex items-center gap-1.5 flex-wrap sm:justify-end">
+                      {onEditGasto && (
+                        <button
+                          type="button"
+                          onClick={() => onEditGasto(g)}
+                          title="Editar este gasto"
+                          className="flex items-center gap-1 text-[11px] font-bold text-[#00FF85] hover:bg-[#00FF85]/15 cursor-pointer bg-[#151B27] px-2.5 py-1 rounded border border-[#00FF85]/30 transition-colors"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                          <span>Editar</span>
+                        </button>
+                      )}
+                      {onDeleteGasto && (
+                        <button
+                          type="button"
+                          onClick={() => onDeleteGasto(g.id)}
+                          title="Eliminar este gasto"
+                          className="p-1 rounded bg-[#151B27] border border-[#1C2436] hover:border-[#FF2E55] text-[#8492A6] hover:text-[#FF2E55] transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setExpandedGastoId(expandedGastoId === g.id ? null : g.id)}
+                        className="flex items-center gap-1 text-[11px] font-semibold text-[#00E5FF] hover:underline cursor-pointer bg-[#151B27] px-2 py-1 rounded border border-[#1C2436]"
+                      >
+                        <ArrowRightLeft className="w-3 h-3" />
+                        <span>{isExpanded ? 'Ocultar divisas' : 'Ver otras monedas'}</span>
+                        {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                      </button>
+                    </div>
                   </div>
                 </div>
 

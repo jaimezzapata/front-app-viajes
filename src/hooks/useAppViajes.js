@@ -49,27 +49,29 @@ export function reconcileGastosWithEventos(rawGastos = [], rawEventos = [], viaj
 
     const paxCount = Math.max(
       1,
-      Math.round(Number(linkedEv?.cantidadPersonas || g.cantidadPersonas) || 1)
+      Math.round(Number(g.cantidadPersonas || linkedEv?.cantidadPersonas) || 1)
     );
-    const modoCostoPersonas = linkedEv?.modoCostoPersonas || g.modoCostoPersonas || 'total';
+    const modoCostoPersonas = g.modoCostoPersonas || linkedEv?.modoCostoPersonas || 'total';
     const computarSoloMiParte =
-      linkedEv?.computarSoloMiParte !== undefined
-        ? Boolean(linkedEv.computarSoloMiParte)
-        : g.computarSoloMiParte !== undefined
+      g.computarSoloMiParte !== undefined
         ? Boolean(g.computarSoloMiParte)
+        : linkedEv?.computarSoloMiParte !== undefined
+        ? Boolean(linkedEv.computarSoloMiParte)
         : true;
 
     const costoTotal =
-      linkedEv?.costoTotal > 0
-        ? Number(linkedEv.costoTotal)
-        : g.costoTotal > 0
+      g.costoTotal > 0
         ? Number(g.costoTotal)
+        : num > 0
+        ? num
+        : linkedEv?.costoTotal > 0
+        ? Number(linkedEv.costoTotal)
         : num;
     const costoPorPersona =
-      linkedEv?.costoPorPersona > 0
-        ? Number(linkedEv.costoPorPersona)
-        : g.costoPorPersona > 0
+      g.costoPorPersona > 0
         ? Number(g.costoPorPersona)
+        : linkedEv?.costoPorPersona > 0 && costoTotal === Number(linkedEv?.costoTotal)
+        ? Number(linkedEv.costoPorPersona)
         : paxCount > 1
         ? Number((costoTotal / paxCount).toFixed(2))
         : costoTotal;
@@ -137,7 +139,11 @@ export function reconcileGastosWithEventos(rawGastos = [], rawEventos = [], viaj
         ? 'alojamiento'
         : (tipoLower === 'vuelo' || tipoLower === 'transporte'
           ? 'transporte'
-          : (tipoLower === 'comida' ? 'comida' : 'actividades'));
+          : (tipoLower === 'comida'
+            ? 'comida'
+            : (tipoLower === 'impuestos' || tipoLower === 'permisos' || tipoLower === 'tramite'
+              ? 'impuestos'
+              : 'actividades')));
 
       const isDescontar = ev.descontarPresupuesto !== undefined
         ? Boolean(ev.descontarPresupuesto)
@@ -608,18 +614,28 @@ export function useAppViajes(usuario) {
     return savedViaje;
   };
 
-  const handleUpdateViaje = async (id, updatedData) => {
+  const handleUpdateViaje = async (id, updatedData, opts = {}) => {
+    const silent = Boolean(opts?.silent);
     let saved = null;
-    const sanitizedUpdate = repairViaje(updatedData);
+    // Optimistic update in local state & localStorage
+    setViajes(prev =>
+      prev.map(v => {
+        if (v.id !== id) return v;
+        return repairViaje({ ...v, ...updatedData });
+      })
+    );
+
     try {
       if (navigator.onLine) {
         const res = await apiRequest(`/viajes/${id}`, {
           method: 'PUT',
-          body: JSON.stringify(sanitizedUpdate)
+          body: JSON.stringify(updatedData)
         });
-        saved = repairViaje(res?.data || res || sanitizedUpdate);
+        saved = repairViaje(res?.data || res || updatedData);
         setViajes(prev => prev.map(v => (v.id === id ? { ...v, ...saved } : v)));
-        toast.success('Viaje actualizado y sincronizado');
+        if (!silent) {
+          toast.success('Viaje actualizado y sincronizado');
+        }
       }
     } catch {
       // Si falla la API, continuar con fallback offline
@@ -627,9 +643,10 @@ export function useAppViajes(usuario) {
 
     if (!saved) {
       // Fallback offline
-      saved = sanitizedUpdate;
-      setViajes(prev => prev.map(v => (v.id === id ? { ...v, ...sanitizedUpdate } : v)));
-      toast.info('Cambios guardados localmente.');
+      saved = updatedData;
+      if (!silent) {
+        toast.info('Cambios guardados localmente.');
+      }
     }
 
     return saved;
@@ -737,7 +754,15 @@ export function useAppViajes(usuario) {
           viajeId: activeViajeId,
           eventoId: localEvento.id,
           concepto: `${eventoData.tipo ? eventoData.tipo.toUpperCase() + ': ' : ''}${eventoData.titulo}`,
-          categoria: eventoData.tipo === 'hotel' ? 'alojamiento' : (eventoData.tipo === 'vuelo' || eventoData.tipo === 'transporte' ? 'transporte' : 'actividades'),
+          categoria: eventoData.tipo === 'hotel'
+            ? 'alojamiento'
+            : (eventoData.tipo === 'vuelo' || eventoData.tipo === 'transporte'
+              ? 'transporte'
+              : (eventoData.tipo === 'comida'
+                ? 'comida'
+                : (eventoData.tipo === 'impuestos' || eventoData.tipo === 'permisos' || eventoData.tipo === 'tramite'
+                  ? 'impuestos'
+                  : 'actividades'))),
           montoOriginal: costoNum,
           monedaOriginal,
           montoCOP,
@@ -834,7 +859,9 @@ export function useAppViajes(usuario) {
           ? 'transporte'
           : (targetTipo === 'comida'
             ? 'comida'
-            : 'actividades'));
+            : (targetTipo === 'impuestos' || targetTipo === 'permisos' || targetTipo === 'tramite'
+              ? 'impuestos'
+              : 'actividades')));
 
       const concepto = `${targetTipo ? targetTipo.toUpperCase() + ': ' : ''}${updatedEventoData.titulo || ''}`;
       const existingGastoIndex = prev.findIndex(g => g.eventoId === id || (g.concepto && updatedEventoData.titulo && g.concepto.includes(updatedEventoData.titulo)));
@@ -953,6 +980,135 @@ export function useAppViajes(usuario) {
     return localGasto;
   };
 
+  const handleUpdateGasto = async (id, updatedGastoData) => {
+    const existingGasto = reconciledGastos.find(g => g.id === id) || gastos.find(g => g.id === id) || {};
+    const monto = Number(updatedGastoData.montoOriginal ?? existingGasto.montoOriginal) || 0;
+    const orig = (updatedGastoData.monedaOriginal || existingGasto.monedaOriginal || activeViaje?.monedaBase || 'COP').toUpperCase();
+    const liveRate = updatedGastoData.tasaCambioFecha || existingGasto.tasaCambioFecha || getExactExchangeRate(orig, 'COP');
+    const montoCOP = updatedGastoData.montoCOP !== undefined
+      ? Number(updatedGastoData.montoCOP)
+      : convertCurrency(monto, orig, 'COP');
+    const montoUSD = updatedGastoData.montoUSD !== undefined
+      ? Number(updatedGastoData.montoUSD)
+      : convertCurrency(monto, orig, 'USD');
+
+    const paxCount = Math.max(1, Math.round(Number(updatedGastoData.cantidadPersonas ?? existingGasto.cantidadPersonas) || 1));
+    const costoTotal = updatedGastoData.costoTotal !== undefined ? Number(updatedGastoData.costoTotal) : monto;
+    const costoPorPersona = updatedGastoData.costoPorPersona !== undefined
+      ? Number(updatedGastoData.costoPorPersona)
+      : (paxCount > 1 ? Number((costoTotal / paxCount).toFixed(2)) : costoTotal);
+
+    const payload = {
+      ...updatedGastoData,
+      montoOriginal: costoTotal,
+      monedaOriginal: orig,
+      tasaCambioFecha: liveRate,
+      montoCOP,
+      montoUSD,
+      cantidadPersonas: paxCount,
+      costoTotal,
+      costoPorPersona,
+      montoTotalCOP: montoCOP,
+      montoPorPersonaCOP: paxCount > 1 ? Math.round(montoCOP / paxCount) : montoCOP,
+      montoTotalUSD: montoUSD,
+      montoPorPersonaUSD: paxCount > 1 ? Number((montoUSD / paxCount).toFixed(2)) : montoUSD
+    };
+
+    let savedGasto = null;
+    const isLocalOrVirtual = typeof id === 'string' && (id.startsWith('g-local-') || id.startsWith('g-auto-') || id.startsWith('g-ev-'));
+
+    try {
+      if (navigator.onLine && !isLocalOrVirtual) {
+        const res = await apiRequest(`/gastos/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload)
+        });
+        savedGasto = res?.data || res || { ...existingGasto, ...payload, id };
+      } else if (navigator.onLine && isLocalOrVirtual && activeViajeId) {
+        // Si era un gasto virtual/local y estamos online, persistirlo o actualizar su evento
+        if (existingGasto.eventoId && !String(existingGasto.eventoId).startsWith('ev-local-')) {
+          await apiRequest(`/itinerario/${existingGasto.eventoId}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              costo: costoTotal,
+              moneda: orig,
+              tarjetaCredito: payload.tarjetaCredito || null,
+              cantidadPersonas: paxCount,
+              modoCostoPersonas: payload.modoCostoPersonas || 'total',
+              costoTotal,
+              costoPorPersona,
+              computarSoloMiParte: payload.computarSoloMiParte !== undefined ? Boolean(payload.computarSoloMiParte) : true,
+              pagadoAdelantado: Boolean(payload.pagadoAdelantado),
+              descontarPresupuesto: !Boolean(payload.noComputar)
+            })
+          }).catch(() => null);
+        }
+      }
+    } catch (err) {
+      console.warn('Error actualizando gasto en servidor:', err);
+    }
+
+    const finalUpdated = {
+      ...existingGasto,
+      ...payload,
+      ...(savedGasto || {}),
+      id: savedGasto?.id || id
+    };
+
+    setGastos(prev => {
+      const existsInPrev = prev.some(g => g.id === id);
+      if (existsInPrev) {
+        return prev.map(g => (g.id === id ? finalUpdated : g));
+      }
+      return [finalUpdated, ...prev];
+    });
+
+    // Si el gasto está vinculado a un evento del itinerario, sincronizar también el evento en memoria
+    if (existingGasto.eventoId) {
+      setEventos(prev =>
+        prev.map(ev =>
+          ev.id === existingGasto.eventoId
+            ? {
+                ...ev,
+                costo: costoTotal,
+                costoTotal,
+                costoPorPersona,
+                moneda: orig,
+                cantidadPersonas: paxCount,
+                modoCostoPersonas: payload.modoCostoPersonas || ev.modoCostoPersonas || 'total',
+                computarSoloMiParte:
+                  payload.computarSoloMiParte !== undefined
+                    ? Boolean(payload.computarSoloMiParte)
+                    : ev.computarSoloMiParte,
+                tarjetaCredito: payload.tarjetaCredito !== undefined ? payload.tarjetaCredito : ev.tarjetaCredito,
+                pagadoAdelantado:
+                  payload.pagadoAdelantado !== undefined ? Boolean(payload.pagadoAdelantado) : ev.pagadoAdelantado,
+                descontarPresupuesto:
+                  payload.noComputar !== undefined ? !Boolean(payload.noComputar) : ev.descontarPresupuesto
+              }
+            : ev
+        )
+      );
+    }
+
+    toast.success('Gasto actualizado exitosamente.');
+    return finalUpdated;
+  };
+
+  const handleDeleteGasto = async (id) => {
+    const isLocalOrVirtual = typeof id === 'string' && (id.startsWith('g-local-') || id.startsWith('g-auto-') || id.startsWith('g-ev-'));
+    try {
+      if (navigator.onLine && !isLocalOrVirtual) {
+        await apiRequest(`/gastos/${id}`, {
+          method: 'DELETE'
+        });
+      }
+    } catch {}
+
+    setGastos(prev => prev.filter(g => g.id !== id));
+    toast.success('Gasto eliminado correctamente.');
+  };
+
   const handleSyncAndClearLocal = async () => {
     if (!navigator.onLine) {
       toast.error('Se requiere conexión a internet para sincronizar con la base de datos.');
@@ -1049,6 +1205,8 @@ export function useAppViajes(usuario) {
     handleUpdateEvento,
     handleDeleteEvento,
     handleSaveGasto,
+    handleUpdateGasto,
+    handleDeleteGasto,
     handleSyncAndClearLocal,
     handleSyncNow
   };

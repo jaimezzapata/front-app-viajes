@@ -9,9 +9,12 @@ export function NuevoGastoModal({
   isOpen,
   onClose,
   onSaveGasto,
+  onUpdateGasto,
+  gastoAEditar = null,
   monedaDefault = 'COP',
   activeViaje = null
 }) {
+  const isEditing = Boolean(gastoAEditar);
   const todayStr = new Date().toISOString().split('T')[0];
   const [concepto, setConcepto] = useState('');
   const [categoria, setCategoria] = useState('comida');
@@ -33,39 +36,99 @@ export function NuevoGastoModal({
   const availableCategorias = useMemo(() => {
     const cfg = getViajeCategoriasConfig(activeViaje);
     const baseLabels = {
-      comida: 'Comida / Bebida',
-      transporte: 'Transporte',
-      alojamiento: 'Alojamiento',
-      actividades: 'Actividades / Tours',
-      compras: 'Compras',
-      otros: 'Otros'
+      comida: '🍽️ Comida / Bebida',
+      transporte: '✈️ Transporte / Vuelos',
+      alojamiento: '🏨 Alojamiento / Hoteles',
+      actividades: '🎟️ Actividades / Tours',
+      compras: '🛍️ Compras',
+      impuestos: '🪪 Impuestos / Permisos (K-ETA, ETIAS, Visas)',
+      otros: '📌 Otros'
     };
-    return cfg.map((c) => ({
+    const list = cfg.map((c) => ({
       value: c.categoria,
       label:
         baseLabels[c.categoria] ||
         c.categoria.charAt(0).toUpperCase() + c.categoria.slice(1)
     }));
+    if (!list.some((item) => item.value === 'impuestos')) {
+      list.splice(Math.max(0, list.length - 1), 0, {
+        value: 'impuestos',
+        label: baseLabels.impuestos
+      });
+    }
+    return list;
   }, [activeViaje]);
 
-  // Sincronizar moneda inicial según la moneda local del viaje
+  // Sincronizar datos al abrir (creación o edición)
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) return;
+
+    if (gastoAEditar) {
+      const initCurr = (gastoAEditar.monedaOriginal || activeViaje?.monedaLocal || monedaDefault || 'COP').toUpperCase();
+      const initPax = Math.max(1, Math.round(Number(gastoAEditar.cantidadPersonas) || 1));
+      const initModo = gastoAEditar.modoCostoPersonas || 'total';
+      const initSoloMiParte = gastoAEditar.computarSoloMiParte !== undefined
+        ? Boolean(gastoAEditar.computarSoloMiParte)
+        : true;
+
+      setConcepto(gastoAEditar.concepto || '');
+      setCategoria((gastoAEditar.categoria || 'otros').toLowerCase());
+      setTarjetaCredito(gastoAEditar.tarjetaCredito || '');
+      setMonedaOriginal(initCurr);
+      setCantidadPersonas(initPax);
+      setModoCostoPersonas(initModo);
+      setComputarSoloMiParte(initSoloMiParte);
+
+      if (initPax > 1 && initModo === 'por_persona' && gastoAEditar.costoPorPersona) {
+        setMontoOriginal(String(gastoAEditar.costoPorPersona));
+      } else {
+        const totalVal = gastoAEditar.costoTotal ?? gastoAEditar.montoOriginal;
+        setMontoOriginal(totalVal !== undefined && totalVal !== null ? String(totalVal) : '');
+      }
+
+      if (gastoAEditar.fechaGasto) {
+        try {
+          setFechaGasto(new Date(gastoAEditar.fechaGasto).toISOString().split('T')[0]);
+        } catch {
+          setFechaGasto(new Date().toISOString().split('T')[0]);
+        }
+      } else {
+        setFechaGasto(new Date().toISOString().split('T')[0]);
+      }
+
+      setPagadoAdelantado(Boolean(gastoAEditar.pagadoAdelantado));
+      setNoComputar(Boolean(gastoAEditar.noComputar));
+      setEsIngreso(Boolean(gastoAEditar.esIngreso));
+
+      const defaultRate = getExactExchangeRate(initCurr, 'COP');
+      if (gastoAEditar.tasaCambioFecha && Number(gastoAEditar.tasaCambioFecha) > 0) {
+        setTasaManual(String(gastoAEditar.tasaCambioFecha));
+        setUsarTasaManual(Math.abs(Number(gastoAEditar.tasaCambioFecha) - defaultRate) > 0.01);
+      } else {
+        setTasaManual(String(defaultRate));
+        setUsarTasaManual(false);
+      }
+      setErrorMsg('');
+    } else {
       const initialCurr = activeViaje?.monedaLocal || monedaDefault || 'COP';
       setMonedaOriginal(initialCurr);
       setConcepto('');
+      setCategoria('comida');
       setTarjetaCredito('');
       setMontoOriginal('');
       setCantidadPersonas(1);
       setModoCostoPersonas('total');
       setComputarSoloMiParte(true);
+      setPagadoAdelantado(false);
+      setNoComputar(false);
+      setEsIngreso(false);
       setErrorMsg('');
       setFechaGasto(new Date().toISOString().split('T')[0]);
       setUsarTasaManual(false);
       const rate = getExactExchangeRate((initialCurr || 'COP').toUpperCase(), 'COP');
       setTasaManual(String(rate));
     }
-  }, [isOpen, activeViaje, monedaDefault]);
+  }, [isOpen, gastoAEditar, activeViaje, monedaDefault]);
 
   const numMonto = Number(montoOriginal) || 0;
   const currentCode = (monedaOriginal || 'COP').toUpperCase();
@@ -117,10 +180,10 @@ export function NuevoGastoModal({
       // Asegurar fecha válida (usando la fecha ingresada por el usuario con hora actual)
       const selectedDate = fechaGasto ? new Date(`${fechaGasto}T12:00:00.000Z`) : new Date();
 
-      await onSaveGasto({
+      const gastoPayload = {
         concepto: concepto.trim(),
         categoria,
-        tarjetaCredito: tarjetaCredito.trim() || undefined,
+        tarjetaCredito: tarjetaCredito.trim() || null,
         montoOriginal: calculatedTotalOrig,
         monedaOriginal: currentCode,
         tasaCambioFecha: appliedRate, // Congelar tasa exacta (1 unidad extranjera = X COP)
@@ -135,7 +198,13 @@ export function NuevoGastoModal({
         noComputar,
         esIngreso,
         fechaGasto: selectedDate.toISOString()
-      });
+      };
+
+      if (isEditing && onUpdateGasto) {
+        await onUpdateGasto(gastoAEditar.id, gastoPayload);
+      } else {
+        await onSaveGasto(gastoPayload);
+      }
       onClose();
     } catch (err) {
       setErrorMsg(err.message || 'Error al guardar gasto');
@@ -145,7 +214,11 @@ export function NuevoGastoModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Registrar Consumo / Gasto">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEditing ? 'Editar Gasto / Consumo' : 'Registrar Consumo / Gasto'}
+    >
       <form onSubmit={handleSubmit} className="space-y-4">
         {errorMsg && (
           <div className="p-2.5 rounded bg-[#FF2E55]/10 border border-[#FF2E55] text-[#FF2E55] text-xs font-semibold">
@@ -157,14 +230,18 @@ export function NuevoGastoModal({
           <label className="block text-xs font-semibold text-[#8492A6] mb-1 uppercase tracking-wider">
             Concepto del Gasto *
           </label>
-          <input
-            type="text"
-            required
-            placeholder="Ej. Ramen en Shinjuku, Feijoada en Río, Tacos en CDMX..."
-            value={concepto}
-            onChange={(e) => setConcepto(e.target.value)}
-            className="w-full bg-[#151B27] border border-[#1C2436] focus:border-[#00FF85] rounded-lg px-3 py-2 text-sm text-[#F1F5F9] focus:outline-none"
-          />
+            <input
+              type="text"
+              required
+              placeholder={
+                categoria === 'impuestos'
+                  ? 'Ej. Permiso K-ETA Corea, Solicitud ETIAS Europa, Tasa aeroportuaria...'
+                  : 'Ej. Ramen en Shinjuku, Tiquete tren, Hotel...'
+              }
+              value={concepto}
+              onChange={(e) => setConcepto(e.target.value)}
+              className="w-full bg-[#151B27] border border-[#1C2436] focus:border-[#00FF85] rounded-lg px-3 py-2 text-sm text-[#F1F5F9] focus:outline-none"
+            />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -508,7 +585,11 @@ export function NuevoGastoModal({
           disabled={loading}
           className="w-full py-3 px-4 bg-[#00FF85] text-[#080A0F] font-bold text-xs uppercase tracking-wider rounded-lg hover:opacity-90 transition-opacity mt-4 cursor-pointer"
         >
-          {loading ? 'Guardando con tasa exacta...' : 'Registrar Transacción'}
+          {loading
+            ? 'Guardando cambios...'
+            : isEditing
+            ? 'Guardar Cambios del Gasto'
+            : 'Registrar Transacción'}
         </button>
       </form>
     </Modal>

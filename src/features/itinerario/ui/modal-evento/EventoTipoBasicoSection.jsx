@@ -17,6 +17,7 @@ export function EventoTipoBasicoSection({ tipo, onTipoChange, titulo, onTituloCh
           <option value="hotel">🏨 Hotel / Alojamiento</option>
           <option value="atraccion">📍 Atracción / Paseo</option>
           <option value="comida">🍴 Comida / Restaurante</option>
+          <option value="impuestos">🪪 Impuestos / Permisos (K-ETA, ETIAS, Visas)</option>
           <option value="otro">📌 Otro</option>
         </select>
       </div>

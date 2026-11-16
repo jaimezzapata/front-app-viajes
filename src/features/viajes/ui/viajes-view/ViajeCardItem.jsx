@@ -6,10 +6,12 @@ import {
   Share2,
   Edit2,
   Trash2,
-  ArrowRight
+  ArrowRight,
+  CheckSquare
 } from 'lucide-react';
 import MiniFlag from '../../../../components/MiniFlag';
 import { cleanCountryText, fixAccents } from '../../../../utils/countries';
+import { getChecklistStats, getDefaultChecklistForViaje } from '../../../../utils/checklistDefault';
 
 export function ViajeCardItem({
   viaje,
@@ -23,6 +25,7 @@ export function ViajeCardItem({
   const startDate = new Date(viaje.fechaInicio);
   const endDate = new Date(viaje.fechaFin);
   const diffDays = Math.max(1, Math.round((endDate - startDate) / (1000 * 60 * 60 * 24)));
+  const checklistStats = getChecklistStats(getDefaultChecklistForViaje(viaje));
 
   return (
     <div
@@ -108,6 +111,18 @@ export function ViajeCardItem({
               ${(Number(viaje.presupuestoTotal) || 0).toLocaleString('es-CO')} {viaje.monedaBase || 'COP'}
             </span>
           </div>
+
+          {checklistStats.totalItems > 0 && (
+            <div className="flex items-center justify-between text-[#8492A6]">
+              <span className="flex items-center gap-1.5">
+                <CheckSquare className="w-3.5 h-3.5 text-[#B55FE6]" />
+                Checklist
+              </span>
+              <span className="text-[#B55FE6] font-bold font-mono">
+                {checklistStats.completedItems}/{checklistStats.totalItems} ({checklistStats.progressPercent}%)
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

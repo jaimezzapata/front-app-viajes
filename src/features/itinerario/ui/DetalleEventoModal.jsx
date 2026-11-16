@@ -19,7 +19,8 @@ import {
   AlertCircle,
   FileText,
   Users,
-  User
+  User,
+  ShieldCheck
 } from 'lucide-react';
 import Modal from '../../../components/Modal';
 import MiniFlag from '../../../components/MiniFlag';
@@ -37,6 +38,7 @@ const TYPE_CONFIG = {
   atraccion: { label: 'Atracción / Paseo', icon: Compass, color: '#00FF85', bg: 'bg-[#00FF85]/10', border: 'border-[#00FF85]/30' },
   transporte: { label: 'Transporte Terrestre / Tren', icon: Car, color: '#B55FE6', bg: 'bg-[#B55FE6]/10', border: 'border-[#B55FE6]/30' },
   comida: { label: 'Gastronomía / Restaurante', icon: Utensils, color: '#FF9100', bg: 'bg-[#FF9100]/10', border: 'border-[#FF9100]/30' },
+  impuestos: { label: 'Impuestos / Permisos (K-ETA, ETIAS)', icon: ShieldCheck, color: '#FFE500', bg: 'bg-[#FFE500]/10', border: 'border-[#FFE500]/30' },
   otro: { label: 'Evento / Actividad', icon: MapPin, color: '#8492A6', bg: 'bg-[#8492A6]/10', border: 'border-[#8492A6]/30' }
 };
 

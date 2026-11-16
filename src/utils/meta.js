@@ -1,3 +1,5 @@
+import { getDefaultChecklistForViaje } from './checklistDefault';
+
 /**
  * Utilidades para sanitizar texto y deserializar metadata oculta de eventos y viajes
  */
@@ -130,7 +132,13 @@ export function parseViajeMeta(viaje) {
     }
   }
 
-  return {
+  const rawChecklist = Array.isArray(viaje.checklist)
+    ? viaje.checklist
+    : Array.isArray(meta.checklist)
+    ? meta.checklist
+    : null;
+
+  const baseViaje = {
     ...viaje,
     titulo: cleanMetaText(viaje.titulo),
     descripcion: cleanMetaText(descripcion) || null,
@@ -141,5 +149,15 @@ export function parseViajeMeta(viaje) {
     ...(viaje.categoriasPresupuesto || meta.categoriasPresupuesto
       ? { categoriasPresupuesto: viaje.categoriasPresupuesto || meta.categoriasPresupuesto }
       : {})
+  };
+
+  const resolvedChecklist =
+    rawChecklist && rawChecklist.length > 0
+      ? rawChecklist
+      : getDefaultChecklistForViaje(baseViaje);
+
+  return {
+    ...baseViaje,
+    checklist: resolvedChecklist
   };
 }

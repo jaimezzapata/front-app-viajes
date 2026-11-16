@@ -162,6 +162,7 @@ export function BalanceFiltrosPanel({
                   comida: '🍽️ Comida / Restaurantes',
                   actividades: '🎟️ Actividades / Tours',
                   compras: '🛍️ Compras / Souvenirs',
+                  impuestos: '🪪 Impuestos / Permisos (K-ETA, ETIAS)',
                   otros: '📌 Otros Gastos'
                 };
                 return (

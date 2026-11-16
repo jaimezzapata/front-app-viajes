@@ -10,7 +10,7 @@ import { BalanceSemaforoCard } from './balance-view/BalanceSemaforoCard';
 import { BalanceDesgloseTable } from './balance-view/BalanceDesgloseTable';
 import { ConfigurarPresupuestoModal } from './balance-view/ConfigurarPresupuestoModal';
 
-export function BalanceView({ viaje, onOpenNuevoViaje, onUpdateViaje, balance, gastos = [], eventos = [] }) {
+export function BalanceView({ viaje, onOpenNuevoViaje, onUpdateViaje, onEditGasto, balance, gastos = [], eventos = [] }) {
   const [isConfigPresupuestoOpen, setIsConfigPresupuestoOpen] = useState(false);
   const {
     exportingExcel,
@@ -192,6 +192,7 @@ export function BalanceView({ viaje, onOpenNuevoViaje, onUpdateViaje, balance, g
         hasActiveFilters={hasActiveFilters}
         gastos={hasActiveFilters ? filteredGastos : enrichedGastos}
         onOpenConfigPresupuesto={onUpdateViaje ? () => setIsConfigPresupuestoOpen(true) : undefined}
+        onEditGasto={onEditGasto}
       />
 
       {/* SECCIÓN DETALLADA: DESGLOSE Y AUDITORÍA DE PAGOS */}
@@ -200,6 +201,7 @@ export function BalanceView({ viaje, onOpenNuevoViaje, onUpdateViaje, balance, g
         filteredTotals={filteredTotals}
         hasActiveFilters={hasActiveFilters}
         clearAllFilters={clearAllFilters}
+        onEditGasto={onEditGasto}
       />
 
       {/* Modal para Modificar Presupuesto Total, % y Categorías */}

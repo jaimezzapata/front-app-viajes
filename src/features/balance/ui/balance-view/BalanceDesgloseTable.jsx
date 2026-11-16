@@ -10,7 +10,9 @@ import {
   ShoppingBag,
   Tag,
   Calendar,
-  Users
+  Users,
+  ShieldCheck,
+  Edit2
 } from 'lucide-react';
 import MiniFlag from '../../../../components/MiniFlag';
 import { cleanCountryText } from '../../../../utils/countries';
@@ -26,6 +28,8 @@ const CATEGORIA_ICONS = {
   actividades: Camera,
   tour: Camera,
   compras: ShoppingBag,
+  impuestos: ShieldCheck,
+  permisos: ShieldCheck,
   otros: Tag
 };
 
@@ -33,7 +37,8 @@ export function BalanceDesgloseTable({
   filteredGastos = [],
   filteredTotals,
   hasActiveFilters,
-  clearAllFilters
+  clearAllFilters,
+  onEditGasto
 }) {
   const showTotalDesembolsado =
     Math.round(filteredTotals?.totalDesembolsadoCOP || 0) > Math.round(filteredTotals?.cop || 0);
@@ -105,6 +110,7 @@ export function BalanceDesgloseTable({
                 <th className="py-2.5 px-3">Modalidad</th>
                 <th className="py-2.5 px-3 text-right">Total Gastado (TC)</th>
                 <th className="py-2.5 px-3 text-right">Por Persona (COP)</th>
+                {onEditGasto && <th className="py-2.5 px-3 text-center">Acción</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1C2436]/60">
@@ -198,6 +204,19 @@ export function BalanceDesgloseTable({
                         )}
                       </div>
                     </td>
+                    {onEditGasto && (
+                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => onEditGasto(g)}
+                          title="Editar este gasto"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#151B27] border border-[#1C2436] hover:border-[#00FF85] text-[#8492A6] hover:text-[#00FF85] text-[10px] font-bold transition-colors cursor-pointer"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                          <span>Editar</span>
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -280,6 +299,16 @@ export function BalanceDesgloseTable({
                         <span className="px-1.5 py-0.2 rounded bg-[#FF2E55]/15 text-[#FF2E55] font-bold uppercase text-[9px]">
                           Terceros
                         </span>
+                      )}
+                      {onEditGasto && (
+                        <button
+                          type="button"
+                          onClick={() => onEditGasto(g)}
+                          className="px-2 py-0.5 rounded bg-[#0E121B] border border-[#00FF85]/30 text-[#00FF85] font-bold uppercase text-[9px] inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <Edit2 className="w-2.5 h-2.5" />
+                          <span>Editar</span>
+                        </button>
                       )}
                     </div>
                   </div>

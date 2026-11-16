@@ -11,7 +11,9 @@ import {
   Calendar,
   AlertCircle,
   Settings2,
-  Users
+  Users,
+  ShieldCheck,
+  Edit2
 } from 'lucide-react';
 import Modal from '../../../../components/Modal';
 import MiniFlag from '../../../../components/MiniFlag';
@@ -28,6 +30,8 @@ const CATEGORIA_ICONS = {
   actividades: Camera,
   tour: Camera,
   compras: ShoppingBag,
+  impuestos: ShieldCheck,
+  permisos: ShieldCheck,
   otros: Tag
 };
 
@@ -35,7 +39,8 @@ export function BalanceSemaforoCard({
   displayBalance,
   hasActiveFilters,
   gastos = [],
-  onOpenConfigPresupuesto
+  onOpenConfigPresupuesto,
+  onEditGasto
 }) {
   const [modalCategoria, setModalCategoria] = useState(null);
 
@@ -134,7 +139,9 @@ export function BalanceSemaforoCard({
                     <div className="flex items-center gap-2 flex-wrap">
                       <Icon className="w-3.5 h-3.5 text-[#00E5FF] group-hover:scale-110 transition-transform" />
                       <span className="font-bold uppercase tracking-wider text-[#F1F5F9] group-hover:text-[#00E5FF] transition-colors">
-                        {cat.categoria}
+                        {cat.categoria === 'impuestos'
+                          ? 'impuestos / permisos (K-ETA, ETIAS)'
+                          : cat.categoria}
                       </span>
                       {cat.porcentajeAsignado !== undefined && (
                         <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-[#151B27] border border-[#1C2436] text-[#8492A6]">
@@ -272,6 +279,7 @@ export function BalanceSemaforoCard({
                     <th className="py-2.5 px-3">Modalidad</th>
                     <th className="py-2.5 px-3 text-right">Total Gastado (TC)</th>
                     <th className="py-2.5 px-3 text-right">Por Persona (COP)</th>
+                    {onEditGasto && <th className="py-2.5 px-3 text-center">Acción</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#1C2436]/60">
@@ -366,6 +374,21 @@ export function BalanceSemaforoCard({
                             )}
                           </div>
                         </td>
+                        {onEditGasto && (
+                          <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setModalCategoria(null);
+                                onEditGasto(g);
+                              }}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#151B27] border border-[#1C2436] hover:border-[#00FF85] text-[#8492A6] hover:text-[#00FF85] text-[10px] font-bold transition-colors cursor-pointer"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                              <span>Editar</span>
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     );
                   })}

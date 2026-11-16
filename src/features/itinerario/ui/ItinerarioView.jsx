@@ -24,7 +24,8 @@ import {
   Calendar,
   Eye,
   Users,
-  User
+  User,
+  ShieldCheck
 } from 'lucide-react';
 import WatermarkIcon from '../../../components/WatermarkIcon';
 import WorldMapModal from '../../../components/WorldMapModal';
@@ -46,6 +47,8 @@ const TYPE_ICONS = {
   atraccion: Compass,
   transporte: Car,
   comida: Utensils,
+  impuestos: ShieldCheck,
+  permisos: ShieldCheck,
   otro: MapPin
 };
 
@@ -55,7 +58,8 @@ const FILTERS = [
   { id: 'transporte', label: 'Transporte' },
   { id: 'hotel', label: 'Hoteles' },
   { id: 'atraccion', label: 'Atracciones' },
-  { id: 'comida', label: 'Comida' }
+  { id: 'comida', label: 'Comida' },
+  { id: 'impuestos', label: 'Impuestos / Permisos' }
 ];
 
 export function ItinerarioView({
