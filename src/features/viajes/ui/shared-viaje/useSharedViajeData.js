@@ -3,6 +3,7 @@ import { extractVisitedCountries } from '../../../../utils/countries';
 import { extractFlightTrajectories } from '../../../../utils/geoCoordinates';
 import { calculateTripBalance } from '../../../../utils/balance';
 import { parseEventoMeta, parseViajeMeta } from '../../../../utils/meta';
+import { reconcileGastosWithEventos } from '../../../../hooks/useAppViajes';
 import { apiRequest } from '../../../../services/api';
 import { groupEventosByCountryCity } from '../../../../utils/itinerarioGrouping';
 
@@ -124,7 +125,8 @@ export function useSharedViajeData({ shareId, shareDataRaw }) {
   const { totalGastadoCOP, totalGastadoUSD, diffDays, status } = useMemo(() => {
     if (!viaje) return { totalGastadoCOP: 0, totalGastadoUSD: 0, diffDays: 0, status: null };
 
-    const tripBalance = calculateTripBalance(viaje, gastos);
+    const reconciled = reconcileGastosWithEventos(gastos, eventos, viaje.id);
+    const tripBalance = calculateTripBalance(viaje, reconciled);
 
     const start = new Date(viaje.fechaInicio);
     const end = new Date(viaje.fechaFin);

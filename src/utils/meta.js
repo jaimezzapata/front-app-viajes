@@ -42,11 +42,14 @@ export function parseEventoMeta(evento) {
       ? Number(meta.costoTotal)
       : rawCosto);
 
-  const costoPorPersona = evento.costoPorPersona !== undefined && Number(evento.costoPorPersona) > 0
-    ? Number(evento.costoPorPersona)
-    : (meta.costoPorPersona !== undefined && Number(meta.costoPorPersona) > 0
-      ? Number(meta.costoPorPersona)
-      : (cantidadPersonas > 1 ? Number((costoTotal / cantidadPersonas).toFixed(2)) : costoTotal));
+  const isHotel = (evento.tipo || '').trim().toLowerCase() === 'hotel';
+  const costoPorPersona = isHotel
+    ? costoTotal
+    : (evento.costoPorPersona !== undefined && Number(evento.costoPorPersona) > 0
+      ? Number(evento.costoPorPersona)
+      : (meta.costoPorPersona !== undefined && Number(meta.costoPorPersona) > 0
+        ? Number(meta.costoPorPersona)
+        : (cantidadPersonas > 1 ? Number((costoTotal / cantidadPersonas).toFixed(2)) : costoTotal)));
 
   return {
     ...evento,
@@ -83,11 +86,13 @@ export function parseGastoMeta(gasto) {
   }
 
   const cleanConcepto = cleanMetaText(concepto);
+  const hasExplicitPax = gasto.cantidadPersonas !== undefined || meta.cantidadPersonas !== undefined;
   const rawPax = gasto.cantidadPersonas !== undefined
     ? Number(gasto.cantidadPersonas)
     : (meta.cantidadPersonas !== undefined ? Number(meta.cantidadPersonas) : 1);
   const cantidadPersonas = !isNaN(rawPax) && rawPax >= 1 ? Math.round(rawPax) : 1;
 
+  const hasExplicitComputar = gasto.computarSoloMiParte !== undefined || meta.computarSoloMiParte !== undefined;
   const modoCostoPersonas = gasto.modoCostoPersonas || meta.modoCostoPersonas || 'total';
   const computarSoloMiParte = gasto.computarSoloMiParte !== undefined
     ? Boolean(gasto.computarSoloMiParte)
@@ -111,6 +116,8 @@ export function parseGastoMeta(gasto) {
     concepto: cleanConcepto,
     tarjetaCredito: gasto.tarjetaCredito !== undefined ? gasto.tarjetaCredito : (meta.tarjetaCredito || null),
     cantidadPersonas,
+    hasExplicitPax,
+    hasExplicitComputar,
     modoCostoPersonas,
     computarSoloMiParte,
     costoTotal,
@@ -138,6 +145,17 @@ export function parseViajeMeta(viaje) {
     ? meta.checklist
     : null;
 
+  const rawPresupuestoPersonas =
+    viaje.presupuestoPersonas !== undefined && viaje.presupuestoPersonas !== null
+      ? Number(viaje.presupuestoPersonas)
+      : meta.presupuestoPersonas !== undefined && meta.presupuestoPersonas !== null
+      ? Number(meta.presupuestoPersonas)
+      : 1;
+  const presupuestoPersonas =
+    !isNaN(rawPresupuestoPersonas) && rawPresupuestoPersonas >= 1
+      ? Math.round(rawPresupuestoPersonas)
+      : 1;
+
   const baseViaje = {
     ...viaje,
     titulo: cleanMetaText(viaje.titulo),
@@ -146,6 +164,7 @@ export function parseViajeMeta(viaje) {
     escalas: viaje.escalas || meta.escalas || null,
     tipoViaje: viaje.tipoViaje || meta.tipoViaje || 'unico',
     destinosMultidestino: viaje.destinosMultidestino || meta.destinosMultidestino || [],
+    presupuestoPersonas,
     ...(viaje.categoriasPresupuesto || meta.categoriasPresupuesto
       ? { categoriasPresupuesto: viaje.categoriasPresupuesto || meta.categoriasPresupuesto }
       : {})

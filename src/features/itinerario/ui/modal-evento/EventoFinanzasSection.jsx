@@ -27,17 +27,25 @@ export function EventoFinanzasSection({
   setPagadoAdelantado
 }) {
   const isRoundTripFlight = tipo === 'vuelo' && tipoTrayecto === 'round-trip';
+  const isAlojamiento = (tipo || '').toLowerCase() === 'hotel';
   const paxCount = Math.max(1, Math.round(Number(cantidadPersonas) || 1));
   const rawCosto = Number(costo) || 0;
   const currCode = (moneda || 'COP').toUpperCase();
 
-  const calculatedTotal = paxCount > 1 && modoCostoPersonas === 'por_persona'
-    ? Number((rawCosto * paxCount).toFixed(2))
-    : rawCosto;
-  const calculatedPerPerson = paxCount > 1
-    ? (modoCostoPersonas === 'por_persona' ? rawCosto : Number((rawCosto / paxCount).toFixed(2)))
-    : rawCosto;
-  const calculatedCompanions = Math.max(0, Number((calculatedTotal - calculatedPerPerson).toFixed(2)));
+  // Regla de negocio: El alojamiento para 1 o 2 personas tiene el mismo valor (no aplica regla del 50%)
+  const calculatedTotal = isAlojamiento
+    ? rawCosto
+    : (paxCount > 1 && modoCostoPersonas === 'por_persona'
+      ? Number((rawCosto * paxCount).toFixed(2))
+      : rawCosto);
+  const calculatedPerPerson = isAlojamiento
+    ? rawCosto
+    : (paxCount > 1
+      ? (modoCostoPersonas === 'por_persona' ? rawCosto : Number((rawCosto / paxCount).toFixed(2)))
+      : rawCosto);
+  const calculatedCompanions = isAlojamiento
+    ? 0
+    : Math.max(0, Number((calculatedTotal - calculatedPerPerson).toFixed(2)));
 
   const totalCOP = currCode === 'COP' ? calculatedTotal : convertCurrency(calculatedTotal, currCode, 'COP');
   const perPersonCOP = currCode === 'COP' ? calculatedPerPerson : convertCurrency(calculatedPerPerson, currCode, 'COP');
@@ -61,7 +69,7 @@ export function EventoFinanzasSection({
 
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
             {[
-              { count: 1, label: '1 Persona', sub: 'Solo yo' },
+              { count: 1, label: '1 Persona', sub: 'Individual' },
               { count: 2, label: '2 Personas', sub: 'Pareja / Dúo' },
               { count: 3, label: '3 Personas', sub: 'Grupo x3' }
             ].map((opt) => {
@@ -169,7 +177,7 @@ export function EventoFinanzasSection({
         </div>
         {isRoundTripFlight && (
           <span className="text-[10px] text-[#8492A6] mt-1 block">
-            ✓ Se registrará en tus gastos para no duplicar el cobro en el presupuesto.
+            ✓ Se registrará en gastos para no duplicar el cobro en el presupuesto.
           </span>
         )}
 
@@ -201,32 +209,38 @@ export function EventoFinanzasSection({
 
               <div className="p-2 rounded-lg bg-[#151B27] border border-[#00FF85]/30">
                 <span className="text-[10px] font-semibold text-[#00FF85] uppercase block">
-                  👤 Valor por Persona (1 cupo)
+                  {isAlojamiento ? '🏨 Valor para 1 o 2 Personas (Habitación)' : '👤 Valor por Persona (1 cupo)'}
                 </span>
                 <span className="text-sm font-black text-[#00FF85] block mt-0.5">
                   {formatCurrencyDisplay(calculatedPerPerson, currCode, true)}
                 </span>
                 {currCode !== 'COP' && (
                   <span className="text-[10px] text-[#8492A6] font-mono">
-                    ≈ $ {Math.round(perPersonCOP).toLocaleString()} COP c/u
+                    ≈ $ {Math.round(perPersonCOP).toLocaleString()} COP
                   </span>
                 )}
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-[11px] text-[#8492A6] px-1">
-              <span>
-                Parte de acompañante{paxCount - 1 > 1 ? 's' : ''} ({paxCount - 1} {paxCount - 1 === 1 ? 'persona' : 'personas'}):
-              </span>
-              <strong className="text-[#CBD5E1] font-mono">
-                {formatCurrencyDisplay(calculatedCompanions, currCode, true)}
-              </strong>
-            </div>
+            {isAlojamiento ? (
+              <div className="text-[11px] text-[#00E5FF] bg-[#00E5FF]/10 border border-[#00E5FF]/30 rounded-lg px-2.5 py-1.5 font-medium">
+                🏨 Regla de Alojamiento: El costo de hospedaje para 1 o {paxCount} personas es el mismo (no se divide al 50%).
+              </div>
+            ) : (
+              <div className="flex items-center justify-between text-[11px] text-[#8492A6] px-1">
+                <span>
+                  Parte de acompañante{paxCount - 1 > 1 ? 's' : ''} ({paxCount - 1} {paxCount - 1 === 1 ? 'persona' : 'personas'}):
+                </span>
+                <strong className="text-[#CBD5E1] font-mono">
+                  {formatCurrencyDisplay(calculatedCompanions, currCode, true)}
+                </strong>
+              </div>
+            )}
 
-            {setComputarSoloMiParte && descontarPresupuesto && (
+            {!isAlojamiento && setComputarSoloMiParte && descontarPresupuesto && (
               <div className="pt-2 border-t border-[#1C2436] flex flex-col gap-1.5">
                 <span className="text-[10px] font-bold text-[#8492A6] uppercase">
-                  ¿Cómo descontar de tu presupuesto personal?
+                  ¿Cómo computar en el presupuesto del viaje?
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                   <button
@@ -238,9 +252,9 @@ export function EventoFinanzasSection({
                         : 'bg-[#151B27] border-[#1C2436] text-[#8492A6]'
                     }`}
                   >
-                    <span className="block text-[#00FF85]">✓ Solo mi parte (1 persona)</span>
+                    <span className="block text-[#00FF85]">✓ Por persona (1 cupo)</span>
                     <span className="text-[10px] text-[#8492A6] font-normal">
-                      Descuenta {formatCurrencyDisplay(calculatedPerPerson, currCode, false)} del ppto y registra {formatCurrencyDisplay(calculatedTotal, currCode, false)} en total TC.
+                      Descuenta {formatCurrencyDisplay(calculatedPerPerson, currCode, false)} en el ppto individual y registra {formatCurrencyDisplay(calculatedTotal, currCode, false)} en total TC.
                     </span>
                   </button>
                   <button
@@ -254,7 +268,7 @@ export function EventoFinanzasSection({
                   >
                     <span className="block text-[#FFE500]">Descontar todo ({paxCount} personas)</span>
                     <span className="text-[10px] text-[#8492A6] font-normal">
-                      Descuenta los {formatCurrencyDisplay(calculatedTotal, currCode, false)} completos de tu presupuesto.
+                      Descuenta los {formatCurrencyDisplay(calculatedTotal, currCode, false)} completos del presupuesto.
                     </span>
                   </button>
                 </div>
@@ -346,7 +360,7 @@ export function EventoFinanzasSection({
             <p className="text-[11px] text-[#8492A6] mt-0.5 leading-snug">
               {descontarPresupuesto
                 ? 'Se restará del saldo disponible del viaje y computará en la categoría correspondiente.'
-                : 'No afectará tu presupuesto personal disponible (útil para compras de terceros, regalos o presupuesto fuera de bolsa).'}
+                : 'No afectará el presupuesto operativo disponible (útil para tiquetes principales fuera de bolsa, encargos o gastos excluidos).'}
             </p>
           </div>
         </label>
@@ -374,7 +388,7 @@ export function EventoFinanzasSection({
             <p className="text-[11px] text-[#8492A6] mt-0.5 leading-snug">
               {pagadoAdelantado
                 ? 'Costo previo al viaje (costo hundido). Queda registrado en gastos y balance, pero no requerirá efectivo o cobro durante la estancia.'
-                : 'Gasto que pagarás durante el viaje en ruta con tu dinero diario.'}
+                : 'Gasto pendiente de pago durante el viaje en ruta.'}
             </p>
           </div>
         </label>

@@ -31,6 +31,7 @@ export function useNuevoViajeForm({
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
   const [presupuestoTotal, setPresupuestoTotal] = useState('');
+  const [presupuestoPersonas, setPresupuestoPersonas] = useState('1');
   const [monedaLocal, setMonedaLocal] = useState('USD');
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
@@ -63,6 +64,7 @@ export function useNuevoViajeForm({
       setFechaInicio(viajeAEditar.fechaInicio ? viajeAEditar.fechaInicio.split('T')[0] : '');
       setFechaFin(viajeAEditar.fechaFin ? viajeAEditar.fechaFin.split('T')[0] : '');
       setPresupuestoTotal(viajeAEditar.presupuestoTotal !== undefined ? String(viajeAEditar.presupuestoTotal) : '');
+      setPresupuestoPersonas(String(Math.max(1, Math.round(Number(viajeAEditar.presupuestoPersonas) || 1))));
       setMonedaLocal(viajeAEditar.monedaLocal || 'USD');
     } else {
       setStep(1);
@@ -79,6 +81,7 @@ export function useNuevoViajeForm({
       setFechaInicio('');
       setFechaFin('');
       setPresupuestoTotal('');
+      setPresupuestoPersonas('1');
       setMonedaLocal('USD');
     }
     setErrorMsg('');
@@ -215,6 +218,7 @@ export function useNuevoViajeForm({
         fechaInicio: new Date(fechaInicio).toISOString(),
         fechaFin: new Date(fechaFin).toISOString(),
         presupuestoTotal: presupuestoTotal ? Number(presupuestoTotal) : 0,
+        presupuestoPersonas: Math.max(1, Math.round(Number(presupuestoPersonas) || 1)),
         monedaBase: viajeAEditar?.monedaBase || 'COP',
         monedaReferencia: viajeAEditar?.monedaReferencia || 'USD',
         monedaLocal: monedaLocal.toUpperCase()
@@ -256,6 +260,8 @@ export function useNuevoViajeForm({
     setFechaFin,
     presupuestoTotal,
     setPresupuestoTotal,
+    presupuestoPersonas,
+    setPresupuestoPersonas,
     monedaLocal,
     setMonedaLocal,
     errorMsg,

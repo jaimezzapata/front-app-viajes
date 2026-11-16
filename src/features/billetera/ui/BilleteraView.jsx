@@ -163,7 +163,7 @@ export function BilleteraView({
         <div className="p-10 rounded-xl bg-[#0E121B] border border-[#1C2436] text-center relative z-10">
           <Wallet className="w-10 h-10 text-[#8492A6] mx-auto mb-3 opacity-40" />
           <p className="text-sm font-semibold text-[#F1F5F9]">No hay gastos registrados aún</p>
-          <p className="text-xs text-[#8492A6] mt-1">Usa el botón para añadir consumos en cualquiera de las monedas de tu viaje.</p>
+          <p className="text-xs text-[#8492A6] mt-1">Usa el botón para añadir consumos en cualquiera de las monedas de la ruta.</p>
         </div>
       ) : (
         <div className="space-y-3 relative z-10">
@@ -277,7 +277,9 @@ export function BilleteraView({
                         <p className="text-[11px] font-bold text-[#00E5FF] m-0 mt-0.5 text-left sm:text-right flex items-center sm:justify-end gap-1">
                           <User className="w-3 h-3 text-[#00E5FF]" />
                           <span>
-                            Por persona: $ {Math.round(g.montoPorPersonaCOP || ((g.montoCOP || 0) / Number(g.cantidadPersonas))).toLocaleString()} COP c/u
+                            {(g.categoria || '').toLowerCase() === 'alojamiento'
+                              ? `Habitación (1 o ${g.cantidadPersonas}p): $ ${Math.round(g.montoTotalCOP || g.montoCOP || 0).toLocaleString('es-CO')} COP (mismo valor)`
+                              : `Por persona (50%): $ ${Math.round(g.montoPorPersonaCOP || ((g.montoCOP || 0) / Number(g.cantidadPersonas))).toLocaleString('es-CO')} COP c/u`}
                           </span>
                         </p>
                       )}
@@ -328,7 +330,7 @@ export function BilleteraView({
                 {isExpanded && (
                   <div className="p-2.5 rounded-lg bg-[#151B27]/90 border border-[#1C2436] space-y-1.5 relative z-10 animate-in fade-in duration-200">
                     <span className="text-[10px] font-semibold text-[#8492A6] uppercase tracking-wider block">
-                      Equivalencia en las monedas de tu viaje:
+                      Equivalencia en las monedas de la ruta:
                     </span>
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                       {otherConversions.map((conv) => (

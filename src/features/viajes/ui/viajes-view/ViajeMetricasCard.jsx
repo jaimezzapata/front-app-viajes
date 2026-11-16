@@ -1,17 +1,19 @@
 import React from 'react';
-import { DollarSign, TrendingUp, Sparkles } from 'lucide-react';
+import { DollarSign, TrendingUp, Sparkles, Ban, CheckCircle2 } from 'lucide-react';
 
 export function ViajeMetricasCard({ tripMetrics }) {
   if (!tripMetrics) return null;
 
+  const hasFueraPresupuesto = (tripMetrics.totalFueraPresupuestoCOP || 0) > 0;
+
   return (
     <section className="space-y-3 relative z-10">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
+      <div className={`grid grid-cols-2 ${hasFueraPresupuesto ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-2.5 sm:gap-3.5`}>
         {/* Presupuesto Total */}
         <div className="bg-[#0E121B] border border-[#1C2436] rounded-xl p-3.5">
           <p className="text-[10px] uppercase font-bold tracking-wider text-[#8492A6] m-0 flex items-center gap-1">
             <DollarSign className="w-3 h-3 text-[#FFE500]" />
-            Presupuesto
+            Presupuesto (Sin Tiquetes)
           </p>
           <p className="text-lg sm:text-xl font-black text-[#FFE500] mt-0.5 m-0 truncate">
             ${tripMetrics.presupuesto.toLocaleString('es-CO')}
@@ -21,32 +23,49 @@ export function ViajeMetricasCard({ tripMetrics }) {
           </span>
         </div>
 
-        {/* Total Gastado en COP */}
-        <div className="bg-[#0E121B] border border-[#1C2436] rounded-xl p-3.5">
-          <p className="text-[10px] uppercase font-bold tracking-wider text-[#8492A6] m-0 flex items-center gap-1">
-            <TrendingUp className="w-3 h-3 text-[#00E5FF]" />
-            Gastado (COP)
+        {/* Total Gastado en Presupuesto (1 Persona) */}
+        <div className="bg-[#0E121B] border border-[#00FF85]/30 rounded-xl p-3.5">
+          <p className="text-[10px] uppercase font-bold tracking-wider text-[#00FF85] m-0 flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3 text-[#00FF85]" />
+            Gastado En Presupuesto (1p)
           </p>
-          <p className="text-lg sm:text-xl font-black text-[#00E5FF] mt-0.5 m-0 truncate">
+          <p className="text-lg sm:text-xl font-black text-[#00FF85] mt-0.5 m-0 truncate">
             ${Math.round(tripMetrics.totalGastadoCOP).toLocaleString('es-CO')}
           </p>
           <span className="text-[10px] text-[#8492A6] mt-0.5 inline-block">
-            {tripMetrics.gastosComputablesCount} en presupuesto
-            {tripMetrics.totalFueraPresupuestoCOP > 0 && ` • $${Math.round(tripMetrics.totalFueraPresupuestoCOP).toLocaleString('es-CO')} fuera`}
+            {tripMetrics.gastosComputablesCount} registros incluidos
+            {Math.round(tripMetrics.totalDesembolsadoCOP || 0) > Math.round(tripMetrics.totalGastadoCOP || 0) &&
+              ` • TC (2p): $${Math.round(tripMetrics.totalDesembolsadoCOP).toLocaleString('es-CO')}`}
           </span>
         </div>
 
-        {/* Total Gastado en USD */}
+        {/* Fuera de Presupuesto (Tiquetes Salida y Llegada) */}
+        {hasFueraPresupuesto && (
+          <div className="bg-[#0E121B] border border-[#FF2E55]/30 rounded-xl p-3.5">
+            <p className="text-[10px] uppercase font-bold tracking-wider text-[#FF2E55] m-0 flex items-center gap-1">
+              <Ban className="w-3 h-3 text-[#FF2E55]" />
+              Fuera de Presupuesto
+            </p>
+            <p className="text-lg sm:text-xl font-black text-[#FF2E55] mt-0.5 m-0 truncate">
+              ${Math.round(tripMetrics.totalFueraPresupuestoCOP).toLocaleString('es-CO')}
+            </p>
+            <span className="text-[10px] text-[#8492A6] mt-0.5 inline-block">
+              Tiquetes salida/llegada (No suma al ppto)
+            </span>
+          </div>
+        )}
+
+        {/* Total Gastado en USD (En Presupuesto) */}
         <div className="bg-[#0E121B] border border-[#1C2436] rounded-xl p-3.5">
           <p className="text-[10px] uppercase font-bold tracking-wider text-[#8492A6] m-0 flex items-center gap-1">
             <DollarSign className="w-3 h-3 text-[#B55FE6]" />
-            Gastado (USD)
+            En Presupuesto (USD)
           </p>
           <p className="text-lg sm:text-xl font-black text-[#B55FE6] mt-0.5 m-0 truncate">
             ${tripMetrics.totalGastadoUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
           <span className="text-[10px] text-[#8492A6] mt-0.5 inline-block">
-            Tasa exacta capturada
+            Equivalente de lo incluido
           </span>
         </div>
 

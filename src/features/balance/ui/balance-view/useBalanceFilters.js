@@ -202,12 +202,15 @@ export function useBalanceFilters({ viaje, gastos = [], eventos = [], balance = 
     let porPersonaCOP = 0;
     let porPersonaUSD = 0;
     let acompanantesCOP = 0;
+    let fueraPresupuestoCOP = 0;
     let adelCOP = 0;
     let adelTotalCOP = 0;
     let enRutaCOP = 0;
 
+    const presupuestoPersonas = Math.max(1, Math.round(Number(viaje?.presupuestoPersonas) || 1));
+
     filteredGastos.forEach(g => {
-      const amounts = getGastoAmounts(g);
+      const amounts = getGastoAmounts(g, presupuestoPersonas);
       const {
         montoTotalCOP,
         montoTotalUSD,
@@ -228,25 +231,31 @@ export function useBalanceFilters({ viaje, gastos = [], eventos = [], balance = 
         return;
       }
 
-      totalDesembolsadoCOP += montoTotalCOP;
-      totalDesembolsadoUSD += montoTotalUSD;
-      porPersonaCOP += montoPorPersonaCOP;
-      porPersonaUSD += montoPorPersonaUSD;
-      acompanantesCOP += montoAcompanantesCOP;
-
       if (!g.noComputar) {
         cop += montoComputableCOP;
         usd += montoComputableUSD;
+        totalDesembolsadoCOP += montoTotalCOP;
+        totalDesembolsadoUSD += montoTotalUSD;
+        porPersonaCOP += montoPorPersonaCOP;
+        porPersonaUSD += montoPorPersonaUSD;
+        acompanantesCOP += montoAcompanantesCOP;
+        if (g.pagadoAdelantado) {
+          adelCOP += montoComputableCOP;
+          adelTotalCOP += montoTotalCOP;
+        } else {
+          enRutaCOP += montoComputableCOP;
+        }
       } else {
-        cop += montoTotalCOP;
-        usd += montoTotalUSD;
-      }
-
-      if (g.pagadoAdelantado) {
-        adelCOP += g.noComputar ? montoTotalCOP : montoComputableCOP;
-        adelTotalCOP += montoTotalCOP;
-      } else if (!g.noComputar) {
-        enRutaCOP += montoComputableCOP;
+        fueraPresupuestoCOP += montoTotalCOP;
+        if (selectedPresupuesto === 'fuera_presupuesto') {
+          // Si el usuario filtró explícitamente para ver los gastos fuera de presupuesto
+          cop += montoTotalCOP;
+          usd += montoTotalUSD;
+          totalDesembolsadoCOP += montoTotalCOP;
+          totalDesembolsadoUSD += montoTotalUSD;
+          porPersonaCOP += montoPorPersonaCOP;
+          porPersonaUSD += montoPorPersonaUSD;
+        }
       }
     });
 
@@ -258,11 +267,12 @@ export function useBalanceFilters({ viaje, gastos = [], eventos = [], balance = 
       porPersonaCOP,
       porPersonaUSD,
       acompanantesCOP,
+      fueraPresupuestoCOP,
       adelCOP,
       adelTotalCOP,
       enRutaCOP
     };
-  }, [filteredGastos]);
+  }, [filteredGastos, selectedPresupuesto, viaje?.presupuestoPersonas]);
 
   // Balance dinámico para la selección
   const dynamicBalance = useMemo(() => {

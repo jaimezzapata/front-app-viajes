@@ -5,6 +5,7 @@ import { cleanCountryText } from '../../../utils/countries';
 import { useBalanceFilters } from './balance-view/useBalanceFilters';
 import { BalanceFiltrosPanel } from './balance-view/BalanceFiltrosPanel';
 import { BalanceKpiCards } from './balance-view/BalanceKpiCards';
+import { BalanceTortaCard } from './balance-view/BalanceTortaCard';
 import { BalanceMultidivisaGrid } from './balance-view/BalanceMultidivisaGrid';
 import { BalanceSemaforoCard } from './balance-view/BalanceSemaforoCard';
 import { BalanceDesgloseTable } from './balance-view/BalanceDesgloseTable';
@@ -175,6 +176,15 @@ export function BalanceView({ viaje, onOpenNuevoViaje, onUpdateViaje, onEditGast
         hasActiveFilters={hasActiveFilters}
         filteredTotals={filteredTotals}
         balance={balance}
+        onOpenConfigPresupuesto={onUpdateViaje ? () => setIsConfigPresupuestoOpen(true) : undefined}
+      />
+
+      {/* Gráfico de Torta: Lo Gastado vs. Lo que Resta con Efecto Semáforo */}
+      <BalanceTortaCard
+        viaje={viaje}
+        displayBalance={displayBalance}
+        hasActiveFilters={hasActiveFilters}
+        filteredTotals={filteredTotals}
         onOpenConfigPresupuesto={onUpdateViaje ? () => setIsConfigPresupuestoOpen(true) : undefined}
       />
 

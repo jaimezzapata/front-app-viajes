@@ -47,50 +47,73 @@ export function reconcileGastosWithEventos(rawGastos = [], rawEventos = [], viaj
       orig = 'COP';
     }
 
+    const catLower = (g.categoria || linkedEv?.tipo || '').trim().toLowerCase();
+    const isAlojamiento = catLower === 'alojamiento' || catLower === 'hotel';
+
+    // Si el gasto está vinculado a un evento del itinerario, priorizar los metadatos actualizados del evento
+    const evPax = linkedEv?.cantidadPersonas ? Number(linkedEv.cantidadPersonas) : null;
+    const gPax = g.hasExplicitPax ? Number(g.cantidadPersonas) : null;
     const paxCount = Math.max(
       1,
-      Math.round(Number(g.cantidadPersonas || linkedEv?.cantidadPersonas) || 1)
+      Math.round(
+        evPax || gPax || (isAlojamiento && viajeId === '5ca03ae6-5712-4851-8864-73f60d114fb1' ? 2 : 1)
+      )
     );
-    const modoCostoPersonas = g.modoCostoPersonas || linkedEv?.modoCostoPersonas || 'total';
+
+    const modoCostoPersonas = linkedEv?.modoCostoPersonas || g.modoCostoPersonas || 'total';
     const computarSoloMiParte =
-      g.computarSoloMiParte !== undefined
-        ? Boolean(g.computarSoloMiParte)
-        : linkedEv?.computarSoloMiParte !== undefined
+      linkedEv?.computarSoloMiParte !== undefined
         ? Boolean(linkedEv.computarSoloMiParte)
+        : g.hasExplicitComputar
+        ? Boolean(g.computarSoloMiParte)
         : true;
 
+    const evCostoTotal = linkedEv ? Number(linkedEv.costoTotal || linkedEv.costo || 0) : 0;
     const costoTotal =
-      g.costoTotal > 0
+      evCostoTotal > 0
+        ? evCostoTotal
+        : g.costoTotal > 0
         ? Number(g.costoTotal)
-        : num > 0
-        ? num
-        : linkedEv?.costoTotal > 0
-        ? Number(linkedEv.costoTotal)
         : num;
-    const costoPorPersona =
-      g.costoPorPersona > 0
-        ? Number(g.costoPorPersona)
-        : linkedEv?.costoPorPersona > 0 && costoTotal === Number(linkedEv?.costoTotal)
-        ? Number(linkedEv.costoPorPersona)
-        : paxCount > 1
-        ? Number((costoTotal / paxCount).toFixed(2))
-        : costoTotal;
+
+    // Regla de negocio: El alojamiento para 1 o 2 personas es el mismo valor (no aplica regla del 50%)
+    const costoPorPersona = isAlojamiento
+      ? costoTotal
+      : paxCount > 1
+      ? Number((costoTotal / paxCount).toFixed(2))
+      : costoTotal;
 
     const montoCOP =
-      Number(g.montoCOP) > 0 && costoTotal === num
+      Number(g.montoCOP) > 0 && costoTotal === num && (!linkedEv || orig === (linkedEv.moneda || orig).toUpperCase())
         ? Number(g.montoCOP)
         : convertCurrency(costoTotal, orig, 'COP');
     const montoUSD =
-      Number(g.montoUSD) > 0 && costoTotal === num
+      Number(g.montoUSD) > 0 && costoTotal === num && (!linkedEv || orig === (linkedEv.moneda || orig).toUpperCase())
         ? Number(g.montoUSD)
         : convertCurrency(costoTotal, orig, 'USD');
 
-    const montoTotalCOP = montoCOP;
-    const montoPorPersonaCOP = paxCount > 1 ? Math.round(montoTotalCOP / paxCount) : montoTotalCOP;
+    const montoTotalCOP = Math.round(montoCOP);
+    const montoPorPersonaCOP = isAlojamiento
+      ? montoTotalCOP
+      : paxCount > 1
+      ? Math.round(montoTotalCOP / paxCount)
+      : montoTotalCOP;
     const montoTotalUSD = montoUSD;
-    const montoPorPersonaUSD = paxCount > 1 ? Number((montoTotalUSD / paxCount).toFixed(2)) : montoTotalUSD;
+    const montoPorPersonaUSD = isAlojamiento
+      ? montoTotalUSD
+      : paxCount > 1
+      ? Number((montoTotalUSD / paxCount).toFixed(2))
+      : montoTotalUSD;
 
-    const tc = g.tarjetaCredito || linkedEv?.tarjetaCredito || undefined;
+    const tc = linkedEv?.tarjetaCredito || g.tarjetaCredito || undefined;
+    const noComputar =
+      linkedEv && linkedEv.descontarPresupuesto !== undefined
+        ? !Boolean(linkedEv.descontarPresupuesto)
+        : Boolean(g.noComputar);
+    const pagadoAdelantado =
+      linkedEv && linkedEv.pagadoAdelantado !== undefined
+        ? Boolean(linkedEv.pagadoAdelantado)
+        : Boolean(g.pagadoAdelantado);
 
     return {
       ...g,
@@ -107,6 +130,8 @@ export function reconcileGastosWithEventos(rawGastos = [], rawEventos = [], viaj
       montoPorPersonaCOP,
       montoTotalUSD,
       montoPorPersonaUSD,
+      noComputar,
+      pagadoAdelantado,
       ...(tc ? { tarjetaCredito: tc } : {})
     };
   });
@@ -121,20 +146,30 @@ export function reconcileGastosWithEventos(rawGastos = [], rawEventos = [], viaj
       if (costoNum >= 50000 && orig === 'USD') {
         orig = 'COP';
       }
-      const paxCount = Math.max(1, Math.round(Number(ev.cantidadPersonas) || 1));
-      const costoTotal = costoNum;
-      const costoPorPersona =
-        ev.costoPorPersona > 0
-          ? Number(ev.costoPorPersona)
-          : paxCount > 1
-          ? Number((costoTotal / paxCount).toFixed(2))
-          : costoTotal;
-      const montoTotalCOP = convertCurrency(costoTotal, orig, 'COP');
-      const montoTotalUSD = convertCurrency(costoTotal, orig, 'USD');
-      const montoPorPersonaCOP = paxCount > 1 ? Math.round(montoTotalCOP / paxCount) : montoTotalCOP;
-      const montoPorPersonaUSD = paxCount > 1 ? Number((montoTotalUSD / paxCount).toFixed(2)) : montoTotalUSD;
-
       const tipoLower = (ev.tipo || 'otro').toLowerCase();
+      const isAloj = tipoLower === 'hotel';
+      const paxCount = Math.max(
+        1,
+        Math.round(Number(ev.cantidadPersonas) || (isAloj && viajeId === '5ca03ae6-5712-4851-8864-73f60d114fb1' ? 2 : 1))
+      );
+      const costoTotal = costoNum;
+      const costoPorPersona = isAloj
+        ? costoTotal
+        : paxCount > 1
+        ? Number((costoTotal / paxCount).toFixed(2))
+        : costoTotal;
+      const montoTotalCOP = Math.round(convertCurrency(costoTotal, orig, 'COP'));
+      const montoTotalUSD = convertCurrency(costoTotal, orig, 'USD');
+      const montoPorPersonaCOP = isAloj
+        ? montoTotalCOP
+        : paxCount > 1
+        ? Math.round(montoTotalCOP / paxCount)
+        : montoTotalCOP;
+      const montoPorPersonaUSD = isAloj
+        ? montoTotalUSD
+        : paxCount > 1
+        ? Number((montoTotalUSD / paxCount).toFixed(2))
+        : montoTotalUSD;
       const categoria = tipoLower === 'hotel'
         ? 'alojamiento'
         : (tipoLower === 'vuelo' || tipoLower === 'transporte'
@@ -714,7 +749,7 @@ export function useAppViajes(usuario) {
               tarjetaCredito: eventoData.tarjetaCredito || undefined
             })
           });
-          savedEvento = res.data || res;
+          savedEvento = parseEventoMeta(res.data || res);
           setEventos(prev => [...prev, savedEvento].sort((a, b) => new Date(a.fechaInicio) - new Date(b.fechaInicio)));
 
           if (res.gastoAsociado) {
@@ -812,9 +847,9 @@ export function useAppViajes(usuario) {
             ...(updatedEventoData.tarjetaCredito !== undefined ? { tarjetaCredito: updatedEventoData.tarjetaCredito } : {})
           })
         });
-        saved = res?.data || res || updatedEventoData;
+        saved = parseEventoMeta(res?.data || res || updatedEventoData);
         const targetTipo = (updatedEventoData.tipo || saved.tipo || '').toLowerCase();
-        setEventos(prev => prev.map(e => (e.id === id ? { ...e, ...saved, tipo: targetTipo || e.tipo } : e)));
+        setEventos(prev => prev.map(e => (e.id === id ? { ...e, ...updatedEventoData, ...saved, tipo: targetTipo || e.tipo } : e)));
 
         try {
           const gs = await apiRequest(`/viajes/${activeViajeId}/gastos`);
@@ -867,6 +902,19 @@ export function useAppViajes(usuario) {
       const existingGastoIndex = prev.findIndex(g => g.eventoId === id || (g.concepto && updatedEventoData.titulo && g.concepto.includes(updatedEventoData.titulo)));
 
       if (costoNum > 0) {
+        const paxCount = Math.max(1, Math.round(Number(updatedEventoData.cantidadPersonas) || 1));
+        const isAloj = categoriaGasto === 'alojamiento';
+        const costoTotal = updatedEventoData.costoTotal ? Number(updatedEventoData.costoTotal) : costoNum;
+        const costoPorPersona = isAloj
+          ? costoTotal
+          : (updatedEventoData.costoPorPersona
+              ? Number(updatedEventoData.costoPorPersona)
+              : (paxCount > 1 ? Number((costoTotal / paxCount).toFixed(2)) : costoTotal));
+        const computarSoloMiParte =
+          updatedEventoData.computarSoloMiParte !== undefined
+            ? Boolean(updatedEventoData.computarSoloMiParte)
+            : true;
+
         if (existingGastoIndex >= 0) {
           const updatedGastos = [...prev];
           const currentAdelantado = isAdelantado !== undefined ? isAdelantado : Boolean(updatedGastos[existingGastoIndex].pagadoAdelantado);
@@ -878,10 +926,15 @@ export function useAppViajes(usuario) {
             eventoId: id,
             concepto,
             categoria: categoriaGasto,
-            montoOriginal: costoNum,
+            montoOriginal: costoTotal,
             monedaOriginal,
             montoCOP,
             montoUSD,
+            cantidadPersonas: paxCount,
+            modoCostoPersonas: updatedEventoData.modoCostoPersonas || 'total',
+            costoTotal,
+            costoPorPersona,
+            computarSoloMiParte,
             pagadoAdelantado: currentAdelantado,
             noComputar: currentNoComputar,
             tarjetaCredito: currentTC || undefined
@@ -896,10 +949,15 @@ export function useAppViajes(usuario) {
             eventoId: id,
             concepto,
             categoria: categoriaGasto,
-            montoOriginal: costoNum,
+            montoOriginal: costoTotal,
             monedaOriginal,
             montoCOP,
             montoUSD,
+            cantidadPersonas: paxCount,
+            modoCostoPersonas: updatedEventoData.modoCostoPersonas || 'total',
+            costoTotal,
+            costoPorPersona,
+            computarSoloMiParte,
             fechaGasto: updatedEventoData.fechaInicio || new Date().toISOString(),
             pagadoAdelantado: currentAdelantado,
             noComputar: currentNoComputar,

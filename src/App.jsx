@@ -6,12 +6,14 @@ import SidebarNav from './components/SidebarNav';
 import BottomNav from './components/BottomNav';
 import Header from './components/Header';
 
-// Vistas de los 5 módulos
+// Vistas de los 6 módulos
 import ViajesView from './features/viajes/ui/ViajesView';
 import ItinerarioView from './features/itinerario/ui/ItinerarioView';
+import CalendarioView from './features/calendario/ui/CalendarioView';
 import ChecklistView from './features/checklist/ui/ChecklistView';
 import BilleteraView from './features/billetera/ui/BilleteraView';
 import BalanceView from './features/balance/ui/BalanceView';
+import ReportesView from './features/reportes/ui/ReportesView';
 
 // Pantallas
 import AuthScreen from './features/auth/ui/AuthScreen';
@@ -257,6 +259,34 @@ export function App() {
             />
           )}
 
+          {activeTab === 'calendario' && (
+            <CalendarioView
+              viaje={activeViaje}
+              eventos={eventos}
+              gastos={gastos}
+              onOpenNuevoViaje={() => {
+                setViajeAEditar(null);
+                setIsNuevoViajeOpen(true);
+              }}
+              onAddEvento={() => {
+                setEventoAEditar(null);
+                setIsNuevoEventoOpen(true);
+              }}
+              onEditEvento={(evento) => {
+                setEventoAEditar(evento);
+                setIsNuevoEventoOpen(true);
+              }}
+              onAddGasto={() => {
+                setGastoAEditar(null);
+                setIsNuevoGastoOpen(true);
+              }}
+              onEditGasto={(gasto) => {
+                setGastoAEditar(gasto);
+                setIsNuevoGastoOpen(true);
+              }}
+            />
+          )}
+
           {activeTab === 'checklist' && (
             <ChecklistView
               activeViaje={activeViaje}
@@ -301,9 +331,30 @@ export function App() {
                 setGastoAEditar(gasto);
                 setIsNuevoGastoOpen(true);
               }}
+              onOpenReportes={() => setActiveTab('reportes')}
               balance={balance}
               gastos={gastos}
               eventos={eventos}
+            />
+          )}
+
+          {activeTab === 'reportes' && (
+            <ReportesView
+              viaje={activeViaje}
+              eventos={eventos}
+              gastos={gastos}
+              onOpenNuevoViaje={() => {
+                setViajeAEditar(null);
+                setIsNuevoViajeOpen(true);
+              }}
+              onEditEvento={(evento) => {
+                setEventoAEditar(evento);
+                setIsNuevoEventoOpen(true);
+              }}
+              onEditGasto={(gasto) => {
+                setGastoAEditar(gasto);
+                setIsNuevoGastoOpen(true);
+              }}
             />
           )}
         </main>

@@ -17,7 +17,7 @@ export function BalanceMultidivisaGrid({ viaje, hasActiveFilters, filteredTotals
         <div className="flex items-center gap-2">
           <Coins className="w-4 h-4 text-[#00E5FF]" />
           <h3 className="text-xs font-bold text-[#F1F5F9] uppercase tracking-wider m-0">
-            {hasActiveFilters ? 'Total Filtrado en Divisas del Viaje' : 'Total Consumido en las Monedas de tu Viaje'}
+            {hasActiveFilters ? 'Total Filtrado en Divisas del Viaje' : 'Total Consumido en las Divisas de la Ruta'}
           </h3>
         </div>
         <span className="text-[11px] text-[#8492A6]">

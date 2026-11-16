@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { extractVisitedCountries } from '../../../../utils/countries';
 import { extractFlightTrajectories } from '../../../../utils/geoCoordinates';
 import { calculateTripBalance } from '../../../../utils/balance';
+import { reconcileGastosWithEventos } from '../../../../hooks/useAppViajes';
 
 export function useViajesData({
   viajes = [],
@@ -108,8 +109,9 @@ export function useViajesData({
     if (selectedViajeId === activeViajeId && balance) {
       return balance;
     }
-    return calculateTripBalance(currentViaje, tripGastos);
-  }, [selectedViajeId, activeViajeId, balance, currentViaje, tripGastos]);
+    const reconciled = reconcileGastosWithEventos(tripGastos, tripEvents, selectedViajeId);
+    return calculateTripBalance(currentViaje, reconciled);
+  }, [selectedViajeId, activeViajeId, balance, currentViaje, tripGastos, tripEvents]);
 
   const getViajeStatus = (viaje) => {
     if (!viaje || !viaje.fechaInicio || !viaje.fechaFin) {

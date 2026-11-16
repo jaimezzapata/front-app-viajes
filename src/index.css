@@ -85,18 +85,37 @@ html:not(.dark) [class*="bg-[#0D111A]"] {
   box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
 }
 
-/* Elementos elevados, campos de texto y botones secundarios */
+/* Elementos elevados, cabeceras de tarjetas, campos de texto y botones secundarios */
 html:not(.dark) .bg-\[\#151B27\],
-html:not(.dark) [class*="bg-[#151B27]"] {
+html:not(.dark) [class*="bg-[#151B27]"],
+html:not(.dark) .bg-\[\#121723\],
+html:not(.dark) [class*="bg-[#121723]"],
+html:not(.dark) .bg-\[\#111622\],
+html:not(.dark) [class*="bg-[#111622]"],
+html:not(.dark) .bg-\[\#1E2738\],
+html:not(.dark) [class*="bg-[#1E2738]"] {
   background-color: #F1F5F9 !important;
 }
 
-html:not(.dark) [class*="hover:bg-[#1E2738]"]:hover {
+/* Gradientes oscuros adaptados a modo claro */
+html:not(.dark) [class*="from-[#0E121B]"],
+html:not(.dark) [class*="from-[#111726]"],
+html:not(.dark) [class*="via-[#121928]"],
+html:not(.dark) [class*="via-[#0E131F]"],
+html:not(.dark) [class*="to-[#0E121B]"],
+html:not(.dark) [class*="to-[#0A0D14]"] {
+  background-image: linear-gradient(to right, #FFFFFF, #F1F5F9, #FFFFFF) !important;
+  background-color: #FFFFFF !important;
+}
+
+html:not(.dark) [class*="hover:bg-[#1E2738]"]:hover,
+html:not(.dark) [class*="hover:bg-[#151B27]"]:hover {
   background-color: #E2E8F0 !important;
 }
 
-html:not(.dark) [class*="hover:bg-[#111622]"]:hover {
-  background-color: #F8FAFC !important;
+html:not(.dark) [class*="hover:bg-[#111622]"]:hover,
+html:not(.dark) [class*="hover:bg-[#121622]"]:hover {
+  background-color: #F1F5F9 !important;
 }
 
 html:not(.dark) .bg-\[\#121622\],
@@ -106,12 +125,16 @@ html:not(.dark) [class*="bg-[#121622]"] {
 
 html:not(.dark) .bg-\[\#080A0F\],
 html:not(.dark) [class*="bg-[#080A0F]"] {
-  background-color: #E2E8F0 !important;
+  background-color: #F1F5F9 !important;
 }
 
-/* Bordes */
+/* Bordes y divisores */
 html:not(.dark) .border-\[\#1C2436\],
 html:not(.dark) [class*="border-[#1C2436]"] {
+  border-color: #E2E8F0 !important;
+}
+
+html:not(.dark) [class*="divide-[#1C2436]"] > :not([hidden]) ~ :not([hidden]) {
   border-color: #E2E8F0 !important;
 }
 

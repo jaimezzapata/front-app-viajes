@@ -42,13 +42,15 @@ export function exportTripPdf({ viaje, balance, gastos = [], eventos = [], filte
   doc.text('1. RESUMEN FINANCIERO Y PRESUPUESTO', 14, 45);
 
   const kpiData = [
-    ['Presupuesto Total (COP)', `$ ${Number(balance?.presupuestoTotalCOP || 0).toLocaleString()}`],
-    ['Total Gastado (COP)', `$ ${Number(balance?.totalGastadoCOP || 0).toLocaleString()}`],
-    ['Total Gastado (USD ref)', `$ ${Number(balance?.totalGastadoUSD || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`],
-    ['Pagado por Adelantado (Costos Hundidos)', `$ ${Number(balance?.pagadoAdelantadoCOP || 0).toLocaleString()}`],
-    ['Dinero Requerido en Ruta', `$ ${Number(balance?.dineroRequeridoEnRutaCOP || 0).toLocaleString()}`],
-    ['Balance Disponible', `$ ${Number(balance?.balanceDisponibleCOP || 0).toLocaleString()}`],
-    ['Porcentaje Consumido', `${balance?.porcentajeConsumido || 0}% (${(balance?.semaforoGlobal || 'verde').toUpperCase()})`]
+    ['Presupuesto Asignado (Sin tiquetes principales)', `$ ${Number(balance?.presupuestoTotalCOP || 0).toLocaleString('es-CO')} COP`],
+    ['1. Consumido EN PRESUPUESTO — Por Persona (1 Cupo)', `$ ${Number(balance?.totalGastadoCOP || 0).toLocaleString('es-CO')} COP`],
+    ['1b. Total Facturado TC EN PRESUPUESTO (Todos los cupos)', `$ ${Number(balance?.totalDesembolsadoCOP || balance?.totalGastadoCOP || 0).toLocaleString('es-CO')} COP`],
+    ['1c. Cupos Adicionales / Acompañantes (En Presupuesto)', `$ ${Number(balance?.gastoAcompanantesCOP || 0).toLocaleString('es-CO')} COP`],
+    ['2. FUERA DE PRESUPUESTO (Tiquetes Salida y Llegada)', `$ ${Number(balance?.totalFueraPresupuestoCOP || 0).toLocaleString('es-CO')} COP (Excluido del presupuesto)`],
+    ['3. Gran Total Acumulado (En Presupuesto + Tiquetes)', `$ ${Number((balance?.totalDesembolsadoCOP || 0) + (balance?.totalFueraPresupuestoCOP || 0)).toLocaleString('es-CO')} COP`],
+    ['Pagado Pre-Viaje (En Presupuesto - 1 Persona)', `$ ${Number(balance?.pagadoAdelantadoCOP || 0).toLocaleString('es-CO')} COP`],
+    ['Dinero Requerido en Ruta (En Presupuesto)', `$ ${Number(balance?.dineroRequeridoEnRutaCOP || 0).toLocaleString('es-CO')} COP`],
+    ['Saldo Disponible del Presupuesto', `$ ${Number(balance?.balanceDisponibleCOP || 0).toLocaleString('es-CO')} COP (${balance?.porcentajeConsumido || 0}%)`]
   ];
 
   autoTable(doc, {
@@ -108,19 +110,19 @@ export function exportTripPdf({ viaje, balance, gastos = [], eventos = [], filte
       g.categoria,
       g.cityName ? `${g.cityName}${g.countryName ? `, ${g.countryName}` : ''}` : (g.countryName || '-'),
       g.tarjetaCredito || 'Efectivo',
-      `${g.montoOriginal} ${g.monedaOriginal}`,
-      getTasaDisplay(g),
-      `$ ${Number(g.montoCOP).toLocaleString()}`,
-      g.pagadoAdelantado ? 'Adelantado' : (g.noComputar ? 'Terceros' : 'En Ruta')
+      `${g.cantidadPersonas || 1}p`,
+      `$ ${Number(g.montoTotalCOP || g.montoCOP || 0).toLocaleString('es-CO')}`,
+      `$ ${Number(g.montoPorPersonaCOP || g.montoCOP || 0).toLocaleString('es-CO')}`,
+      g.noComputar ? 'NO (Fuera Ppto)' : 'SÍ (En Ppto)'
     ]);
 
     autoTable(doc, {
       startY: startGastosY + 3,
-      head: [['Fecha', 'Concepto', 'Categoría', 'Ciudad / País', 'TC / Medio', 'Monto Orig.', 'Tasa Aplicada', 'Equiv. COP', 'Modalidad']],
+      head: [['Fecha', 'Concepto', 'Categoría', 'Ciudad / País', 'TC / Medio', 'Pers.', 'Total TC COP', 'Por Persona COP', '¿En Presupuesto?']],
       body: gastosRows,
       theme: 'striped',
       headStyles: { fillColor: [15, 20, 28], textColor: [0, 255, 133] },
-      styles: { fontSize: 7, cellPadding: 2 }
+      styles: { fontSize: 6.8, cellPadding: 1.8 }
     });
   }
 

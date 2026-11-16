@@ -596,28 +596,40 @@ export function ItinerarioView({
                       <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 shrink-0 ml-auto items-end">
                         <div className="flex items-center gap-1 flex-wrap justify-end">
                           {Number(ev.cantidadPersonas) > 1 ? (
-                            <>
-                              <span
-                                className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold text-[#FFE500] bg-[#FFE500]/10 px-2 py-0.5 rounded border border-[#FFE500]/30"
-                                title={`Total gastado / cobrado por ${ev.cantidadPersonas} personas`}
-                              >
-                                <span>{CURRENCY_MAP[(ev.moneda || 'COP').toUpperCase()]?.flag || '💱'}</span>
-                                <span>Total ({ev.cantidadPersonas}p): {formatCurrencyDisplay(ev.costoTotal || ev.costo, ev.moneda || 'COP', true)}</span>
-                              </span>
+                            (ev.tipo || '').toLowerCase() === 'hotel' ? (
                               <span
                                 className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold text-[#00FF85] bg-[#00FF85]/10 px-2 py-0.5 rounded border border-[#00FF85]/30"
-                                title="Valor individual por persona"
+                                title="En alojamiento el valor para 1 o 2 personas es el mismo (no aplica regla del 50%)"
                               >
-                                <User className="w-3 h-3 text-[#00FF85]" />
+                                <span>{CURRENCY_MAP[(ev.moneda || 'COP').toUpperCase()]?.flag || '💱'}</span>
                                 <span>
-                                  {formatCurrencyDisplay(
-                                    ev.costoPorPersona || (Number(ev.costoTotal || ev.costo) / Number(ev.cantidadPersonas)),
-                                    ev.moneda || 'COP',
-                                    true
-                                  )} / pers.
+                                  {formatCurrencyDisplay(ev.costoTotal || ev.costo, ev.moneda || 'COP', true)} (1 o {ev.cantidadPersonas}p)
                                 </span>
                               </span>
-                            </>
+                            ) : (
+                              <>
+                                <span
+                                  className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold text-[#FFE500] bg-[#FFE500]/10 px-2 py-0.5 rounded border border-[#FFE500]/30"
+                                  title={`Total gastado / cobrado por ${ev.cantidadPersonas} personas`}
+                                >
+                                  <span>{CURRENCY_MAP[(ev.moneda || 'COP').toUpperCase()]?.flag || '💱'}</span>
+                                  <span>Total ({ev.cantidadPersonas}p): {formatCurrencyDisplay(ev.costoTotal || ev.costo, ev.moneda || 'COP', true)}</span>
+                                </span>
+                                <span
+                                  className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold text-[#00FF85] bg-[#00FF85]/10 px-2 py-0.5 rounded border border-[#00FF85]/30"
+                                  title="Valor individual por persona (50%)"
+                                >
+                                  <User className="w-3 h-3 text-[#00FF85]" />
+                                  <span>
+                                    {formatCurrencyDisplay(
+                                      ev.costoPorPersona || (Number(ev.costoTotal || ev.costo) / Number(ev.cantidadPersonas)),
+                                      ev.moneda || 'COP',
+                                      true
+                                    )} / pers.
+                                  </span>
+                                </span>
+                              </>
+                            )
                           ) : (
                             <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold text-[#00FF85] bg-[#00FF85]/10 px-2 py-0.5 rounded border border-[#00FF85]/20">
                               <span>{CURRENCY_MAP[(ev.moneda || 'COP').toUpperCase()]?.flag || '💱'}</span>

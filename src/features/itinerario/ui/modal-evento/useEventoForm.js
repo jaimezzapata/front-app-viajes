@@ -311,12 +311,18 @@ export function useEventoForm({
 
       const paxCount = Math.max(1, Math.round(Number(cantidadPersonas) || 1));
       const rawCostoNum = costo ? Number(costo) : 0;
-      const finalCostoTotal = paxCount > 1 && modoCostoPersonas === 'por_persona'
-        ? Number((rawCostoNum * paxCount).toFixed(2))
-        : rawCostoNum;
-      const finalCostoPorPersona = paxCount > 1
-        ? (modoCostoPersonas === 'por_persona' ? rawCostoNum : Number((rawCostoNum / paxCount).toFixed(2)))
-        : rawCostoNum;
+      const isAlojamiento = (tipo || '').toLowerCase() === 'hotel';
+      // Regla de negocio: El alojamiento para 1 o 2 personas es el mismo valor (no aplica regla del 50%)
+      const finalCostoTotal = isAlojamiento
+        ? rawCostoNum
+        : (paxCount > 1 && modoCostoPersonas === 'por_persona'
+          ? Number((rawCostoNum * paxCount).toFixed(2))
+          : rawCostoNum);
+      const finalCostoPorPersona = isAlojamiento
+        ? rawCostoNum
+        : (paxCount > 1
+          ? (modoCostoPersonas === 'por_persona' ? rawCostoNum : Number((rawCostoNum / paxCount).toFixed(2)))
+          : rawCostoNum);
 
       // CASO 1: Creación de Vuelo Round-Trip (Genera automáticamente los dos tramos organizados)
       if (tipo === 'vuelo' && tipoTrayecto === 'round-trip' && !isEditing) {

@@ -46,7 +46,7 @@ export const JAPON_2_0_CHECKLIST = [
       { id: 'item-ae-esc-2', texto: 'Billete de continuación.', completado: false },
       { id: 'item-ae-esc-3', texto: 'No salir del área de tránsito.', completado: false },
       { id: 'item-ae-esc-4', texto: 'No visa previa para la escala.', completado: false },
-      { id: 'item-ae-esc-5', texto: 'Certificado de fiebre amarilla recomendado como parte de tu documentación general.', completado: false }
+      { id: 'item-ae-esc-5', texto: 'Certificado de fiebre amarilla recomendado como parte de la documentación general.', completado: false }
     ]
   },
   {
@@ -58,7 +58,7 @@ export const JAPON_2_0_CHECKLIST = [
       { id: 'item-kr-1', texto: 'Pasaporte.', completado: false },
       { id: 'item-kr-2', texto: 'Sin visa turística.', completado: false },
       { id: 'item-kr-3', texto: 'K-ETA: exenta durante 2026 según la medida vigente.', completado: false },
-      { id: 'item-kr-4', texto: 'Arrival Card si corresponde/no tienes K-ETA.', completado: false },
+      { id: 'item-kr-4', texto: 'Arrival Card si corresponde / sin K-ETA.', completado: false },
       { id: 'item-kr-5', texto: 'Reserva de hotel.', completado: false },
       { id: 'item-kr-6', texto: 'Billete Corea → Japón.', completado: false }
     ]
@@ -70,7 +70,7 @@ export const JAPON_2_0_CHECKLIST = [
     pais: '🇯🇵 Japón',
     items: [
       { id: 'item-jp-1', texto: 'Pasaporte.', completado: false },
-      { id: 'item-jp-2', texto: 'Sin visa turística para tu estancia corta.', completado: false },
+      { id: 'item-jp-2', texto: 'Sin visa turística para estancia corta.', completado: false },
       { id: 'item-jp-3', texto: 'Visit Japan Web.', completado: false, importante: true },
       { id: 'item-jp-4', texto: 'Reserva/alojamiento.', completado: false },
       { id: 'item-jp-5', texto: 'Billete Japón → Corea.', completado: false },

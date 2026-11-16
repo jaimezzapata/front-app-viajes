@@ -64,13 +64,18 @@ export function BalanceDesgloseTable({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {Math.round(filteredTotals?.fueraPresupuestoCOP || 0) > 0 && (
+            <span className="text-xs font-bold text-[#FF2E55] bg-[#FF2E55]/10 border border-[#FF2E55]/30 px-2.5 py-1 rounded-lg font-mono">
+              🚫 Fuera de Ppto: $ {Math.round(filteredTotals.fueraPresupuestoCOP).toLocaleString('es-CO')} COP
+            </span>
+          )}
           {showTotalDesembolsado && (
             <span className="text-xs font-bold text-[#FFE500] bg-[#FFE500]/10 border border-[#FFE500]/30 px-2.5 py-1 rounded-lg font-mono">
-              Total TC: $ {Math.round(filteredTotals.totalDesembolsadoCOP).toLocaleString()} COP
+              Total TC En Ppto: $ {Math.round(filteredTotals.totalDesembolsadoCOP).toLocaleString('es-CO')} COP
             </span>
           )}
           <span className="text-xs font-bold text-[#00FF85] bg-[#00FF85]/10 border border-[#00FF85]/30 px-2.5 py-1 rounded-lg font-mono">
-            {showTotalDesembolsado ? 'Por Persona: ' : ''}$ {Math.round(filteredTotals.cop).toLocaleString()} COP
+            En Presupuesto (1p): $ {Math.round(filteredTotals.cop).toLocaleString('es-CO')} COP
           </span>
           <span className="text-xs font-bold text-[#8492A6] bg-[#151B27] border border-[#1C2436] px-2 py-1 rounded-lg font-mono">
             ~${filteredTotals.usd.toFixed(2)} USD
@@ -175,9 +180,13 @@ export function BalanceDesgloseTable({
                             En Ruta
                           </span>
                         )}
-                        {g.noComputar && (
-                          <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-[#FF2E55]/15 border border-[#FF2E55]/30 text-[#FF2E55]">
-                            Terceros
+                        {g.noComputar ? (
+                          <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-[#FF2E55]/15 border border-[#FF2E55]/40 text-[#FF2E55]">
+                            🚫 Fuera de Presupuesto
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-[#00FF85]/15 border border-[#00FF85]/30 text-[#00FF85]">
+                            ✅ En Presupuesto
                           </span>
                         )}
                       </div>
@@ -196,10 +205,10 @@ export function BalanceDesgloseTable({
                     </td>
                     <td className="py-2.5 px-3 text-right whitespace-nowrap font-bold text-[#00FF85] font-mono text-xs">
                       <div className="flex flex-col items-end">
-                        <span>$ {Math.round(amounts.montoPorPersonaCOP || 0).toLocaleString()}</span>
+                        <span>$ {Math.round(amounts.montoPorPersonaCOP || 0).toLocaleString('es-CO')}</span>
                         {amounts.isMultiPerson && (
                           <span className="text-[9px] text-[#00E5FF] font-normal">
-                            c/u ({amounts.cantidadPersonas}p)
+                            {amounts.isAlojamiento ? `1 o ${amounts.cantidadPersonas}p (igual)` : `c/u (${amounts.cantidadPersonas}p)`}
                           </span>
                         )}
                       </div>
@@ -295,9 +304,13 @@ export function BalanceDesgloseTable({
                           En Ruta
                         </span>
                       )}
-                      {g.noComputar && (
-                        <span className="px-1.5 py-0.2 rounded bg-[#FF2E55]/15 text-[#FF2E55] font-bold uppercase text-[9px]">
-                          Terceros
+                      {g.noComputar ? (
+                        <span className="px-1.5 py-0.2 rounded bg-[#FF2E55]/15 text-[#FF2E55] border border-[#FF2E55]/30 font-bold uppercase text-[9px]">
+                          🚫 Fuera de Ppto
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.2 rounded bg-[#00FF85]/15 text-[#00FF85] border border-[#00FF85]/30 font-bold uppercase text-[9px]">
+                          ✅ En Ppto
                         </span>
                       )}
                       {onEditGasto && (

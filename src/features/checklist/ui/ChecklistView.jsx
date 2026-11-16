@@ -337,7 +337,7 @@ export function ChecklistView({ activeViaje, onUpdateViaje, onOpenNuevoViaje }) 
             </span>
           </div>
           <p className="text-xs text-[#8492A6] m-0">
-            Control práctico de documentos, visados, escalas, vacunas y reservas para cada tramo de tu ruta.
+            Control práctico de documentos, visados, escalas, vacunas y reservas para cada tramo de la ruta.
           </p>
         </div>
 
@@ -601,7 +601,7 @@ export function ChecklistView({ activeViaje, onUpdateViaje, onOpenNuevoViaje }) 
               >
                 <div>
                   {/* Cabecera de la Etapa */}
-                  <div className="p-4 bg-[#121723] border-b border-[#1C2436]">
+                  <div className="p-4 bg-[#151B27] border-b border-[#1C2436]">
                     {editingSection?.sectionId === sec.id ? (
                       <div className="space-y-2">
                         <input
@@ -793,9 +793,9 @@ export function ChecklistView({ activeViaje, onUpdateViaje, onOpenNuevoViaje }) 
                             key={item.id}
                             className={`px-3.5 py-2.5 flex items-start justify-between gap-2.5 transition-colors group ${
                               item.completado
-                                ? 'bg-[#0B0F17]/60'
+                                ? 'bg-[#151B27]/40'
                                 : isImp
-                                ? 'bg-[#FFE500]/[0.04] hover:bg-[#FFE500]/[0.08]'
+                                ? 'bg-[#FFE500]/[0.06] hover:bg-[#FFE500]/[0.12]'
                                 : 'hover:bg-[#151B27]/60'
                             }`}
                           >
@@ -886,7 +886,7 @@ export function ChecklistView({ activeViaje, onUpdateViaje, onOpenNuevoViaje }) 
 
                 {/* Input rápido para agregar nuevo ítem a esta etapa */}
                 {!isCollapsed && (
-                  <div className="p-3 bg-[#111622] border-t border-[#1C2436] flex items-center gap-2">
+                  <div className="p-3 bg-[#151B27] border-t border-[#1C2436] flex items-center gap-2">
                     <input
                       type="text"
                       value={newItemInputs[sec.id] || ''}

@@ -170,6 +170,8 @@ export function NuevoViajeModal(props) {
                   setMonedaLocal={form.setMonedaLocal}
                   presupuestoTotal={form.presupuestoTotal}
                   setPresupuestoTotal={form.setPresupuestoTotal}
+                  presupuestoPersonas={form.presupuestoPersonas}
+                  setPresupuestoPersonas={form.setPresupuestoPersonas}
                   destino={form.destino}
                   origen={form.origen}
                   tipoViaje={form.tipoViaje}
@@ -218,6 +220,8 @@ export function NuevoViajeModal(props) {
                 setMonedaLocal={form.setMonedaLocal}
                 presupuestoTotal={form.presupuestoTotal}
                 setPresupuestoTotal={form.setPresupuestoTotal}
+                presupuestoPersonas={form.presupuestoPersonas}
+                setPresupuestoPersonas={form.setPresupuestoPersonas}
                 destino={form.destino}
                 origen={form.origen}
                 tipoViaje={form.tipoViaje}

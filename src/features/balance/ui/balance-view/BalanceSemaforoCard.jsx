@@ -45,6 +45,9 @@ export function BalanceSemaforoCard({
   const [modalCategoria, setModalCategoria] = useState(null);
 
   const categoriasList = displayBalance?.semaforoCategorias || [];
+  const presupuestoPersonas = Math.max(1, Math.round(Number(displayBalance?.presupuestoPersonas) || 1));
+  const presupuestoTotalCOP = Number(displayBalance?.presupuestoTotalCOP || 0);
+  const totalConsumidoCOP = Number(displayBalance?.totalGastadoCOP || 0);
 
   const activeCategoryData = useMemo(() => {
     if (!modalCategoria) return null;
@@ -69,14 +72,19 @@ export function BalanceSemaforoCard({
     let usd = 0;
     let totalDesembolsadoCOP = 0;
     let porPersonaCOP = 0;
+    let fueraPresupuestoCOP = 0;
     categoryGastos.forEach((g) => {
       const amounts = getGastoAmounts(g);
-      cop += amounts.montoComputableCOP || 0;
-      usd += amounts.montoComputableUSD || 0;
-      totalDesembolsadoCOP += amounts.montoTotalCOP || 0;
-      porPersonaCOP += amounts.montoPorPersonaCOP || 0;
+      if (g.noComputar) {
+        fueraPresupuestoCOP += amounts.montoTotalCOP || 0;
+      } else {
+        cop += amounts.montoComputableCOP || 0;
+        usd += amounts.montoComputableUSD || 0;
+        totalDesembolsadoCOP += amounts.montoTotalCOP || 0;
+        porPersonaCOP += amounts.montoPorPersonaCOP || 0;
+      }
     });
-    return { cop, usd, totalDesembolsadoCOP, porPersonaCOP };
+    return { cop, usd, totalDesembolsadoCOP, porPersonaCOP, fueraPresupuestoCOP };
   }, [categoryGastos]);
 
   return (
@@ -87,6 +95,9 @@ export function BalanceSemaforoCard({
             <h3 className="text-sm font-bold text-[#F1F5F9] uppercase tracking-wider m-0 flex items-center gap-2">
               <span>Semáforo de Presupuesto por Categoría</span>
             </h3>
+            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-[#FFE500]/10 border border-[#FFE500]/30 text-[#FFE500]">
+              Vs. Presupuesto ({presupuestoPersonas} {presupuestoPersonas === 1 ? 'persona' : 'personas'})
+            </span>
             <span className="text-[10px] text-[#00E5FF] font-semibold bg-[#00E5FF]/10 px-2 py-0.5 rounded border border-[#00E5FF]/20 flex items-center gap-1">
               <Eye className="w-2.5 h-2.5" />
               Haz clic en una categoría para ver sus gastos
@@ -104,14 +115,25 @@ export function BalanceSemaforoCard({
                 type="button"
                 onClick={onOpenConfigPresupuesto}
                 className="text-[11px] font-bold text-[#00FF85] bg-[#00FF85]/10 hover:bg-[#00FF85]/20 border border-[#00FF85]/30 px-2.5 py-1 rounded-lg transition-colors cursor-pointer flex items-center gap-1 uppercase tracking-wider"
-                title="Modificar presupuesto total, porcentajes por categoría o agregar categorías"
+                title="Modificar presupuesto total, cantidad de personas y porcentajes por categoría"
               >
                 <Settings2 className="w-3.5 h-3.5" />
-                <span>Configurar % y Categorías</span>
+                <span>Configurar Ppto y %</span>
               </button>
             )}
-            <span className="text-xs text-[#8492A6]">
-              Consumido: <strong className="text-[#F1F5F9]">{displayBalance?.porcentajeConsumido || 0}%</strong>
+            <span className="text-xs text-[#8492A6] font-mono">
+              <strong className="text-[#F1F5F9]">$ {Math.round(totalConsumidoCOP).toLocaleString('es-CO')}</strong>
+              {presupuestoTotalCOP > 0 && ` / $ ${Math.round(presupuestoTotalCOP).toLocaleString('es-CO')}`}
+              {' '}
+              <strong className={
+                displayBalance?.semaforoGlobal === 'rojo'
+                  ? 'text-[#FF2E55]'
+                  : displayBalance?.semaforoGlobal === 'amarillo'
+                  ? 'text-[#FFE500]'
+                  : 'text-[#00FF85]'
+              }>
+                ({displayBalance?.porcentajeConsumido || 0}%)
+              </strong>
             </span>
           </div>
         </div>
@@ -152,9 +174,9 @@ export function BalanceSemaforoCard({
                         • Ver detalle
                       </span>
                     </div>
-                    <span className="text-[#8492A6]">
-                      <strong className="text-[#F1F5F9]">$ {Math.round(cat.consumidoCOP).toLocaleString()}</strong>
-                      {cat.limiteCOP > 0 && ` / $ ${Math.round(cat.limiteCOP).toLocaleString()}`}
+                    <span className="text-[#8492A6] font-mono text-right">
+                      <strong className="text-[#F1F5F9]">$ {Math.round(cat.consumidoCOP).toLocaleString('es-CO')}</strong>
+                      {cat.limiteCOP > 0 && ` / $ ${Math.round(cat.limiteCOP).toLocaleString('es-CO')}`}
                       <span
                         className={`ml-2 font-bold ${
                           cat.color === 'rojo'
@@ -166,6 +188,19 @@ export function BalanceSemaforoCard({
                       >
                         ({cat.porcentaje}%)
                       </span>
+                      {cat.limiteCOP > 0 && (
+                        <span className="hidden md:inline ml-2 text-[10px]">
+                          {cat.consumidoCOP > cat.limiteCOP ? (
+                            <span className="text-[#FF2E55] font-semibold">
+                              • Excedido +$ {Math.round(cat.consumidoCOP - cat.limiteCOP).toLocaleString('es-CO')}
+                            </span>
+                          ) : (
+                            <span className="text-[#00E5FF]">
+                              • Resta $ {Math.round(cat.limiteCOP - cat.consumidoCOP).toLocaleString('es-CO')}
+                            </span>
+                          )}
+                        </span>
+                      )}
                     </span>
                   </div>
 
@@ -232,20 +267,24 @@ export function BalanceSemaforoCard({
                     </span>
                   </div>
                   <p className="text-xs text-[#8492A6] m-0 mt-0.5">
-                    Representa el <strong className="text-[#F1F5F9]">{activeCategoryData.porcentaje}%</strong> del consumo total
+                    Consumo del <strong className="text-[#F1F5F9]">{activeCategoryData.porcentaje}%</strong> sobre el presupuesto asignado a esta categoría ($ {Math.round(activeCategoryData.limiteCOP || 0).toLocaleString('es-CO')} COP • {presupuestoPersonas} {presupuestoPersonas === 1 ? 'persona' : 'personas'})
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
+                {Math.round(categoryTotals.fueraPresupuestoCOP) > 0 && (
+                  <span className="text-xs font-bold text-[#FF2E55] bg-[#FF2E55]/10 border border-[#FF2E55]/30 px-2.5 py-1 rounded-lg font-mono">
+                    🚫 Fuera de Ppto: $ {Math.round(categoryTotals.fueraPresupuestoCOP).toLocaleString('es-CO')} COP
+                  </span>
+                )}
                 {Math.round(categoryTotals.totalDesembolsadoCOP) > Math.round(categoryTotals.cop) && (
                   <span className="text-xs font-bold text-[#FFE500] bg-[#FFE500]/10 border border-[#FFE500]/30 px-2.5 py-1 rounded-lg font-mono">
-                    Total TC: $ {Math.round(categoryTotals.totalDesembolsadoCOP).toLocaleString()} COP
+                    Total TC En Ppto: $ {Math.round(categoryTotals.totalDesembolsadoCOP).toLocaleString('es-CO')} COP
                   </span>
                 )}
                 <span className="text-xs font-bold text-[#00FF85] bg-[#00FF85]/10 border border-[#00FF85]/30 px-2.5 py-1 rounded-lg font-mono">
-                  {Math.round(categoryTotals.totalDesembolsadoCOP) > Math.round(categoryTotals.cop) ? 'Por Persona: ' : ''}
-                  $ {Math.round(categoryTotals.cop).toLocaleString()} COP
+                  En Presupuesto (1p): $ {Math.round(categoryTotals.cop).toLocaleString('es-CO')} COP
                 </span>
                 <span className="text-xs font-bold text-[#8492A6] bg-[#0E121B] border border-[#1C2436] px-2.5 py-1 rounded-lg font-mono">
                   ~${categoryTotals.usd.toFixed(2)} USD
@@ -366,10 +405,10 @@ export function BalanceSemaforoCard({
                         </td>
                         <td className="py-2.5 px-3 text-right whitespace-nowrap font-bold text-[#00FF85] font-mono text-xs">
                           <div className="flex flex-col items-end">
-                            <span>$ {Math.round(amounts.montoPorPersonaCOP || 0).toLocaleString()}</span>
+                            <span>$ {Math.round(amounts.montoPorPersonaCOP || 0).toLocaleString('es-CO')}</span>
                             {amounts.isMultiPerson && (
                               <span className="text-[9px] text-[#00E5FF] font-normal">
-                                c/u ({amounts.cantidadPersonas}p)
+                                {amounts.isAlojamiento ? `1 o ${amounts.cantidadPersonas}p (igual)` : `c/u (${amounts.cantidadPersonas}p)`}
                               </span>
                             )}
                           </div>

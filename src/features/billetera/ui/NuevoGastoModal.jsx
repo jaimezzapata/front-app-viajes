@@ -145,21 +145,28 @@ export function NuevoGastoModal({
     ? Number(tasaManual)
     : exactRateToCOP;
 
+  const isAlojamiento = (categoria || '').toLowerCase() === 'alojamiento';
   const paxCount = Math.max(1, Math.round(Number(cantidadPersonas) || 1));
-  const calculatedTotalOrig = paxCount > 1 && modoCostoPersonas === 'por_persona'
-    ? Number((numMonto * paxCount).toFixed(2))
-    : numMonto;
-  const calculatedPerPersonOrig = paxCount > 1
-    ? (modoCostoPersonas === 'por_persona' ? numMonto : Number((numMonto / paxCount).toFixed(2)))
-    : numMonto;
+  const calculatedTotalOrig = isAlojamiento
+    ? numMonto
+    : (paxCount > 1 && modoCostoPersonas === 'por_persona'
+      ? Number((numMonto * paxCount).toFixed(2))
+      : numMonto);
+  const calculatedPerPersonOrig = isAlojamiento
+    ? numMonto
+    : (paxCount > 1
+      ? (modoCostoPersonas === 'por_persona' ? numMonto : Number((numMonto / paxCount).toFixed(2)))
+      : numMonto);
 
   const previewMontoCOP = currentCode === 'COP'
     ? calculatedTotalOrig
     : Math.round(calculatedTotalOrig * appliedRate);
 
-  const previewPorPersonaCOP = paxCount > 1
-    ? Math.round(previewMontoCOP / paxCount)
-    : previewMontoCOP;
+  const previewPorPersonaCOP = isAlojamiento
+    ? previewMontoCOP
+    : (paxCount > 1
+      ? Math.round(previewMontoCOP / paxCount)
+      : previewMontoCOP);
 
   const previewMontoUSD = convertCurrency(calculatedTotalOrig, currentCode, 'USD');
 
@@ -345,7 +352,7 @@ export function NuevoGastoModal({
 
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
             {[
-              { count: 1, label: '1 Persona', sub: 'Solo yo' },
+              { count: 1, label: '1 Persona', sub: 'Individual' },
               { count: 2, label: '2 Personas', sub: 'Pareja / Dúo' },
               { count: 3, label: '3 Personas', sub: 'Grupo x3' }
             ].map((opt) => {
@@ -563,7 +570,7 @@ export function NuevoGastoModal({
               className="w-4 h-4 rounded border-[#1C2436] accent-[#B55FE6]"
             />
             <span className="text-xs text-[#F1F5F9]">
-              <strong>Encargo / Terceros</strong> (No computar en mi presupuesto personal)
+              <strong>Fuera de Presupuesto / Terceros</strong> (No computar en el presupuesto operativo del viaje)
             </span>
           </label>
 

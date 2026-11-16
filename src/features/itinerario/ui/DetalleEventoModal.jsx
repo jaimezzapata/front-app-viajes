@@ -377,11 +377,13 @@ export function DetalleEventoModal({
                     <div className="pt-1 border-t border-[#1C2436] flex items-center justify-between text-xs">
                       <span className="text-[#8492A6] flex items-center gap-1 font-semibold">
                         <User className="w-3 h-3 text-[#00FF85]" />
-                        Valor por Persona:
+                        {tipoKey === 'hotel' ? 'Valor (1 o 2 personas):' : 'Valor por Persona:'}
                       </span>
                       <span className="font-black text-[#00FF85]">
                         {formatCurrencyDisplay(
-                          evento.costoPorPersona || (Number(evento.costoTotal || evento.costo) / Number(evento.cantidadPersonas)),
+                          tipoKey === 'hotel'
+                            ? (evento.costoTotal || evento.costo)
+                            : (evento.costoPorPersona || (Number(evento.costoTotal || evento.costo) / Number(evento.cantidadPersonas))),
                           evento.moneda || 'COP',
                           true
                         )}
