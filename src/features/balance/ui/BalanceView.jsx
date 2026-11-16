@@ -135,7 +135,42 @@ export function BalanceView({ viaje, onOpenNuevoViaje, onUpdateViaje, onEditGast
         </div>
       </div>
 
-      {/* PANEL DE FILTROS AVANZADOS */}
+      {/* 1. PRINCIPAL: Gráfico de Torta (Lo Gastado vs. Lo que Resta) con Efecto Semáforo */}
+      <BalanceTortaCard
+        viaje={viaje}
+        displayBalance={displayBalance}
+        hasActiveFilters={hasActiveFilters}
+        filteredTotals={filteredTotals}
+        onOpenConfigPresupuesto={onUpdateViaje ? () => setIsConfigPresupuestoOpen(true) : undefined}
+      />
+
+      {/* 2. Semáforo de Presupuesto por Categoría */}
+      <BalanceSemaforoCard
+        displayBalance={displayBalance}
+        hasActiveFilters={hasActiveFilters}
+        gastos={hasActiveFilters ? filteredGastos : enrichedGastos}
+        onOpenConfigPresupuesto={onUpdateViaje ? () => setIsConfigPresupuestoOpen(true) : undefined}
+        onEditGasto={onEditGasto}
+      />
+
+      {/* 3. Tarjetas de KPIs Principales y Segmentación */}
+      <BalanceKpiCards
+        viaje={viaje}
+        hasActiveFilters={hasActiveFilters}
+        filteredTotals={filteredTotals}
+        balance={balance}
+        onOpenConfigPresupuesto={onUpdateViaje ? () => setIsConfigPresupuestoOpen(true) : undefined}
+      />
+
+      {/* 4. Multidivisa: Consumo en todas las monedas del viaje */}
+      <BalanceMultidivisaGrid
+        viaje={viaje}
+        hasActiveFilters={hasActiveFilters}
+        filteredTotals={filteredTotals}
+        balance={balance}
+      />
+
+      {/* 5. Panel de Filtros Avanzados y Desglose de Pagos */}
       <BalanceFiltrosPanel
         viaje={viaje}
         showFiltersPanel={showFiltersPanel}
@@ -168,41 +203,6 @@ export function BalanceView({ viaje, onOpenNuevoViaje, onUpdateViaje, onEditGast
         activeFiltersCount={activeFiltersCount}
         clearAllFilters={clearAllFilters}
         filteredTotals={filteredTotals}
-      />
-
-      {/* Tarjetas de KPIs Principales */}
-      <BalanceKpiCards
-        viaje={viaje}
-        hasActiveFilters={hasActiveFilters}
-        filteredTotals={filteredTotals}
-        balance={balance}
-        onOpenConfigPresupuesto={onUpdateViaje ? () => setIsConfigPresupuestoOpen(true) : undefined}
-      />
-
-      {/* Gráfico de Torta: Lo Gastado vs. Lo que Resta con Efecto Semáforo */}
-      <BalanceTortaCard
-        viaje={viaje}
-        displayBalance={displayBalance}
-        hasActiveFilters={hasActiveFilters}
-        filteredTotals={filteredTotals}
-        onOpenConfigPresupuesto={onUpdateViaje ? () => setIsConfigPresupuestoOpen(true) : undefined}
-      />
-
-      {/* Multidivisa: Consumo en todas las monedas del viaje */}
-      <BalanceMultidivisaGrid
-        viaje={viaje}
-        hasActiveFilters={hasActiveFilters}
-        filteredTotals={filteredTotals}
-        balance={balance}
-      />
-
-      {/* Semáforo de Presupuesto por Categoría */}
-      <BalanceSemaforoCard
-        displayBalance={displayBalance}
-        hasActiveFilters={hasActiveFilters}
-        gastos={hasActiveFilters ? filteredGastos : enrichedGastos}
-        onOpenConfigPresupuesto={onUpdateViaje ? () => setIsConfigPresupuestoOpen(true) : undefined}
-        onEditGasto={onEditGasto}
       />
 
       {/* SECCIÓN DETALLADA: DESGLOSE Y AUDITORÍA DE PAGOS */}

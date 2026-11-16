@@ -70,7 +70,9 @@ html:not(.dark) [class*="bg-[#07090E]"] {
 }
 
 html:not(.dark) .bg-\[\#0A0D14\],
-html:not(.dark) [class*="bg-[#0A0D14]"] {
+html:not(.dark) [class*="bg-[#0A0D14]"],
+html:not(.dark) .bg-\[\#0B0E15\],
+html:not(.dark) [class*="bg-[#0B0E15]"] {
   background-color: #F1F5F9 !important;
 }
 
@@ -188,6 +190,11 @@ html:not(.dark) [class*="text-[#FF2E55]"] {
 html:not(.dark) .text-\[\#B55FE6\],
 html:not(.dark) [class*="text-[#B55FE6]"] {
   color: #7C3AED !important; /* Violet 600 */
+}
+
+html:not(.dark) .text-\[\#FF9F43\],
+html:not(.dark) [class*="text-[#FF9F43]"] {
+  color: #EA580C !important; /* Orange 600 */
 }
 
 /* Mantener el texto oscuro dentro de botones con fondo verde llamativo */

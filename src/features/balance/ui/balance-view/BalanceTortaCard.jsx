@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTheme } from '../../../../context/ThemeContext';
 import {
   PieChart as PieChartIcon,
   CheckCircle2,
@@ -82,6 +83,9 @@ export function BalanceTortaCard({
   filteredTotals,
   onOpenConfigPresupuesto
 }) {
+  const { isDark } = useTheme();
+  const sliceSeparatorStroke = isDark ? '#0E121B' : '#FFFFFF';
+  const baseRingStroke = isDark ? '#151B27' : '#E2E8F0';
   const [chartMode, setChartMode] = useState('simple'); // 'simple' | 'modalidad'
   const [hoveredSlice, setHoveredSlice] = useState(null);
 
@@ -471,7 +475,7 @@ export function BalanceTortaCard({
                 cy={cy}
                 r={outerRadius}
                 fill="none"
-                stroke="#151B27"
+                stroke={baseRingStroke}
                 strokeWidth="4"
               />
 
@@ -490,7 +494,7 @@ export function BalanceTortaCard({
                       cy={cy}
                       r={r}
                       fill={slice.color}
-                      stroke="#0E121B"
+                      stroke={sliceSeparatorStroke}
                       strokeWidth="2.5"
                       className="transition-all duration-200 cursor-pointer"
                       style={
@@ -510,7 +514,7 @@ export function BalanceTortaCard({
                     key={slice.id}
                     d={d}
                     fill={slice.color}
-                    stroke="#0E121B"
+                    stroke={sliceSeparatorStroke}
                     strokeWidth="2.5"
                     className="transition-all duration-200 cursor-pointer"
                     style={

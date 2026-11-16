@@ -62,7 +62,8 @@ export function ReportesView({
 }) {
   const [viewMode, setViewMode] = useState('timeline'); // 'timeline' | 'tabla'
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc' | 'desc'
-  const [showFilters, setShowFilters] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
+  const [showResumenFinanciero, setShowResumenFinanciero] = useState(false);
   const [exportingExcel, setExportingExcel] = useState(false);
 
   // Estados de filtros
@@ -530,8 +531,48 @@ export function ReportesView({
         </div>
       </div>
 
-      {/* 2. SEGMENTACIÓN EN 3 NIVELES: 1) GASTO POR PERSONA, 2) GASTO TOTAL DE PERSONAS, 3) GASTO TOTAL DEL VIAJE */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5 relative z-10">
+      {/* 2. BARRA COMPACTA DE RESUMEN (Sin ocupar toda la pantalla antes del cronograma) */}
+      <div className="p-3 rounded-xl bg-[#0E121B] border border-[#1C2436] relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 flex-1">
+          <div className="px-2.5 py-1.5 rounded-lg bg-[#151B27] border border-[#00FF85]/30">
+            <span className="text-[9px] font-bold uppercase tracking-wider text-[#00FF85] block truncate">
+              1. Por Persona (Ppto)
+            </span>
+            <span className="text-xs sm:text-sm font-black font-mono text-[#00FF85]">
+              $ {Math.round(summary.enPresupuestoPorPersonaCOP).toLocaleString('es-CO')}
+            </span>
+          </div>
+          <div className="px-2.5 py-1.5 rounded-lg bg-[#151B27] border border-[#00E5FF]/30">
+            <span className="text-[9px] font-bold uppercase tracking-wider text-[#00E5FF] block truncate">
+              2. Total Personas (Ppto)
+            </span>
+            <span className="text-xs sm:text-sm font-black font-mono text-[#F1F5F9]">
+              $ {Math.round(summary.enPresupuestoTotalCOP).toLocaleString('es-CO')}
+            </span>
+          </div>
+          <div className="px-2.5 py-1.5 rounded-lg bg-[#151B27] border border-[#FF2E55]/30">
+            <span className="text-[9px] font-bold uppercase tracking-wider text-[#FF2E55] block truncate">
+              3. Total Viaje (+Tiquetes)
+            </span>
+            <span className="text-xs sm:text-sm font-black font-mono text-[#F1F5F9]">
+              $ {Math.round(summary.totalDesembolsadoCOP).toLocaleString('es-CO')}
+            </span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setShowResumenFinanciero((v) => !v)}
+          className="px-3 py-1.5 rounded-lg bg-[#151B27] border border-[#1C2436] hover:border-[#00E5FF] text-[11px] font-bold text-[#00E5FF] uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+        >
+          <span>{showResumenFinanciero ? 'Ocultar Detalle 3 Niveles' : 'Ver Detalle 3 Niveles'}</span>
+          {showResumenFinanciero ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+        </button>
+      </div>
+
+      {/* Detalle Expandible de los 3 Niveles de Gasto */}
+      {showResumenFinanciero && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5 relative z-10">
         {/* SEGMENTO 1: GASTO POR PERSONA (EN PRESUPUESTO) */}
         <div className="p-4 rounded-2xl bg-[#0E121B] border border-[#00FF85]/35 space-y-3 shadow-sm flex flex-col justify-between">
           <div className="flex items-start justify-between gap-2">
@@ -645,7 +686,8 @@ export function ReportesView({
             </span>
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* 3. PANEL DE FILTROS AVANZADOS Y SELECTOR DE VISTA */}
       <div className="p-3.5 sm:p-4 rounded-2xl bg-[#0E121B] border border-[#1C2436] relative z-10 space-y-3">

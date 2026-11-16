@@ -725,10 +725,10 @@ export function CalendarioView({
                         isSelected
                           ? 'bg-[#00E5FF]/10 ring-2 ring-inset ring-[#00E5FF]'
                           : isTripDay
-                          ? 'bg-[#00FF85]/[0.03] hover:bg-[#151B27]'
+                          ? 'bg-[#00FF85]/[0.04] hover:bg-[#151B27]'
                           : cell.inCurrentMonth
                           ? 'bg-[#0E121B] hover:bg-[#151B27]/70'
-                          : 'bg-[#0B0E15] opacity-55 hover:opacity-85'
+                          : 'bg-[#0A0D14] opacity-70 hover:opacity-95'
                       }`}
                     >
                       {/* Fila superior: Número de día + Badge Día X del viaje */}
@@ -739,7 +739,7 @@ export function CalendarioView({
                               isToday
                                 ? 'bg-[#00E5FF] text-[#080A0F]'
                                 : isSelected
-                                ? 'bg-[#F1F5F9] text-[#080A0F]'
+                                ? 'bg-[#00E5FF]/20 text-[#00E5FF] border border-[#00E5FF]/50'
                                 : cell.inCurrentMonth
                                 ? 'text-[#F1F5F9]'
                                 : 'text-[#8492A6]'
