@@ -84,7 +84,7 @@ export function ViajesCatalogoView({
           <button
             type="button"
             onClick={onOpenNuevoViaje}
-            className="h-10 px-4 bg-[#00FF85] hover:opacity-90 text-[#080A0F] font-bold text-xs uppercase tracking-wider rounded-xl transition-opacity inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-sm whitespace-nowrap select-none shrink-0"
+            className="hidden sm:inline-flex h-10 px-4 bg-[#00FF85] hover:opacity-90 text-[#080A0F] font-bold text-xs uppercase tracking-wider rounded-xl transition-opacity items-center justify-center gap-1.5 cursor-pointer shadow-sm whitespace-nowrap select-none shrink-0"
           >
             <Plus className="w-4 h-4 shrink-0" strokeWidth={2.5} />
             <span className="whitespace-nowrap">Nuevo Viaje</span>
@@ -175,6 +175,19 @@ export function ViajesCatalogoView({
           </div>
         )}
       </section>
+
+      {/* Botón flotante sutil en móvil (parte inferior derecha) */}
+      {onOpenNuevoViaje && (
+        <button
+          type="button"
+          onClick={onOpenNuevoViaje}
+          className="sm:hidden fixed bottom-20 right-4 z-40 w-12 h-12 rounded-full bg-[#00FF85]/90 hover:bg-[#00FF85] backdrop-blur-md text-[#080A0F] flex items-center justify-center shadow-lg ring-1 ring-black/10 active:scale-95 transition-all cursor-pointer"
+          title="Nuevo Viaje"
+          aria-label="Nuevo Viaje"
+        >
+          <Plus className="w-5 h-5" strokeWidth={2.5} />
+        </button>
+      )}
     </div>
   );
 }

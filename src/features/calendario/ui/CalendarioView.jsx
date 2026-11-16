@@ -155,6 +155,7 @@ export function CalendarioView({
   const [categoryFilter, setCategoryFilter] = useState('todas');
   const [searchText, setSearchText] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [showFabMenu, setShowFabMenu] = useState(false);
 
   const hasActiveFilter = categoryFilter !== 'todas' || Boolean(searchText.trim());
 
@@ -525,7 +526,7 @@ export function CalendarioView({
             <button
               type="button"
               onClick={onAddEvento}
-              className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-[#00FF85] text-[#080A0F] font-bold text-[11px] sm:text-xs uppercase tracking-wider hover:opacity-90 transition-opacity cursor-pointer"
+              className="hidden sm:flex items-center gap-1 px-3 py-2 rounded-lg bg-[#00FF85] text-[#080A0F] font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-opacity cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
               <span>Actividad</span>
@@ -535,7 +536,7 @@ export function CalendarioView({
             <button
               type="button"
               onClick={onAddGasto}
-              className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-[#151B27] border border-[#1C2436] hover:border-[#FFE500] text-[#FFE500] font-bold text-[11px] sm:text-xs uppercase tracking-wider transition-colors cursor-pointer"
+              className="hidden sm:flex items-center gap-1 px-3 py-2 rounded-lg bg-[#151B27] border border-[#1C2436] hover:border-[#FFE500] text-[#FFE500] font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
               <span>Gasto</span>
@@ -1114,6 +1115,61 @@ export function CalendarioView({
           )}
         </div>
       </Modal>
+
+      {/* Botón flotante sutil en móvil (parte inferior derecha) */}
+      {(onAddEvento || onAddGasto) && (
+        <div className="sm:hidden fixed bottom-20 right-4 z-40 flex flex-col items-end gap-2">
+          {showFabMenu && (
+            <div className="flex flex-col items-end gap-1.5 mb-1">
+              {onAddEvento && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowFabMenu(false);
+                    onAddEvento();
+                  }}
+                  className="px-3 py-1.5 rounded-full bg-[#00FF85] text-[#080A0F] text-xs font-bold shadow-lg flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>Actividad</span>
+                </button>
+              )}
+              {onAddGasto && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowFabMenu(false);
+                    onAddGasto();
+                  }}
+                  className="px-3 py-1.5 rounded-full bg-[#151B27] border border-[#FFE500]/50 text-[#FFE500] text-xs font-bold shadow-lg flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>Gasto</span>
+                </button>
+              )}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              if (onAddEvento && onAddGasto) {
+                setShowFabMenu((v) => !v);
+              } else if (onAddEvento) {
+                onAddEvento();
+              } else if (onAddGasto) {
+                onAddGasto();
+              }
+            }}
+            className={`w-12 h-12 rounded-full bg-[#00E5FF]/90 hover:bg-[#00E5FF] backdrop-blur-md text-[#080A0F] flex items-center justify-center shadow-lg ring-1 ring-black/10 active:scale-95 transition-all cursor-pointer ${
+              showFabMenu ? 'rotate-45' : ''
+            }`}
+            title="Registrar Actividad o Gasto"
+            aria-label="Registrar Actividad o Gasto"
+          >
+            <Plus className="w-5 h-5" strokeWidth={2.5} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

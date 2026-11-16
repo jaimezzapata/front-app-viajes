@@ -178,7 +178,7 @@ export function ItinerarioView({
 
           <button
             onClick={onAddEvento}
-            className="flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-lg bg-[#00E5FF] text-[#080A0F] font-bold text-xs uppercase tracking-wider hover:opacity-90 hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] transition-all cursor-pointer shadow-sm"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-lg bg-[#00E5FF] text-[#080A0F] font-bold text-xs uppercase tracking-wider hover:opacity-90 hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] transition-all cursor-pointer shadow-sm"
           >
             <Plus className="w-4 h-4" strokeWidth={2.5} />
             <span>Vuelo / Actividad</span>
@@ -892,6 +892,17 @@ export function ItinerarioView({
           if (onDeleteEvento) onDeleteEvento(ev);
         }}
       />
+
+      {/* Botón flotante sutil en móvil (parte inferior derecha) */}
+      <button
+        type="button"
+        onClick={onAddEvento}
+        className="sm:hidden fixed bottom-20 right-4 z-40 w-12 h-12 rounded-full bg-[#00E5FF]/90 hover:bg-[#00E5FF] backdrop-blur-md text-[#080A0F] flex items-center justify-center shadow-lg ring-1 ring-black/10 active:scale-95 transition-all cursor-pointer"
+        title="Registrar Vuelo / Actividad"
+        aria-label="Registrar Vuelo / Actividad"
+      >
+        <Plus className="w-5 h-5" strokeWidth={2.5} />
+      </button>
     </div>
   );
 }

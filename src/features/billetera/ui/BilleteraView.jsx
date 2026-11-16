@@ -150,7 +150,7 @@ export function BilleteraView({
 
           <button
             onClick={onAddGasto}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#00FF85] text-[#080A0F] font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#00FF85] text-[#080A0F] font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
           >
             <Plus className="w-4 h-4" strokeWidth={2.5} />
             <span>Registrar Gasto</span>
@@ -356,13 +356,15 @@ export function BilleteraView({
         </div>
       )}
 
-      {/* Floating Action Button (FAB) en Móvil (Thumb-zone RF 2 & REGLAS 1.5) */}
+      {/* Botón flotante sutil en móvil (parte inferior derecha) */}
       <button
+        type="button"
         onClick={onAddGasto}
-        className="sm:hidden fixed bottom-20 right-4 z-40 w-14 h-14 rounded-full bg-[#00FF85] text-[#080A0F] flex items-center justify-center shadow-xl active:scale-95 transition-transform border-2 border-[#080A0F]"
-        title="Registrar Gasto Rápido"
+        className="sm:hidden fixed bottom-20 right-4 z-40 w-12 h-12 rounded-full bg-[#00FF85]/90 hover:bg-[#00FF85] backdrop-blur-md text-[#080A0F] flex items-center justify-center shadow-lg ring-1 ring-black/10 active:scale-95 transition-all cursor-pointer"
+        title="Registrar Gasto"
+        aria-label="Registrar Gasto"
       >
-        <Plus className="w-7 h-7" strokeWidth={3} />
+        <Plus className="w-5 h-5" strokeWidth={2.5} />
       </button>
     </div>
   );
