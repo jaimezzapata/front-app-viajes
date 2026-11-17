@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiRequest } from '../../../services/api';
+import { recordAuditEvent } from '../../../utils/auditLog';
 
 const USER_STORAGE_KEY = 'app_viajes_usuario';
 
@@ -44,6 +45,13 @@ export function useAuth() {
       });
       setUsuario(res);
       localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(res));
+      recordAuditEvent({
+        modulo: 'sesion',
+        accion: 'login',
+        titulo: 'Inicio de sesión',
+        detalle: `Sesión iniciada en la plataforma (${res?.email || email})`,
+        usuario: res
+      });
       return res;
     } catch (err) {
       console.warn('Conexión con servidor no disponible, continuando en modo Offline-First:', err.message);
@@ -56,6 +64,13 @@ export function useAuth() {
       };
       setUsuario(offlineUser);
       localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(offlineUser));
+      recordAuditEvent({
+        modulo: 'sesion',
+        accion: 'login',
+        titulo: 'Inicio de sesión (Modo Offline)',
+        detalle: `Sesión iniciada localmente (${offlineUser.email})`,
+        usuario: offlineUser
+      });
       return offlineUser;
     } finally {
       setLoading(false);
@@ -63,6 +78,15 @@ export function useAuth() {
   };
 
   const logout = () => {
+    if (usuario) {
+      recordAuditEvent({
+        modulo: 'sesion',
+        accion: 'logout',
+        titulo: 'Cierre de sesión',
+        detalle: `Sesión cerrada (${usuario.email || usuario.nombre})`,
+        usuario
+      });
+    }
     setUsuario(null);
     localStorage.removeItem(USER_STORAGE_KEY);
   };

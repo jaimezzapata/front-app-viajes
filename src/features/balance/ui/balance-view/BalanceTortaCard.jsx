@@ -9,7 +9,8 @@ import {
   Wallet,
   ShieldAlert,
   Settings2,
-  Layers
+  Layers,
+  PlusCircle
 } from 'lucide-react';
 
 const SEMAFORO_CONFIG = {
@@ -76,20 +77,43 @@ function createPieSlicePath(cx, cy, r, startAngle, endAngle) {
   ].join(' ');
 }
 
+function createArcPath(cx, cy, r, startAngle, endAngle) {
+  const clampedSpan = Math.min(Math.max(endAngle - startAngle, 0), 359.99);
+  if (clampedSpan <= 0.01) return '';
+  const start = polarToCartesian(cx, cy, r, startAngle + clampedSpan);
+  const end = polarToCartesian(cx, cy, r, startAngle);
+  const largeArcFlag = clampedSpan <= 180 ? '0' : '1';
+  return [
+    'M', start.x, start.y,
+    'A', r, r, 0, largeArcFlag, 0, end.x, end.y
+  ].join(' ');
+}
+
 export function BalanceTortaCard({
   viaje,
   displayBalance,
   hasActiveFilters,
   filteredTotals,
-  onOpenConfigPresupuesto
+  onOpenConfigPresupuesto,
+  onOpenInyectarPresupuesto
 }) {
   const { isDark } = useTheme();
   const sliceSeparatorStroke = isDark ? '#0E121B' : '#FFFFFF';
   const baseRingStroke = isDark ? '#151B27' : '#E2E8F0';
-  const [chartMode, setChartMode] = useState('simple'); // 'simple' | 'modalidad'
+  const [chartMode, setChartMode] = useState('simple'); // 'simple' | 'modalidad' | 'origen'
   const [hoveredSlice, setHoveredSlice] = useState(null);
 
   const presupuestoCOP = Number(viaje?.presupuestoTotal || displayBalance?.presupuestoTotalCOP || 0);
+  const inyeccionesPresupuesto = Array.isArray(viaje?.inyeccionesPresupuesto)
+    ? viaje.inyeccionesPresupuesto
+    : Array.isArray(displayBalance?.inyeccionesPresupuesto)
+    ? displayBalance.inyeccionesPresupuesto
+    : [];
+  const totalInyectadoCOP = inyeccionesPresupuesto.reduce(
+    (acc, item) => acc + Math.max(0, Number(item?.monto) || 0),
+    0
+  );
+  const presupuestoBaseCOP = Math.max(0, presupuestoCOP - totalInyectadoCOP);
   const presupuestoPersonas = Math.max(1, Math.round(Number(viaje?.presupuestoPersonas || displayBalance?.presupuestoPersonas) || 1));
   const gastadoCOP = Number(
     hasActiveFilters
@@ -125,6 +149,8 @@ export function BalanceTortaCard({
   const rawPctGastado = presupuestoCOP > 0 ? (gastadoCOP / presupuestoCOP) * 100 : 0;
   const pctGastadoVisual = Math.min(Math.max(rawPctGastado, 0), 100);
   const pctRestanteVisual = Math.max(0, 100 - pctGastadoVisual);
+  const pctInyectadoDelTotal = presupuestoCOP > 0 ? (totalInyectadoCOP / presupuestoCOP) * 100 : 0;
+  const pctBaseDelTotal = Math.max(0, 100 - pctInyectadoDelTotal);
 
   const semaforoKey =
     rawPctGastado >= 100 ? 'rojo' : rawPctGastado >= 75 ? 'amarillo' : 'verde';
@@ -147,6 +173,33 @@ export function BalanceTortaCard({
       startAngle: 0,
       endAngle: 359.99
     });
+  } else if (chartMode === 'origen' && presupuestoCOP > 0) {
+    // Modo Origen del Presupuesto: Presupuesto Base vs. Inyecciones Adicionales
+    const pctBase = (presupuestoBaseCOP / presupuestoCOP) * 100;
+    const pctInyectado = Math.max(0, 100 - pctBase);
+    const spanBase = (pctBase / 100) * 360;
+    if (pctBase > 0) {
+      slices.push({
+        id: 'ppto_base',
+        label: 'Presupuesto Base Inicial',
+        amountCOP: presupuestoBaseCOP,
+        pct: Number(pctBase.toFixed(1)),
+        color: '#00E5FF',
+        startAngle: 0,
+        endAngle: spanBase
+      });
+    }
+    if (pctInyectado > 0) {
+      slices.push({
+        id: 'ppto_inyectado',
+        label: 'Presupuesto Inyectado (+)',
+        amountCOP: totalInyectadoCOP,
+        pct: Number(pctInyectado.toFixed(1)),
+        color: '#B55FE6',
+        startAngle: spanBase,
+        endAngle: 360
+      });
+    }
   } else if (chartMode === 'modalidad' && gastadoCOP > 0) {
     const pctPreViaje = presupuestoCOP > 0
       ? Math.min((preViajeCOP / presupuestoCOP) * 100, 100)
@@ -211,25 +264,66 @@ export function BalanceTortaCard({
       });
     }
     if (pctRestanteVisual > 0) {
-      slices.push({
-        id: 'restante',
-        label: 'Lo que resta (Disponible)',
-        amountCOP: restanteCOP,
-        pct: Number(pctRestanteVisual.toFixed(1)),
-        color: '#00E5FF',
-        startAngle: spanGastado,
-        endAngle: 360
-      });
+      if (totalInyectadoCOP > 0 && presupuestoCOP > 0) {
+        const restanteInyectadoCOP = Math.min(restanteCOP, totalInyectadoCOP);
+        const restanteBaseCOP = Math.max(0, restanteCOP - restanteInyectadoCOP);
+        const pctRestanteBase = (restanteBaseCOP / presupuestoCOP) * 100;
+        const pctRestanteIny = Math.max(0, pctRestanteVisual - pctRestanteBase);
+        const spanRestanteBase = (pctRestanteBase / 100) * 360;
+
+        if (pctRestanteBase > 0.05) {
+          slices.push({
+            id: 'restante',
+            label: 'Resta Presupuesto Base',
+            amountCOP: restanteBaseCOP,
+            pct: Number(pctRestanteBase.toFixed(1)),
+            color: '#00E5FF',
+            startAngle: spanGastado,
+            endAngle: spanGastado + spanRestanteBase
+          });
+        }
+        if (pctRestanteIny > 0.05) {
+          slices.push({
+            id: 'restante_inyectado',
+            label: 'Resta Inyectado (+)',
+            amountCOP: restanteInyectadoCOP,
+            pct: Number(pctRestanteIny.toFixed(1)),
+            color: '#B55FE6',
+            startAngle: spanGastado + spanRestanteBase,
+            endAngle: 360
+          });
+        }
+      } else {
+        slices.push({
+          id: 'restante',
+          label: 'Lo que resta (Disponible)',
+          amountCOP: restanteCOP,
+          pct: Number(pctRestanteVisual.toFixed(1)),
+          color: '#00E5FF',
+          startAngle: spanGastado,
+          endAngle: 360
+        });
+      }
     }
   }
 
-  const activeSlice = slices.find((s) => s.id === hoveredSlice) || null;
+  const activeSlice =
+    hoveredSlice === 'outer_inyectado'
+      ? {
+          id: 'outer_inyectado',
+          label: 'Capital Inyectado (+)',
+          amountCOP: totalInyectadoCOP,
+          pct: Number(pctInyectadoDelTotal.toFixed(1)),
+          color: '#B55FE6'
+        }
+      : slices.find((s) => s.id === hoveredSlice) || null;
 
   // Coordenadas para marcador del 75% (umbral amarillo = 270°)
   const cx = 120;
   const cy = 120;
-  const outerRadius = 96;
+  const outerRadius = totalInyectadoCOP > 0 ? 90 : 96;
   const innerRadius = 56;
+  const haloRadius = 103;
   const marker75Inner = polarToCartesian(cx, cy, innerRadius - 4, 270);
   const marker75Outer = polarToCartesian(cx, cy, outerRadius + 6, 270);
 
@@ -299,9 +393,34 @@ export function BalanceTortaCard({
               }`}
             >
               <Layers className="w-3 h-3" />
-              <span>Pre-Viaje / Ruta vs. Resta</span>
+              <span>Pre-Viaje / Ruta</span>
             </button>
+            {totalInyectadoCOP > 0 && (
+              <button
+                type="button"
+                onClick={() => setChartMode('origen')}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                  chartMode === 'origen'
+                    ? 'bg-[#B55FE6] text-white'
+                    : 'text-[#8492A6] hover:text-[#F1F5F9]'
+                }`}
+              >
+                Base vs. Inyectado
+              </button>
+            )}
           </div>
+
+          {onOpenInyectarPresupuesto && (
+            <button
+              type="button"
+              onClick={onOpenInyectarPresupuesto}
+              className="px-2.5 py-1.5 rounded-lg bg-[#B55FE6]/15 hover:bg-[#B55FE6]/25 border border-[#B55FE6]/45 text-[#B55FE6] text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1"
+              title="Inyectar presupuesto adicional al viaje"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span>Inyectar</span>
+            </button>
+          )}
 
           {onOpenConfigPresupuesto && (
             <button
@@ -467,7 +586,64 @@ export function BalanceTortaCard({
                   <feGaussianBlur stdDeviation="3.5" result="blur" />
                   <feComposite in="SourceGraphic" in2="blur" operator="over" />
                 </filter>
+                <pattern
+                  id="injectedStripePattern"
+                  width="6"
+                  height="6"
+                  patternTransform="rotate(45 0 0)"
+                  patternUnits="userSpaceOnUse"
+                >
+                  <rect width="6" height="6" fill="#B55FE6" />
+                  <line x1="0" y1="0" x2="0" y2="6" stroke="#FFFFFF" strokeOpacity="0.35" strokeWidth="2.2" />
+                </pattern>
               </defs>
+
+              {/* Anillo Exterior de Origen del Capital (solo cuando hay capital inyectado) */}
+              {totalInyectadoCOP > 0 && presupuestoCOP > 0 && (
+                <g>
+                  <circle
+                    cx={cx}
+                    cy={cy}
+                    r={haloRadius}
+                    fill="none"
+                    stroke="#00E5FF"
+                    strokeOpacity="0.28"
+                    strokeWidth="6"
+                  />
+                  {pctInyectadoDelTotal >= 99.9 ? (
+                    <circle
+                      cx={cx}
+                      cy={cy}
+                      r={haloRadius}
+                      fill="none"
+                      stroke="#B55FE6"
+                      strokeWidth={hoveredSlice === 'outer_inyectado' ? '9' : '6.5'}
+                      className="transition-all duration-200 cursor-pointer"
+                      style={{ filter: 'url(#semaforoGlow)' }}
+                      onMouseEnter={() => setHoveredSlice('outer_inyectado')}
+                      onMouseLeave={() => setHoveredSlice(null)}
+                    />
+                  ) : (
+                    <path
+                      d={createArcPath(
+                        cx,
+                        cy,
+                        haloRadius,
+                        (pctBaseDelTotal / 100) * 360,
+                        360
+                      )}
+                      fill="none"
+                      stroke="#B55FE6"
+                      strokeLinecap="round"
+                      strokeWidth={hoveredSlice === 'outer_inyectado' ? '9' : '6.5'}
+                      className="transition-all duration-200 cursor-pointer"
+                      style={{ filter: 'url(#semaforoGlow)' }}
+                      onMouseEnter={() => setHoveredSlice('outer_inyectado')}
+                      onMouseLeave={() => setHoveredSlice(null)}
+                    />
+                  )}
+                </g>
+              )}
 
               {/* Círculo base de fondo */}
               <circle
@@ -509,11 +685,13 @@ export function BalanceTortaCard({
                 }
 
                 const d = createPieSlicePath(cx, cy, r, slice.startAngle, slice.endAngle);
+                const isInjectedSlice =
+                  slice.id === 'restante_inyectado' || slice.id === 'ppto_inyectado';
                 return (
                   <path
                     key={slice.id}
                     d={d}
-                    fill={slice.color}
+                    fill={isInjectedSlice ? 'url(#injectedStripePattern)' : slice.color}
                     stroke={sliceSeparatorStroke}
                     strokeWidth="2.5"
                     className="transition-all duration-200 cursor-pointer"
@@ -558,7 +736,15 @@ export function BalanceTortaCard({
               {activeSlice ? (
                 <>
                   <span className="text-[9px] font-bold uppercase tracking-wider text-[#8492A6] max-w-[95px] truncate">
-                    {activeSlice.id === 'restante' ? 'Lo que resta' : 'Gastado'}
+                    {activeSlice.id === 'restante'
+                      ? 'Resta Base'
+                      : activeSlice.id === 'restante_inyectado'
+                      ? 'Resta Inyectado'
+                      : activeSlice.id === 'ppto_base'
+                      ? 'Ppto Base'
+                      : activeSlice.id === 'ppto_inyectado' || activeSlice.id === 'outer_inyectado'
+                      ? 'Capital Inyectado'
+                      : 'Gastado'}
                   </span>
                   <span
                     className="text-lg font-extrabold font-mono leading-tight"
@@ -591,27 +777,66 @@ export function BalanceTortaCard({
           </div>
 
           {/* Leyenda Interactiva debajo de la Torta */}
-          <div className="flex items-center justify-center gap-3 flex-wrap mt-2">
-            {slices.map((s) => (
+          <div className="flex items-center justify-center gap-2 flex-wrap mt-2">
+            {slices.map((s) => {
+              const isInjected = s.id === 'restante_inyectado' || s.id === 'ppto_inyectado';
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onMouseEnter={() => setHoveredSlice(s.id)}
+                  onMouseLeave={() => setHoveredSlice(null)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] transition-all cursor-pointer ${
+                    hoveredSlice === s.id
+                      ? 'bg-[#151B27] border-[#00E5FF]'
+                      : 'bg-[#151B27]/60 border-[#1C2436]'
+                  }`}
+                >
+                  <span
+                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                    style={
+                      isInjected
+                        ? {
+                            background:
+                              'repeating-linear-gradient(45deg, #B55FE6, #B55FE6 2px, rgba(255,255,255,0.55) 2px, rgba(255,255,255,0.55) 4px)'
+                          }
+                        : { backgroundColor: s.color }
+                    }
+                  />
+                  <span className="text-[#8492A6] font-medium">{s.label}:</span>
+                  <strong className="text-[#F1F5F9] font-mono">{s.pct}%</strong>
+                </button>
+              );
+            })}
+
+            {totalInyectadoCOP > 0 && chartMode !== 'origen' && (
               <button
-                key={s.id}
                 type="button"
-                onMouseEnter={() => setHoveredSlice(s.id)}
+                onMouseEnter={() => setHoveredSlice('outer_inyectado')}
                 onMouseLeave={() => setHoveredSlice(null)}
+                onClick={onOpenInyectarPresupuesto}
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] transition-all cursor-pointer ${
-                  hoveredSlice === s.id
-                    ? 'bg-[#151B27] border-[#00E5FF]'
-                    : 'bg-[#151B27]/60 border-[#1C2436]'
+                  hoveredSlice === 'outer_inyectado'
+                    ? 'bg-[#B55FE6]/20 border-[#B55FE6]'
+                    : 'bg-[#B55FE6]/10 border-[#B55FE6]/40'
                 }`}
+                title="Porcentaje del presupuesto total que proviene de capital inyectado"
               >
                 <span
                   className="w-2.5 h-2.5 rounded-full shrink-0"
-                  style={{ backgroundColor: s.color }}
+                  style={{
+                    background:
+                      'repeating-linear-gradient(45deg, #B55FE6, #B55FE6 2px, rgba(255,255,255,0.55) 2px, rgba(255,255,255,0.55) 4px)'
+                  }}
                 />
-                <span className="text-[#8492A6] font-medium">{s.label}:</span>
-                <strong className="text-[#F1F5F9] font-mono">{s.pct}%</strong>
+                <span className="text-[#B55FE6] font-bold">
+                  Capital Inyectado: +{pctInyectadoDelTotal.toFixed(1)}%
+                </span>
+                <strong className="text-[#F1F5F9] font-mono">
+                  ($ {Math.round(totalInyectadoCOP).toLocaleString('es-CO')})
+                </strong>
               </button>
-            ))}
+            )}
           </div>
         </div>
 
@@ -688,6 +913,23 @@ export function BalanceTortaCard({
                 </strong>
                 .
               </p>
+
+              {totalInyectadoCOP > 0 && (
+                <div className="mt-2 pt-2 border-t border-[#1C2436] flex items-center justify-between gap-2 text-[11px] flex-wrap">
+                  <span className="text-[#8492A6]">
+                    Base:{' '}
+                    <strong className="text-[#00E5FF] font-mono">
+                      $ {Math.round(presupuestoBaseCOP).toLocaleString('es-CO')}
+                    </strong>
+                  </span>
+                  <span className="text-[#8492A6]">
+                    + Inyectado ({inyeccionesPresupuesto.length}):{' '}
+                    <strong className="text-[#B55FE6] font-mono">
+                      +$ {Math.round(totalInyectadoCOP).toLocaleString('es-CO')}
+                    </strong>
+                  </span>
+                </div>
+              )}
             </div>
           ) : (
             <div className="p-3.5 rounded-xl bg-[#151B27] border border-[#FF2E55]/50">
@@ -732,6 +974,18 @@ export function BalanceTortaCard({
               <span className="text-[#FF2E55]">100% Tope</span>
             </div>
             <div className="relative h-3 rounded-full bg-[#0E121B] border border-[#1C2436] overflow-hidden">
+              {/* Zona de capital inyectado al final de la barra (diferenciada en violeta rayado) */}
+              {totalInyectadoCOP > 0 && pctInyectadoDelTotal > 0 && pctInyectadoDelTotal < 100 && (
+                <div
+                  className="absolute top-0 bottom-0 right-0 opacity-40"
+                  style={{
+                    width: `${pctInyectadoDelTotal}%`,
+                    background:
+                      'repeating-linear-gradient(45deg, #B55FE6, #B55FE6 3px, rgba(255,255,255,0.25) 3px, rgba(255,255,255,0.25) 6px)'
+                  }}
+                  title={`Capital Inyectado (+${pctInyectadoDelTotal.toFixed(1)}%)`}
+                />
+              )}
               {/* Marca vertical del 75% */}
               <div
                 className="absolute top-0 bottom-0 w-0.5 bg-[#FFE500]/80 z-10"

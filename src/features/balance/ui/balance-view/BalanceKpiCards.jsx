@@ -5,6 +5,16 @@ import WatermarkIcon from '../../../../components/WatermarkIcon';
 export function BalanceKpiCards({ viaje, hasActiveFilters, filteredTotals, balance, onOpenConfigPresupuesto }) {
   const presupuestoPersonas = Math.max(1, Math.round(Number(viaje?.presupuestoPersonas || balance?.presupuestoPersonas) || 1));
   const presupuestoTotalNum = Number(viaje?.presupuestoTotal || balance?.presupuestoTotalCOP || 0);
+  const inyecciones = Array.isArray(viaje?.inyeccionesPresupuesto)
+    ? viaje.inyeccionesPresupuesto
+    : Array.isArray(balance?.inyeccionesPresupuesto)
+    ? balance.inyeccionesPresupuesto
+    : [];
+  const totalInyectadoCOP = inyecciones.reduce(
+    (acc, it) => acc + Math.max(0, Number(it?.monto) || 0),
+    0
+  );
+  const presupuestoBaseCOP = Math.max(0, presupuestoTotalNum - totalInyectadoCOP);
   const miParteCOP = hasActiveFilters ? (filteredTotals?.cop || 0) : (balance?.totalGastadoCOP || 0);
   const miParteUSD = hasActiveFilters ? (filteredTotals?.usd || 0) : (balance?.totalGastadoUSD || 0);
   const totalDesembolsadoCOP = hasActiveFilters
@@ -62,6 +72,11 @@ export function BalanceKpiCards({ viaje, hasActiveFilters, filteredTotals, balan
           <span className="text-[10px] text-[#00E5FF] font-medium block">
             {viaje?.monedaBase || 'COP'} • {presupuestoPersonas === 1 ? 'Individual (1p)' : `Grupal (${presupuestoPersonas}p ≈ $${Math.round(presupuestoTotalNum / presupuestoPersonas).toLocaleString('es-CO')}/p)`}
           </span>
+          {totalInyectadoCOP > 0 && (
+            <span className="text-[10px] text-[#B55FE6] font-mono font-bold block mt-0.5">
+              Base: ${Math.round(presupuestoBaseCOP).toLocaleString('es-CO')} + Iny: ${Math.round(totalInyectadoCOP).toLocaleString('es-CO')}
+            </span>
+          )}
         </div>
 
         {/* Total Consumido (En Presupuesto - Según Alcance Definido) */}

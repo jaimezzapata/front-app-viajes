@@ -5,6 +5,7 @@ import { convertCurrency, getExactExchangeRate } from '../utils/currencies';
 import { fixAccents, cleanCountryText } from '../utils/countries';
 import { calculateTripBalance } from '../utils/balance';
 import { parseEventoMeta, parseViajeMeta, parseGastoMeta } from '../utils/meta';
+import { recordAuditEvent } from '../utils/auditLog';
 
 export function repairViaje(v) {
   if (!v) return v;
@@ -646,11 +647,26 @@ export function useAppViajes(usuario) {
       toast.info('Configuración guardada localmente (Modo Offline).');
     }
 
+    if (savedViaje) {
+      recordAuditEvent({
+        modulo: 'viajes',
+        accion: 'crear',
+        titulo: `Viaje creado: ${savedViaje.titulo || nuevoViajeData?.titulo || 'Nuevo viaje'}`,
+        detalle: `Destino: ${savedViaje.destino || nuevoViajeData?.destino || '-'} • Presupuesto: $ ${Math.round(Number(savedViaje.presupuestoTotal || 0)).toLocaleString('es-CO')} COP`,
+        usuario,
+        viajeId: savedViaje.id,
+        viajeTitulo: savedViaje.titulo,
+        montoCOP: Number(savedViaje.presupuestoTotal || 0),
+        fechaReferencia: savedViaje.fechaInicio || null
+      });
+    }
+
     return savedViaje;
   };
 
   const handleUpdateViaje = async (id, updatedData, opts = {}) => {
     const silent = Boolean(opts?.silent);
+    const prevViaje = viajes.find(v => v.id === id);
     let saved = null;
     // Optimistic update in local state & localStorage
     setViajes(prev =>
@@ -684,10 +700,74 @@ export function useAppViajes(usuario) {
       }
     }
 
+    // Registrar movimiento en auditoría según el tipo de actualización
+    const targetViajeTitle = saved?.titulo || prevViaje?.titulo || 'Viaje';
+    if (updatedData.inyeccionesPresupuesto !== undefined) {
+      const prevLen = Array.isArray(prevViaje?.inyeccionesPresupuesto) ? prevViaje.inyeccionesPresupuesto.length : 0;
+      const nextList = Array.isArray(updatedData.inyeccionesPresupuesto) ? updatedData.inyeccionesPresupuesto : [];
+      if (nextList.length > prevLen) {
+        const latest = nextList[0];
+        recordAuditEvent({
+          modulo: 'presupuesto',
+          accion: 'inyectar',
+          titulo: `Inyección de presupuesto: ${latest?.concepto || 'Aporte adicional'}`,
+          detalle: `Nuevo total vigente: $ ${Math.round(Number(updatedData.presupuestoTotal || 0)).toLocaleString('es-CO')} COP`,
+          usuario,
+          viajeId: id,
+          viajeTitulo: targetViajeTitle,
+          montoCOP: Number(latest?.monto || 0),
+          fechaReferencia: latest?.fecha || null
+        });
+      } else {
+        recordAuditEvent({
+          modulo: 'presupuesto',
+          accion: 'eliminar',
+          titulo: 'Inyección de presupuesto revertida',
+          detalle: `Nuevo total vigente: $ ${Math.round(Number(updatedData.presupuestoTotal || 0)).toLocaleString('es-CO')} COP`,
+          usuario,
+          viajeId: id,
+          viajeTitulo: targetViajeTitle,
+          montoCOP: Number(updatedData.presupuestoTotal || 0)
+        });
+      }
+    } else if (updatedData.checklist !== undefined && Object.keys(updatedData).length === 1) {
+      recordAuditEvent({
+        modulo: 'checklist',
+        accion: 'editar',
+        titulo: 'Checklist actualizado',
+        detalle: `Se actualizó el estado o ítems del checklist de ${targetViajeTitle}`,
+        usuario,
+        viajeId: id,
+        viajeTitulo: targetViajeTitle
+      });
+    } else if (updatedData.presupuestoTotal !== undefined || updatedData.categoriasPresupuesto !== undefined) {
+      recordAuditEvent({
+        modulo: 'presupuesto',
+        accion: 'editar',
+        titulo: 'Configuración de presupuesto actualizada',
+        detalle: `Presupuesto: $ ${Math.round(Number(updatedData.presupuestoTotal ?? prevViaje?.presupuestoTotal ?? 0)).toLocaleString('es-CO')} COP (${updatedData.presupuestoPersonas ?? prevViaje?.presupuestoPersonas ?? 1} pers.)`,
+        usuario,
+        viajeId: id,
+        viajeTitulo: targetViajeTitle,
+        montoCOP: Number(updatedData.presupuestoTotal ?? prevViaje?.presupuestoTotal ?? 0)
+      });
+    } else {
+      recordAuditEvent({
+        modulo: 'viajes',
+        accion: 'editar',
+        titulo: `Viaje editado: ${targetViajeTitle}`,
+        detalle: `Actualización de configuración o ruta del viaje`,
+        usuario,
+        viajeId: id,
+        viajeTitulo: targetViajeTitle
+      });
+    }
+
     return saved;
   };
 
   const handleDeleteViaje = async (id) => {
+    const targetViaje = viajes.find(v => v.id === id);
     try {
       if (navigator.onLine) {
         await apiRequest(`/viajes/${id}`, {
@@ -714,6 +794,16 @@ export function useAppViajes(usuario) {
     localStorage.removeItem(`app_viajes_eventos_${id}`);
     localStorage.removeItem(`app_viajes_gastos_${id}`);
     localStorage.removeItem(`app_viajes_docs_${id}`);
+
+    recordAuditEvent({
+      modulo: 'viajes',
+      accion: 'eliminar',
+      titulo: `Viaje eliminado: ${targetViaje?.titulo || id}`,
+      detalle: targetViaje?.destino ? `Destino: ${targetViaje.destino}` : 'Viaje eliminado de la bitácora',
+      usuario,
+      viajeId: id,
+      viajeTitulo: targetViaje?.titulo || null
+    });
 
     toast.success('Viaje eliminado correctamente.');
   };
@@ -821,10 +911,29 @@ export function useAppViajes(usuario) {
       toast.success('Evento agendado exitosamente.');
     }
 
+    savedResults.forEach((ev) => {
+      const cNum = Number(ev?.costo || 0);
+      const mon = (ev?.moneda || activeViaje?.monedaBase || 'COP').toUpperCase();
+      recordAuditEvent({
+        modulo: 'itinerario',
+        accion: 'crear',
+        titulo: `Actividad / Vuelo creado: ${ev?.titulo || 'Evento'}`,
+        detalle: `Tipo: ${(ev?.tipo || 'evento').toUpperCase()}${ev?.tarjetaCredito ? ` • TC: ${ev.tarjetaCredito}` : ''}`,
+        usuario,
+        viajeId: activeViajeId,
+        viajeTitulo: activeViaje?.titulo || null,
+        montoCOP: cNum > 0 ? convertCurrency(cNum, mon, 'COP') : null,
+        montoOriginal: cNum > 0 ? cNum : null,
+        monedaOriginal: cNum > 0 ? mon : null,
+        fechaReferencia: ev?.fechaInicio || null
+      });
+    });
+
     return Array.isArray(eventoDataOrList) ? savedResults : savedResults[0];
   };
 
   const handleUpdateEvento = async (id, updatedEventoData) => {
+    const prevViaje = viajes.find(v => v.id === id);
     let saved = null;
     const monedaOriginal = (updatedEventoData.moneda || activeViaje?.monedaBase || 'COP').toUpperCase();
     const costoNum = (updatedEventoData.costo !== undefined && updatedEventoData.costo !== null && Number(updatedEventoData.costo) > 0)
@@ -972,10 +1081,25 @@ export function useAppViajes(usuario) {
       return prev;
     });
 
+    recordAuditEvent({
+      modulo: 'itinerario',
+      accion: 'editar',
+      titulo: `Actividad / Vuelo editado: ${updatedEventoData.titulo || saved?.titulo || 'Evento'}`,
+      detalle: `Tipo: ${(updatedEventoData.tipo || saved?.tipo || 'evento').toUpperCase()}${updatedEventoData.tarjetaCredito ? ` • TC: ${updatedEventoData.tarjetaCredito}` : ''}`,
+      usuario,
+      viajeId: activeViajeId,
+      viajeTitulo: activeViaje?.titulo || null,
+      montoCOP: costoNum > 0 ? montoCOP : null,
+      montoOriginal: costoNum > 0 ? costoNum : null,
+      monedaOriginal: costoNum > 0 ? monedaOriginal : null,
+      fechaReferencia: updatedEventoData.fechaInicio || saved?.fechaInicio || null
+    });
+
     return saved;
   };
 
   const handleDeleteEvento = async (id) => {
+    const targetEv = eventos.find(e => e.id === id);
     try {
       if (navigator.onLine) {
         await apiRequest(`/itinerario/${id}`, {
@@ -988,6 +1112,16 @@ export function useAppViajes(usuario) {
 
     setEventos(prev => prev.filter(e => e.id !== id));
     setGastos(prev => prev.filter(g => g.eventoId !== id));
+    recordAuditEvent({
+      modulo: 'itinerario',
+      accion: 'eliminar',
+      titulo: `Actividad / Vuelo eliminado: ${targetEv?.titulo || id}`,
+      detalle: targetEv?.tipo ? `Tipo: ${targetEv.tipo.toUpperCase()}` : 'Eliminado del itinerario',
+      usuario,
+      viajeId: activeViajeId,
+      viajeTitulo: activeViaje?.titulo || null,
+      fechaReferencia: targetEv?.fechaInicio || null
+    });
     toast.success('Vuelo / Evento eliminado del itinerario.');
   };
 
@@ -1020,6 +1154,19 @@ export function useAppViajes(usuario) {
         });
         const savedGasto = res?.data || res || payload;
         setGastos(prev => [savedGasto, ...prev.filter(g => g.id !== savedGasto.id)]);
+        recordAuditEvent({
+          modulo: 'billetera',
+          accion: 'crear',
+          titulo: `Compra / Gasto registrado: ${savedGasto.concepto || payload.concepto || 'Gasto'}`,
+          detalle: `Categoría: ${(savedGasto.categoria || payload.categoria || 'otros').toUpperCase()}${savedGasto.tarjetaCredito ? ` • TC: ${savedGasto.tarjetaCredito}` : ' • Efectivo'}`,
+          usuario,
+          viajeId: activeViajeId,
+          viajeTitulo: activeViaje?.titulo || null,
+          montoCOP,
+          montoOriginal: monto,
+          monedaOriginal: orig,
+          fechaReferencia: savedGasto.fechaGasto || payload.fechaGasto || null
+        });
         toast.success('Gasto registrado con éxito (tasa congelada al instante de la compra).');
         return savedGasto;
       }
@@ -1034,6 +1181,19 @@ export function useAppViajes(usuario) {
       viajeId: activeViajeId
     };
     setGastos(prev => [localGasto, ...prev.filter(g => g.id !== localGasto.id)]);
+    recordAuditEvent({
+      modulo: 'billetera',
+      accion: 'crear',
+      titulo: `Compra / Gasto registrado (Offline): ${localGasto.concepto || 'Gasto'}`,
+      detalle: `Categoría: ${(localGasto.categoria || 'otros').toUpperCase()}${localGasto.tarjetaCredito ? ` • TC: ${localGasto.tarjetaCredito}` : ' • Efectivo'}`,
+      usuario,
+      viajeId: activeViajeId,
+      viajeTitulo: activeViaje?.titulo || null,
+      montoCOP,
+      montoOriginal: monto,
+      monedaOriginal: orig,
+      fechaReferencia: localGasto.fechaGasto || null
+    });
     toast.info('Guardado localmente. Pendiente de sincronización.');
     return localGasto;
   };
@@ -1149,11 +1309,26 @@ export function useAppViajes(usuario) {
       );
     }
 
+    recordAuditEvent({
+      modulo: 'billetera',
+      accion: 'editar',
+      titulo: `Gasto editado: ${finalUpdated.concepto || 'Gasto'}`,
+      detalle: `Categoría: ${(finalUpdated.categoria || 'otros').toUpperCase()}${finalUpdated.tarjetaCredito ? ` • TC: ${finalUpdated.tarjetaCredito}` : ''}`,
+      usuario,
+      viajeId: activeViajeId,
+      viajeTitulo: activeViaje?.titulo || null,
+      montoCOP: Number(finalUpdated.montoCOP || 0),
+      montoOriginal: Number(finalUpdated.montoOriginal || 0),
+      monedaOriginal: finalUpdated.monedaOriginal || orig,
+      fechaReferencia: finalUpdated.fechaGasto || null
+    });
+
     toast.success('Gasto actualizado exitosamente.');
     return finalUpdated;
   };
 
   const handleDeleteGasto = async (id) => {
+    const targetG = reconciledGastos.find(g => g.id === id) || gastos.find(g => g.id === id);
     const isLocalOrVirtual = typeof id === 'string' && (id.startsWith('g-local-') || id.startsWith('g-auto-') || id.startsWith('g-ev-'));
     try {
       if (navigator.onLine && !isLocalOrVirtual) {
@@ -1164,6 +1339,17 @@ export function useAppViajes(usuario) {
     } catch {}
 
     setGastos(prev => prev.filter(g => g.id !== id));
+    recordAuditEvent({
+      modulo: 'billetera',
+      accion: 'eliminar',
+      titulo: `Gasto eliminado: ${targetG?.concepto || id}`,
+      detalle: targetG?.categoria ? `Categoría: ${targetG.categoria.toUpperCase()}` : 'Eliminado de la billetera',
+      usuario,
+      viajeId: activeViajeId,
+      viajeTitulo: activeViaje?.titulo || null,
+      montoCOP: targetG?.montoCOP ? Number(targetG.montoCOP) : null,
+      fechaReferencia: targetG?.fechaGasto || null
+    });
     toast.success('Gasto eliminado correctamente.');
   };
 

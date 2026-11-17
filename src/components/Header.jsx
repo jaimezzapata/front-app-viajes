@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plane, Wifi, WifiOff, User, Plus, Globe2, Edit2, Trash2, MoreVertical, X, Share2, LogOut, RefreshCw } from 'lucide-react';
+import { Plane, Wifi, WifiOff, User, Plus, Globe2, Edit2, Trash2, MoreVertical, X, Share2, LogOut, RefreshCw, History } from 'lucide-react';
 import { cleanCountryText, fixAccents } from '../utils/countries';
 import MiniFlag from './MiniFlag';
 import ThemeToggle from './ThemeToggle';
@@ -282,6 +282,19 @@ export function Header({
                   >
                     <Globe2 className="w-3.5 h-3.5" />
                     <span>Ver Mapa Mundi</span>
+                  </button>
+                )}
+
+                {onSelectTab && (
+                  <button
+                    onClick={() => {
+                      setShowMobileMenu(false);
+                      onSelectTab('historial');
+                    }}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[#B55FE6] hover:bg-[#151B27] text-left cursor-pointer transition-colors font-medium"
+                  >
+                    <History className="w-3.5 h-3.5 text-[#B55FE6]" />
+                    <span>Historial & Auditoría</span>
                   </button>
                 )}
 

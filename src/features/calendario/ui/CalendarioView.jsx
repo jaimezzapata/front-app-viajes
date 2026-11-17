@@ -29,7 +29,7 @@ import MiniFlag from '../../../components/MiniFlag';
 import Modal from '../../../components/Modal';
 import { cleanCountryText } from '../../../utils/countries';
 import { formatCurrencyDisplay } from '../../../utils/currencies';
-import { buildChronologicalMasterList } from '../../reportes/use-cases/cronogramaReportUtils';
+import { buildChronologicalMasterList, getEffectiveTripDateRange } from '../../reportes/use-cases/cronogramaReportUtils';
 
 const WEEKDAYS_MON = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const MONTH_NAMES = [
@@ -159,17 +159,24 @@ export function CalendarioView({
 
   const hasActiveFilter = categoryFilter !== 'todas' || Boolean(searchText.trim());
 
+  // Rango efectivo del viaje: Día 1 = fecha de inicio; Día Final = llegada de regreso al país
+  const tripRange = useMemo(() => {
+    const { startDate: start, endDate: end } = getEffectiveTripDateRange(viaje, eventos);
+    if (!start || !end) return { start: null, end: null, startKey: null, endKey: null };
+    return {
+      start,
+      end,
+      startKey: toLocalDateKey(start),
+      endKey: toLocalDateKey(end)
+    };
+  }, [viaje, eventos]);
+
   // Inicializar mes y día seleccionado al inicio del viaje (o fecha actual)
   const initialFocusDate = useMemo(() => {
-    if (viaje?.fechaInicio) {
-      const d = new Date(viaje.fechaInicio);
-      if (!isNaN(d.getTime())) {
-        return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-      }
-    }
+    if (tripRange.start) return tripRange.start;
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  }, [viaje?.id, viaje?.fechaInicio]);
+  }, [tripRange.start]);
 
   const [cursorDate, setCursorDate] = useState(initialFocusDate);
   const [selectedDateKey, setSelectedDateKey] = useState(() => toLocalDateKey(initialFocusDate));
@@ -184,22 +191,6 @@ export function CalendarioView({
     setCursorDate(initialFocusDate);
     setSelectedDateKey(toLocalDateKey(initialFocusDate));
   }, [initialFocusDate]);
-
-  // Rango del viaje en local date keys
-  const tripRange = useMemo(() => {
-    if (!viaje?.fechaInicio || !viaje?.fechaFin) return { start: null, end: null, startKey: null, endKey: null };
-    const s = new Date(viaje.fechaInicio);
-    const e = new Date(viaje.fechaFin);
-    if (isNaN(s.getTime()) || isNaN(e.getTime())) return { start: null, end: null, startKey: null, endKey: null };
-    const start = new Date(s.getFullYear(), s.getMonth(), s.getDate());
-    const end = new Date(e.getFullYear(), e.getMonth(), e.getDate());
-    return {
-      start,
-      end,
-      startKey: toLocalDateKey(start),
-      endKey: toLocalDateKey(end)
-    };
-  }, [viaje?.fechaInicio, viaje?.fechaFin]);
 
   // Construir eventos unificados desde la fuente única de verdad
   const masterItems = useMemo(() => {

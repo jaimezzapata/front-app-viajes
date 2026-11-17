@@ -78,10 +78,15 @@ export function ReportesView({
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
 
-  // Construir lista cronológica maestra unificada
+  // Construir lista cronológica maestra unificada (solo días del viaje e itinerario)
   const masterItems = useMemo(() => {
     if (!viaje) return [];
-    return buildChronologicalMasterList({ viaje, eventos, gastos });
+    return buildChronologicalMasterList({
+      viaje,
+      eventos,
+      gastos,
+      onlyTripDaysAndItinerary: true
+    });
   }, [viaje, eventos, gastos]);
 
   // Opciones dinámicas para los selectores de filtro

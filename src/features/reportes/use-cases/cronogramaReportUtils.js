@@ -80,16 +80,67 @@ export function formatTimeRange(fechaInicio, fechaFin, isDateOnly = false) {
 }
 
 /**
+ * Convierte una fecha ISO o Date en fecha local a medianoche sin desplazamiento de zona horaria
+ * cuando viene en formato YYYY-MM-DD o medianoche UTC (T00:00:00).
+ */
+export function toSafeLocalDateOnly(input) {
+  if (!input) return null;
+  if (typeof input === 'string') {
+    const trimmed = input.trim();
+    const isoDateMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})(?:T00:00:00(?:\.\d+)?Z?)?$/);
+    if (isoDateMatch) {
+      return new Date(Number(isoDateMatch[1]), Number(isoDateMatch[2]) - 1, Number(isoDateMatch[3]));
+    }
+  }
+  const d = input instanceof Date ? input : new Date(input);
+  if (isNaN(d.getTime())) return null;
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+/**
+ * Calcula el rango efectivo del viaje:
+ * - Día 1: Fecha en que inicia el viaje (`viaje.fechaInicio`).
+ * - Día Final: Fecha de llegada al país nuevamente (el mayor entre `viaje.fechaFin` y la llegada del último vuelo/evento del itinerario).
+ */
+export function getEffectiveTripDateRange(viaje, eventos = []) {
+  const startDate = toSafeLocalDateOnly(viaje?.fechaInicio);
+  let endDate = toSafeLocalDateOnly(viaje?.fechaFin);
+
+  if (Array.isArray(eventos) && eventos.length > 0) {
+    eventos.forEach((ev) => {
+      const candidateRaw = ev?.fechaFin || ev?.fechaInicio;
+      const candidate = toSafeLocalDateOnly(candidateRaw);
+      if (candidate && (!endDate || candidate > endDate)) {
+        endDate = candidate;
+      }
+    });
+  }
+
+  if (startDate && endDate && endDate < startDate) {
+    endDate = new Date(startDate.getTime());
+  }
+
+  return { startDate, endDate };
+}
+
+/**
  * Construye la lista cronológica maestra unificando Eventos del Itinerario y Gastos
  * con todos los campos detallados: día, hora, duración, lugar/ruta, ciudad, país,
  * personas, tarjeta, montos originales, total TC y valor por persona.
  */
-export function buildChronologicalMasterList({ viaje, eventos = [], gastos = [] }) {
+export function buildChronologicalMasterList({
+  viaje,
+  eventos = [],
+  gastos = [],
+  onlyTripDaysAndItinerary = false
+}) {
   const safeEventos = Array.isArray(eventos) ? eventos : [];
   const safeGastos = Array.isArray(gastos) ? gastos : [];
 
-  const tripStartDate = viaje?.fechaInicio ? new Date(viaje.fechaInicio) : null;
-  if (tripStartDate) tripStartDate.setHours(0, 0, 0, 0);
+  const { startDate: tripStartDate, endDate: tripEndBase } = getEffectiveTripDateRange(viaje, safeEventos);
+  const tripEndDate = tripEndBase
+    ? new Date(tripEndBase.getFullYear(), tripEndBase.getMonth(), tripEndBase.getDate(), 23, 59, 59, 999)
+    : null;
 
   // Mapa de gastos vinculados a un eventoId
   const gastoByEventoId = new Map();
@@ -301,6 +352,14 @@ export function buildChronologicalMasterList({ viaje, eventos = [], gastos = [] 
     const enriched = enrichGastoWithLocation(g, safeEventos, viaje);
     const amounts = getGastoAmounts(g);
     const gDate = g.fechaGasto ? new Date(g.fechaGasto) : null;
+
+    // En el reporte cronológico solo se incluyen registros asociados a días del viaje o al itinerario
+    if (onlyTripDaysAndItinerary && tripStartDate && tripEndDate) {
+      if (!gDate || isNaN(gDate.getTime()) || gDate < tripStartDate || gDate > tripEndDate) {
+        return;
+      }
+    }
+
     const dateKey = gDate && !isNaN(gDate.getTime())
       ? gDate.toISOString().split('T')[0]
       : 'sin-fecha';

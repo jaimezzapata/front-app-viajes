@@ -156,6 +156,12 @@ export function parseViajeMeta(viaje) {
       ? Math.round(rawPresupuestoPersonas)
       : 1;
 
+  const inyeccionesPresupuesto = Array.isArray(viaje.inyeccionesPresupuesto)
+    ? viaje.inyeccionesPresupuesto
+    : Array.isArray(meta.inyeccionesPresupuesto)
+    ? meta.inyeccionesPresupuesto
+    : [];
+
   const baseViaje = {
     ...viaje,
     titulo: cleanMetaText(viaje.titulo),
@@ -165,6 +171,7 @@ export function parseViajeMeta(viaje) {
     tipoViaje: viaje.tipoViaje || meta.tipoViaje || 'unico',
     destinosMultidestino: viaje.destinosMultidestino || meta.destinosMultidestino || [],
     presupuestoPersonas,
+    inyeccionesPresupuesto,
     ...(viaje.categoriasPresupuesto || meta.categoriasPresupuesto
       ? { categoriasPresupuesto: viaje.categoriasPresupuesto || meta.categoriasPresupuesto }
       : {})

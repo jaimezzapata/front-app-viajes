@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PieChart, FileDown, FileSpreadsheet, Settings2 } from 'lucide-react';
+import { PieChart, FileDown, FileSpreadsheet, Settings2, PlusCircle } from 'lucide-react';
 import WatermarkIcon from '../../../components/WatermarkIcon';
 import { cleanCountryText } from '../../../utils/countries';
 import { useBalanceFilters } from './balance-view/useBalanceFilters';
@@ -10,9 +10,11 @@ import { BalanceMultidivisaGrid } from './balance-view/BalanceMultidivisaGrid';
 import { BalanceSemaforoCard } from './balance-view/BalanceSemaforoCard';
 import { BalanceDesgloseTable } from './balance-view/BalanceDesgloseTable';
 import { ConfigurarPresupuestoModal } from './balance-view/ConfigurarPresupuestoModal';
+import { InyectarPresupuestoModal } from './balance-view/InyectarPresupuestoModal';
 
 export function BalanceView({ viaje, onOpenNuevoViaje, onUpdateViaje, onEditGasto, balance, gastos = [], eventos = [] }) {
   const [isConfigPresupuestoOpen, setIsConfigPresupuestoOpen] = useState(false);
+  const [isInyectarPresupuestoOpen, setIsInyectarPresupuestoOpen] = useState(false);
   const {
     exportingExcel,
     showFiltersPanel,
@@ -105,15 +107,26 @@ export function BalanceView({ viaje, onOpenNuevoViaje, onUpdateViaje, onEditGast
 
         <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
           {onUpdateViaje && (
-            <button
-              type="button"
-              onClick={() => setIsConfigPresupuestoOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#151B27] border border-[#00E5FF]/40 hover:border-[#00E5FF] text-[#00E5FF] hover:bg-[#00E5FF]/10 font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-sm"
-              title="Modificar el presupuesto total, porcentajes y categorías"
-            >
-              <Settings2 className="w-4 h-4" strokeWidth={2.3} />
-              <span>Editar Presupuesto</span>
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => setIsInyectarPresupuestoOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#151B27] border border-[#B55FE6]/50 hover:border-[#B55FE6] text-[#B55FE6] hover:bg-[#B55FE6]/10 font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-sm"
+                title="Inyectar presupuesto adicional y discriminar aportes"
+              >
+                <PlusCircle className="w-4 h-4" strokeWidth={2.3} />
+                <span>Inyectar Ppto</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsConfigPresupuestoOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#151B27] border border-[#00E5FF]/40 hover:border-[#00E5FF] text-[#00E5FF] hover:bg-[#00E5FF]/10 font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-sm"
+                title="Modificar el presupuesto total, porcentajes y categorías"
+              >
+                <Settings2 className="w-4 h-4" strokeWidth={2.3} />
+                <span>Editar Presupuesto</span>
+              </button>
+            </>
           )}
           <button
             onClick={() => handleExport(true)}
@@ -142,6 +155,7 @@ export function BalanceView({ viaje, onOpenNuevoViaje, onUpdateViaje, onEditGast
         hasActiveFilters={hasActiveFilters}
         filteredTotals={filteredTotals}
         onOpenConfigPresupuesto={onUpdateViaje ? () => setIsConfigPresupuestoOpen(true) : undefined}
+        onOpenInyectarPresupuesto={onUpdateViaje ? () => setIsInyectarPresupuestoOpen(true) : undefined}
       />
 
       {/* 2. Semáforo de Presupuesto por Categoría */}
@@ -218,6 +232,14 @@ export function BalanceView({ viaje, onOpenNuevoViaje, onUpdateViaje, onEditGast
       <ConfigurarPresupuestoModal
         isOpen={isConfigPresupuestoOpen}
         onClose={() => setIsConfigPresupuestoOpen(false)}
+        viaje={viaje}
+        onUpdateViaje={onUpdateViaje}
+      />
+
+      {/* Modal para Inyectar Presupuesto Adicional (Discriminado) */}
+      <InyectarPresupuestoModal
+        isOpen={isInyectarPresupuestoOpen}
+        onClose={() => setIsInyectarPresupuestoOpen(false)}
         viaje={viaje}
         onUpdateViaje={onUpdateViaje}
       />

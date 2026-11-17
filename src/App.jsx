@@ -14,6 +14,7 @@ import ChecklistView from './features/checklist/ui/ChecklistView';
 import BilleteraView from './features/billetera/ui/BilleteraView';
 import BalanceView from './features/balance/ui/BalanceView';
 import ReportesView from './features/reportes/ui/ReportesView';
+import HistorialView from './features/historial/ui/HistorialView';
 
 // Pantallas
 import AuthScreen from './features/auth/ui/AuthScreen';
@@ -356,6 +357,10 @@ export function App() {
                 setIsNuevoGastoOpen(true);
               }}
             />
+          )}
+
+          {activeTab === 'historial' && (
+            <HistorialView activeViaje={activeViaje} />
           )}
         </main>
 

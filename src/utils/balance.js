@@ -315,6 +315,9 @@ export function calculateTripBalance(viaje, gastos = []) {
     return {
       presupuestoTotalCOP: 0,
       presupuesto: 0,
+      presupuestoBaseCOP: 0,
+      totalInyectadoCOP: 0,
+      inyeccionesPresupuesto: [],
       presupuestoPersonas: 1,
       presupuestoPorPersonaCOP: 0,
       totalGastadoCOP: 0,
@@ -352,6 +355,14 @@ export function calculateTripBalance(viaje, gastos = []) {
   }
 
   const presupuestoTotalCOP = Number(viaje.presupuestoTotal) || 0;
+  const inyeccionesPresupuesto = Array.isArray(viaje.inyeccionesPresupuesto)
+    ? viaje.inyeccionesPresupuesto
+    : [];
+  const totalInyectadoCOP = inyeccionesPresupuesto.reduce(
+    (acc, item) => acc + Math.max(0, Number(item?.monto) || 0),
+    0
+  );
+  const presupuestoBaseCOP = Math.max(0, presupuestoTotalCOP - totalInyectadoCOP);
   const presupuestoPersonas = Math.max(1, Math.round(Number(viaje.presupuestoPersonas) || 1));
   const presupuestoPorPersonaCOP = Math.round(presupuestoTotalCOP / presupuestoPersonas);
   const monedaBase = (viaje.monedaBase || 'COP').toUpperCase();
@@ -520,6 +531,9 @@ export function calculateTripBalance(viaje, gastos = []) {
   return {
     presupuestoTotalCOP,
     presupuesto: presupuestoTotalCOP,
+    presupuestoBaseCOP,
+    totalInyectadoCOP,
+    inyeccionesPresupuesto,
     presupuestoPersonas,
     presupuestoPorPersonaCOP,
     totalGastadoCOP,
